@@ -24,6 +24,11 @@ pub use term::*;
 pub struct Triple<S = Subject, P = IriRefBuf, O = Object>(pub S, pub P, pub O);
 
 impl<S, P, O> Triple<S, P, O> {
+	/// Creates a new triple.
+	pub fn new(subject: S, predicate: P, object: O) -> Self {
+		Self(subject, predicate, object)
+	}
+
 	/// Returns a reference to the subject of the triple,
 	/// the first component.
 	pub fn subject(&self) -> &S {
@@ -84,6 +89,11 @@ pub struct Quad<S = Subject, P = IriRefBuf, O = Object, G = GraphLabel>(
 );
 
 impl<S, P, O, G> Quad<S, P, O, G> {
+	/// Creates a new quad.
+	pub fn new(subject: S, predicate: P, object: O, graph: Option<G>) -> Self {
+		Self(subject, predicate, object, graph)
+	}
+	
 	/// Returns a reference to the subject of the quad,
 	/// the first component.
 	pub fn subject(&self) -> &S {
