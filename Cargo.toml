@@ -1,0 +1,21 @@
+[package]
+name = "rdf-types"
+version = "0.1.0"
+edition = "2021"
+authors = ["Timothée Haudebourg <author@haudebourg.net>"]
+description = "Common RDF types definitions."
+categories = ["data-structures"]
+keywords = ["rdf", "w3c", "triple", "n-quads", "quad", "blank"]
+repository = "https://github.com/timothee-haudebourg/rdf-types"
+documentation = "https://docs.rs/rdf-types"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+
+[features]
+default = []
+loc = ["locspan"]
+
+[dependencies]
+iref = "2.1.0"
+langtag = "0.2.0"
+locspan = { version = "0.2.4", optional = true }
