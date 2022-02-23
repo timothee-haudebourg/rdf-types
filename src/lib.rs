@@ -13,7 +13,7 @@ mod blankid;
 mod literal;
 mod term;
 
-#[cfg(features = "loc")]
+#[cfg(feature = "loc")]
 pub mod loc;
 
 pub use blankid::*;
@@ -93,7 +93,7 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	pub fn new(subject: S, predicate: P, object: O, graph: Option<G>) -> Self {
 		Self(subject, predicate, object, graph)
 	}
-	
+
 	/// Returns a reference to the subject of the quad,
 	/// the first component.
 	pub fn subject(&self) -> &S {
