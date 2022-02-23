@@ -1,4 +1,4 @@
-use iref::IriRefBuf;
+use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
@@ -12,7 +12,7 @@ pub enum Literal {
 	String(StringLiteral),
 
 	/// Typed string literal.
-	TypedString(StringLiteral, IriRefBuf),
+	TypedString(StringLiteral, IriBuf),
 
 	/// Language string.
 	LangString(StringLiteral, LanguageTagBuf),

@@ -1,5 +1,5 @@
 use crate::{BlankIdBuf, StringLiteral};
-use iref::IriRefBuf;
+use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::Loc;
 
@@ -10,7 +10,7 @@ pub enum Literal<F> {
 	String(Loc<StringLiteral, F>),
 
 	/// Typed string literal.
-	TypedString(Loc<StringLiteral, F>, Loc<IriRefBuf, F>),
+	TypedString(Loc<StringLiteral, F>, Loc<IriBuf, F>),
 
 	/// Language string.
 	LangString(Loc<StringLiteral, F>, Loc<LanguageTagBuf, F>),
@@ -35,7 +35,7 @@ pub enum Term<F> {
 	Blank(BlankIdBuf),
 
 	/// IRI reference.
-	IriRef(IriRefBuf),
+	Iri(IriBuf),
 
 	/// Literal value.
 	Literal(Literal<F>),
@@ -45,7 +45,7 @@ impl<F> Term<F> {
 	pub fn strip(self) -> super::Term {
 		match self {
 			Self::Blank(id) => super::Term::Blank(id),
-			Self::IriRef(iri_ref) => super::Term::IriRef(iri_ref),
+			Self::Iri(iri) => super::Term::Iri(iri),
 			Self::Literal(lit) => super::Term::Literal(lit.strip()),
 		}
 	}

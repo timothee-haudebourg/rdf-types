@@ -1,16 +1,16 @@
 use crate::{BlankId, BlankIdBuf, Literal};
-use iref::{IriRef, IriRefBuf};
+use iref::{Iri, IriBuf};
 
 /// gRDF term.
 ///
-/// Either a blank node identifier, IRI reference or literal value.
+/// Either a blank node identifier, IRI or literal value.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum Term {
 	/// Blank node identifier.
 	Blank(BlankIdBuf),
 
-	/// IRI reference.
-	IriRef(IriRefBuf),
+	/// IRI.
+	Iri(IriBuf),
 
 	/// Literal value.
 	Literal(Literal),
@@ -20,7 +20,7 @@ impl Term {
 	pub fn as_term_ref(&self) -> TermRef {
 		match self {
 			Self::Blank(id) => TermRef::Blank(id),
-			Self::IriRef(iri) => TermRef::IriRef(iri.as_iri_ref()),
+			Self::Iri(iri) => TermRef::Iri(iri.as_iri()),
 			Self::Literal(lit) => TermRef::Literal(lit),
 		}
 	}
@@ -32,14 +32,14 @@ impl Term {
 
 /// gRDF term reference.
 ///
-/// Either a blank node identifier, IRI reference or literal value.
+/// Either a blank node identifier, IRI or literal value.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum TermRef<'a> {
 	/// Blank node identifier.
 	Blank(&'a BlankId),
 
-	/// IRI reference.
-	IriRef(IriRef<'a>),
+	/// IRI.
+	Iri(Iri<'a>),
 
 	/// Literal value.
 	Literal(&'a Literal),
@@ -53,21 +53,21 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 
 /// RDF Subject.
 ///
-/// Either a blank node identifier or an IRI reference.
+/// Either a blank node identifier or an IRI.
 #[derive(Clone, Debug)]
 pub enum Subject {
 	/// Blank node identifier.
 	Blank(BlankIdBuf),
 
-	/// IRI reference.
-	IriRef(IriRefBuf),
+	/// IRI.
+	Iri(IriBuf),
 }
 
 impl Subject {
 	pub fn as_subject_ref(&self) -> SubjectRef {
 		match self {
 			Self::Blank(id) => SubjectRef::Blank(id),
-			Self::IriRef(iri) => SubjectRef::IriRef(iri.as_iri_ref()),
+			Self::Iri(iri) => SubjectRef::Iri(iri.as_iri()),
 		}
 	}
 
@@ -78,14 +78,14 @@ impl Subject {
 
 /// gRDF subject or graph label reference.
 ///
-/// Either a blank node identifier or an IRI reference.
+/// Either a blank node identifier or an IRI.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum SubjectRef<'a> {
 	/// Blank node identifier.
 	Blank(&'a BlankId),
 
-	/// IRI reference.
-	IriRef(IriRef<'a>),
+	/// IRI.
+	Iri(Iri<'a>),
 }
 
 impl<'a> From<&'a Subject> for SubjectRef<'a> {
