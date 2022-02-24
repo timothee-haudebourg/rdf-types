@@ -6,7 +6,7 @@
 //! The optional feature `loc` provides compatibility
 //! with the `locspan` crate to locate every sub-component
 //! of a term.
-use iref::{IriRef, IriRefBuf};
+use iref::{Iri, IriBuf};
 use std::fmt;
 
 mod blankid;
@@ -21,7 +21,7 @@ pub use literal::*;
 pub use term::*;
 
 /// RDF triple.
-pub struct Triple<S = Subject, P = IriRefBuf, O = Object>(pub S, pub P, pub O);
+pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 impl<S, P, O> Triple<S, P, O> {
 	/// Creates a new triple.
@@ -78,10 +78,10 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<
 }
 
 /// RDF triple reference.
-pub type TripleRef<'a> = Triple<SubjectRef<'a>, IriRef<'a>, ObjectRef<'a>>;
+pub type TripleRef<'a> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>>;
 
 /// RDF quad.
-pub struct Quad<S = Subject, P = IriRefBuf, O = Object, G = GraphLabel>(
+pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
 	pub S,
 	pub P,
 	pub O,
@@ -159,4 +159,4 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Di
 }
 
 /// RDF quad reference.
-pub type QuadRef<'a> = Quad<SubjectRef<'a>, IriRef<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
+pub type QuadRef<'a> = Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
