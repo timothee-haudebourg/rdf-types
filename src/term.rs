@@ -44,21 +44,21 @@ impl Term {
 	pub fn as_blank(&self) -> Option<&BlankId> {
 		match self {
 			Self::Blank(id) => Some(id),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_iri(&self) -> Option<Iri> {
 		match self {
 			Self::Iri(iri) => Some(iri.as_iri()),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_literal(&self) -> Option<&Literal> {
 		match self {
 			Self::Literal(lit) => Some(lit),
-			_ => None
+			_ => None,
 		}
 	}
 }
@@ -94,21 +94,21 @@ impl<'a> TermRef<'a> {
 	pub fn as_blank(&self) -> Option<&'a BlankId> {
 		match self {
 			Self::Blank(id) => Some(id),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_iri(&self) -> Option<Iri<'a>> {
 		match self {
 			Self::Iri(iri) => Some(*iri),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_literal(&self) -> Option<&'a Literal> {
 		match self {
 			Self::Literal(lit) => Some(lit),
-			_ => None
+			_ => None,
 		}
 	}
 }
@@ -154,14 +154,14 @@ impl Subject {
 	pub fn as_blank(&self) -> Option<&BlankId> {
 		match self {
 			Self::Blank(id) => Some(id),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_iri(&self) -> Option<Iri> {
 		match self {
 			Self::Iri(iri) => Some(iri.as_iri()),
-			_ => None
+			_ => None,
 		}
 	}
 }
@@ -190,14 +190,14 @@ impl<'a> SubjectRef<'a> {
 	pub fn as_blank(&self) -> Option<&'a BlankId> {
 		match self {
 			Self::Blank(id) => Some(id),
-			_ => None
+			_ => None,
 		}
 	}
 
 	pub fn as_iri(&self) -> Option<Iri<'a>> {
 		match self {
 			Self::Iri(iri) => Some(*iri),
-			_ => None
+			_ => None,
 		}
 	}
 }

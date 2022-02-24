@@ -1,5 +1,5 @@
 use iref::{Iri, IriBuf};
-use langtag::{LanguageTagBuf, LanguageTag};
+use langtag::{LanguageTag, LanguageTagBuf};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
@@ -26,7 +26,7 @@ impl Literal {
 	pub fn ty(&self) -> Option<Iri> {
 		match self {
 			Self::TypedString(_, ty) => Some(ty.as_iri()),
-			_ => None
+			_ => None,
 		}
 	}
 
@@ -37,7 +37,7 @@ impl Literal {
 	pub fn lang_tag(&self) -> Option<LanguageTag> {
 		match self {
 			Self::LangString(_, tag) => Some(tag.as_ref()),
-			_ => None
+			_ => None,
 		}
 	}
 }
