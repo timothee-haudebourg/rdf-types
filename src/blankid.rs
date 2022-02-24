@@ -7,6 +7,7 @@ use std::str::FromStr;
 ///
 /// This error is raised by the [`BlankId::new`] and [`BlankIdBuf::new`] functions
 /// when the input string is not a valid blank node identifier.
+#[derive(Debug)]
 pub struct InvalidBlankId;
 
 /// Blank node identifier.
