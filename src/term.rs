@@ -28,6 +28,39 @@ impl Term {
 	pub fn as_object_ref(&self) -> TermRef {
 		self.as_term_ref()
 	}
+
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Literal(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&BlankId> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<Iri> {
+		match self {
+			Self::Iri(iri) => Some(iri.as_iri()),
+			_ => None
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<&Literal> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None
+		}
+	}
 }
 
 /// gRDF term reference.
@@ -43,6 +76,41 @@ pub enum TermRef<'a> {
 
 	/// Literal value.
 	Literal(&'a Literal),
+}
+
+impl<'a> TermRef<'a> {
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Literal(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&'a BlankId> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<Iri<'a>> {
+		match self {
+			Self::Iri(iri) => Some(*iri),
+			_ => None
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<&'a Literal> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None
+		}
+	}
 }
 
 impl<'a> From<&'a Term> for TermRef<'a> {
@@ -74,6 +142,28 @@ impl Subject {
 	pub fn as_graph_label_ref(&self) -> GraphLabelRef {
 		self.as_subject_ref()
 	}
+
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&BlankId> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<Iri> {
+		match self {
+			Self::Iri(iri) => Some(iri.as_iri()),
+			_ => None
+		}
+	}
 }
 
 /// gRDF subject or graph label reference.
@@ -86,6 +176,30 @@ pub enum SubjectRef<'a> {
 
 	/// IRI.
 	Iri(Iri<'a>),
+}
+
+impl<'a> SubjectRef<'a> {
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&'a BlankId> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<Iri<'a>> {
+		match self {
+			Self::Iri(iri) => Some(*iri),
+			_ => None
+		}
+	}
 }
 
 impl<'a> From<&'a Subject> for SubjectRef<'a> {

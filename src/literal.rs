@@ -1,5 +1,5 @@
-use iref::IriBuf;
-use langtag::LanguageTagBuf;
+use iref::{Iri, IriBuf};
+use langtag::{LanguageTagBuf, LanguageTag};
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
@@ -16,6 +16,30 @@ pub enum Literal {
 
 	/// Language string.
 	LangString(StringLiteral, LanguageTagBuf),
+}
+
+impl Literal {
+	pub fn is_typed(&self) -> bool {
+		matches!(self, Self::TypedString(_, _))
+	}
+
+	pub fn ty(&self) -> Option<Iri> {
+		match self {
+			Self::TypedString(_, ty) => Some(ty.as_iri()),
+			_ => None
+		}
+	}
+
+	pub fn is_lang_string(&self) -> bool {
+		matches!(self, Self::LangString(_, _))
+	}
+
+	pub fn lang_tag(&self) -> Option<LanguageTag> {
+		match self {
+			Self::LangString(_, tag) => Some(tag.as_ref()),
+			_ => None
+		}
+	}
 }
 
 /// String literal, without type or language tag.
