@@ -21,6 +21,7 @@ pub use literal::*;
 pub use term::*;
 
 /// RDF triple.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 impl<S, P, O> Triple<S, P, O> {
@@ -81,6 +82,7 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<
 pub type TripleRef<'a> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>>;
 
 /// RDF quad.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
 	pub S,
 	pub P,
