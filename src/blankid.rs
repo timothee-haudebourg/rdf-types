@@ -208,6 +208,24 @@ impl fmt::Debug for BlankIdBuf {
 	}
 }
 
+impl PartialEq<BlankId> for BlankIdBuf {
+	fn eq(&self, other: &BlankId) -> bool {
+		self.as_ref() == other
+	}
+}
+
+impl<'a> PartialEq<&'a BlankId> for BlankIdBuf {
+	fn eq(&self, other: &&'a BlankId) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<BlankIdBuf> for BlankId {
+	fn eq(&self, other: &BlankIdBuf) -> bool {
+		self == other.as_ref()
+	}
+}
+
 fn check<C: Iterator<Item = char>>(mut chars: C) -> bool {
 	match chars.next() {
 		Some('_') => match chars.next() {
