@@ -1,5 +1,6 @@
 use crate::{BlankId, BlankIdBuf, Literal};
 use iref::{Iri, IriBuf};
+use std::fmt;
 
 /// gRDF term.
 ///
@@ -63,6 +64,16 @@ impl Term {
 	}
 }
 
+impl fmt::Display for Term {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
 /// gRDF term reference.
 ///
 /// Either a blank node identifier, IRI or literal value.
@@ -119,6 +130,16 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 	}
 }
 
+impl<'a> fmt::Display for TermRef<'a> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
 /// RDF Subject.
 ///
 /// Either a blank node identifier or an IRI.
@@ -166,6 +187,15 @@ impl Subject {
 	}
 }
 
+impl fmt::Display for Subject {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+		}
+	}
+}
+
 /// gRDF subject or graph label reference.
 ///
 /// Either a blank node identifier or an IRI.
@@ -205,6 +235,15 @@ impl<'a> SubjectRef<'a> {
 impl<'a> From<&'a Subject> for SubjectRef<'a> {
 	fn from(t: &'a Subject) -> Self {
 		t.as_subject_ref()
+	}
+}
+
+impl<'a> fmt::Display for SubjectRef<'a> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+		}
 	}
 }
 

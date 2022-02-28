@@ -2,6 +2,7 @@ use crate::{BlankIdBuf, StringLiteral};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::Loc;
+use std::fmt;
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -28,6 +29,16 @@ impl<F> Literal<F> {
 	}
 }
 
+impl<F> fmt::Display for Literal<F> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::String(s) => s.value().fmt(f),
+			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s.value(), ty.value()),
+			Self::LangString(s, tag) => write!(f, "{}@{}", s.value(), tag.value()),
+		}
+	}
+}
+
 /// Located gRDF term.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum Term<F> {
@@ -47,6 +58,16 @@ impl<F> Term<F> {
 			Self::Blank(id) => super::Term::Blank(id),
 			Self::Iri(iri) => super::Term::Iri(iri),
 			Self::Literal(lit) => super::Term::Literal(lit.strip()),
+		}
+	}
+}
+
+impl<F> fmt::Display for Term<F> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Literal(lit) => lit.fmt(f),
 		}
 	}
 }
