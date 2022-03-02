@@ -1,4 +1,4 @@
-use crate::{BlankIdBuf, StringLiteral};
+use crate::{BlankIdBuf, Quad, StringLiteral, Triple};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Loc, Strip};
@@ -89,3 +89,24 @@ impl<F> fmt::Display for Term<F> {
 }
 
 pub type Object<F> = Term<F>;
+
+impl<S: Strip, P: Strip, O: Strip> Strip for Triple<S, P, O> {
+	type Stripped = Triple<S::Stripped, P::Stripped, O::Stripped>;
+
+	fn strip(self) -> Self::Stripped {
+		Triple(self.0.strip(), self.1.strip(), self.2.strip())
+	}
+}
+
+impl<S: Strip, P: Strip, O: Strip, G: Strip> Strip for Quad<S, P, O, G> {
+	type Stripped = Quad<S::Stripped, P::Stripped, O::Stripped, G::Stripped>;
+
+	fn strip(self) -> Self::Stripped {
+		Quad(
+			self.0.strip(),
+			self.1.strip(),
+			self.2.strip(),
+			self.3.strip(),
+		)
+	}
+}
