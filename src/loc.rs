@@ -1,7 +1,7 @@
 use crate::{BlankIdBuf, StringLiteral};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
-use locspan::Loc;
+use locspan::{Loc, Strip};
 use std::fmt;
 
 /// Located RDF Literal.
@@ -26,6 +26,14 @@ impl<F> Literal<F> {
 			}
 			Self::LangString(Loc(lit, _), Loc(tag, _)) => super::Literal::LangString(lit, tag),
 		}
+	}
+}
+
+impl<F> Strip for Literal<F> {
+	type Stripped = super::Literal;
+
+	fn strip(self) -> Self::Stripped {
+		self.strip()
 	}
 }
 
@@ -59,6 +67,14 @@ impl<F> Term<F> {
 			Self::Iri(iri) => super::Term::Iri(iri),
 			Self::Literal(lit) => super::Term::Literal(lit.strip()),
 		}
+	}
+}
+
+impl<F> Strip for Term<F> {
+	type Stripped = super::Term;
+
+	fn strip(self) -> Self::Stripped {
+		self.strip()
 	}
 }
 
