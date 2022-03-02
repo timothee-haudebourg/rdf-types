@@ -185,6 +185,20 @@ impl Subject {
 			_ => None,
 		}
 	}
+
+	pub fn into_term(self) -> Term {
+		match self {
+			Self::Blank(id) => Term::Blank(id),
+			Self::Iri(iri) => Term::Iri(iri),
+		}
+	}
+
+	pub fn as_term_ref(&self) -> TermRef {
+		match self {
+			Self::Blank(id) => TermRef::Blank(id),
+			Self::Iri(iri) => TermRef::Iri(iri.as_iri()),
+		}
+	}
 }
 
 impl fmt::Display for Subject {
@@ -228,6 +242,13 @@ impl<'a> SubjectRef<'a> {
 		match self {
 			Self::Iri(iri) => Some(*iri),
 			_ => None,
+		}
+	}
+
+	pub fn into_term_ref(self) -> TermRef<'a> {
+		match self {
+			Self::Blank(id) => TermRef::Blank(id),
+			Self::Iri(iri) => TermRef::Iri(iri),
 		}
 	}
 }

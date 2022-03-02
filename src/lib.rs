@@ -24,6 +24,20 @@ pub use term::*;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
+impl Triple {
+	pub fn into_grdf(self) -> GrdfTriple {
+		Triple(self.0.into_term(), Term::Iri(self.1), self.2)
+	}
+
+	pub fn as_grdf(&self) -> GrdfTripleRef {
+		Triple(
+			self.0.as_term_ref(),
+			TermRef::Iri(self.1.as_iri()),
+			self.2.as_term_ref(),
+		)
+	}
+}
+
 impl<S, P, O> Triple<S, P, O> {
 	/// Creates a new triple.
 	pub fn new(subject: S, predicate: P, object: O) -> Self {
@@ -81,6 +95,12 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<
 /// RDF triple reference.
 pub type TripleRef<'a> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>>;
 
+/// gRDF triple.
+pub type GrdfTriple = Triple<Term, Term, Term>;
+
+/// gRDF triple reference.
+pub type GrdfTripleRef<'a> = Triple<TermRef<'a>, TermRef<'a>, TermRef<'a>>;
+
 /// RDF quad.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
@@ -89,6 +109,26 @@ pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
 	pub O,
 	pub Option<G>,
 );
+
+impl Quad {
+	pub fn into_grdf(self) -> GrdfQuad {
+		Quad(
+			self.0.into_term(),
+			Term::Iri(self.1),
+			self.2,
+			self.3.map(GraphLabel::into_term),
+		)
+	}
+
+	pub fn as_grdf(&self) -> GrdfQuadRef {
+		Quad(
+			self.0.as_term_ref(),
+			TermRef::Iri(self.1.as_iri()),
+			self.2.as_term_ref(),
+			self.3.as_ref().map(GraphLabel::as_term_ref),
+		)
+	}
+}
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	/// Creates a new quad.
@@ -162,3 +202,9 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Di
 
 /// RDF quad reference.
 pub type QuadRef<'a> = Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
+
+/// gRDF quad.
+pub type GrdfQuad = Quad<Term, Term, Term, Term>;
+
+/// gRDF quad reference.
+pub type GrdfQuadRef<'a> = Quad<TermRef<'a>, TermRef<'a>, TermRef<'a>, TermRef<'a>>;
