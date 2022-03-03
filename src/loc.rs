@@ -1,4 +1,4 @@
-use crate::{BlankIdBuf, Subject, GraphLabel, Quad, StringLiteral, Triple};
+use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Loc, Strip};
@@ -8,10 +8,12 @@ use std::fmt;
 pub type LocQuad<S, P, O, G, F> = Loc<Quad<Loc<S, F>, Loc<P, F>, Loc<O, F>, Loc<G, F>>, F>;
 
 /// Located RDF quad.
-pub type LocRdfQuad<F> = Loc<Quad<Loc<Subject, F>, Loc<IriBuf, F>, Loc<Object<F>, F>, Loc<GraphLabel, F>>, F>;
+pub type LocRdfQuad<F> =
+	Loc<Quad<Loc<Subject, F>, Loc<IriBuf, F>, Loc<Object<F>, F>, Loc<GraphLabel, F>>, F>;
 
 /// Located gRDF quad.
-pub type LocGrdfQuad<F> = Loc<Quad<Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>>, F>;
+pub type LocGrdfQuad<F> =
+	Loc<Quad<Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>>, F>;
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
