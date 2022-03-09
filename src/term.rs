@@ -97,6 +97,34 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 	}
 }
 
+impl<I, B, L> AsTerm for Term<I, B, L> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = L;
+
+	fn as_term(&self) -> Term<&I, &B, &L> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+			Self::Literal(lit) => Term::Literal(lit),
+		}
+	}
+}
+
+impl<I, B, L> IntoTerm for Term<I, B, L> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = L;
+
+	fn into_term(self) -> Term<I, B, L> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+			Self::Literal(lit) => Term::Literal(lit),
+		}
+	}
+}
+
 /// gRDF term reference.
 pub type TermRef<'a> = Term<Iri<'a>, &'a BlankId, &'a Literal>;
 
@@ -186,6 +214,32 @@ impl<'a> From<&'a Subject> for SubjectRef<'a> {
 	}
 }
 
+impl<I, B> AsTerm for Subject<I, B> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = std::convert::Infallible;
+
+	fn as_term(&self) -> Term<&I, &B, &Self::Literal> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+		}
+	}
+}
+
+impl<I, B> IntoTerm for Subject<I, B> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = std::convert::Infallible;
+
+	fn into_term(self) -> Term<I, B, Self::Literal> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+		}
+	}
+}
+
 /// RDF Object.
 pub type Object<I = IriBuf, B = BlankIdBuf, L = Literal> = Term<I, B, L>;
 
@@ -197,3 +251,19 @@ pub type GraphLabel<I = IriBuf, B = BlankIdBuf> = Subject<I, B>;
 
 /// RDF Graph Label reference.
 pub type GraphLabelRef<'a> = SubjectRef<'a>;
+
+pub trait AsTerm {
+	type Iri;
+	type BlankId;
+	type Literal;
+
+	fn as_term(&self) -> Term<&Self::Iri, &Self::BlankId, &Self::Literal>;
+}
+
+pub trait IntoTerm {
+	type Iri;
+	type BlankId;
+	type Literal;
+
+	fn into_term(self) -> Term<Self::Iri, Self::BlankId, Self::Literal>;
+}
