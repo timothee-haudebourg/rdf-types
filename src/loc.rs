@@ -60,18 +60,18 @@ impl<F> fmt::Display for Literal<F> {
 
 /// Located gRDF term.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Term<F> {
+pub enum Term<F, I = IriBuf, B = BlankIdBuf, L = Literal<F>> {
 	/// Blank node identifier.
-	Blank(BlankIdBuf),
+	Blank(B),
 
 	/// IRI reference.
-	Iri(IriBuf),
+	Iri(I),
 
 	/// Literal value.
-	Literal(Literal<F>),
+	Literal(L),
 }
 
-impl<F> Term<F> {
+impl<F, I, B, L: Strip> Term<F, I, B, L> {
 	pub fn strip(self) -> super::Term {
 		match self {
 			Self::Blank(id) => super::Term::Blank(id),
@@ -81,15 +81,15 @@ impl<F> Term<F> {
 	}
 }
 
-impl<F> Strip for Term<F> {
-	type Stripped = super::Term;
+impl<F, I, B, L: Strip> Strip for Term<F, I, B, L> {
+	type Stripped = super::Term<I, B, L>;
 
 	fn strip(self) -> Self::Stripped {
 		self.strip()
 	}
 }
 
-impl<F> fmt::Display for Term<F> {
+impl<F, I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<F> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
@@ -99,7 +99,7 @@ impl<F> fmt::Display for Term<F> {
 	}
 }
 
-pub type Object<F> = Term<F>;
+pub type Object<F, I = IriBuf, B = BlankIdBuf, L = Literal<F>> = Term<F, I, B, L>;
 
 impl<S: Strip, P: Strip, O: Strip> Strip for Triple<S, P, O> {
 	type Stripped = Triple<S::Stripped, P::Stripped, O::Stripped>;
