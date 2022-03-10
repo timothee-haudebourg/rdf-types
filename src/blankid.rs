@@ -187,6 +187,13 @@ impl Borrow<BlankId> for BlankIdBuf {
 	}
 }
 
+impl Borrow<BlankId> for &BlankIdBuf {
+	#[inline(always)]
+	fn borrow(&self) -> &BlankId {
+		unsafe { BlankId::new_unchecked(&self.0) }
+	}
+}
+
 impl<'a> From<&'a BlankIdBuf> for &'a BlankId {
 	#[inline(always)]
 	fn from(b: &'a BlankIdBuf) -> Self {
