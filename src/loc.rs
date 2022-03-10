@@ -69,7 +69,7 @@ impl<F> fmt::Display for Literal<F> {
 	}
 }
 
-impl<I, B, L: Strip> Term<I, B, L> {
+impl<I, B, L: Strip> super::Term<I, B, L> {
 	pub fn strip(self) -> super::Term<I, B, L::Stripped> {
 		match self {
 			Self::Blank(id) => super::Term::Blank(id),
@@ -79,7 +79,7 @@ impl<I, B, L: Strip> Term<I, B, L> {
 	}
 }
 
-impl<I, B, L: Strip> Strip for Term<I, B, L> {
+impl<I, B, L: Strip> Strip for super::Term<I, B, L> {
 	type Stripped = super::Term<I, B, L::Stripped>;
 
 	fn strip(self) -> Self::Stripped {
