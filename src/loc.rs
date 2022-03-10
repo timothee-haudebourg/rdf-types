@@ -1,14 +1,20 @@
-use crate::{BlankIdBuf, GraphLabel, Object, Quad, StringLiteral, Subject, Term, Triple};
+use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Loc, Strip};
 use std::fmt;
 
+/// gRDF term with located literal.
+pub type Term<F> = crate::Term<IriBuf, BlankIdBuf, Literal<F>>;
+
+/// RDF object with located literal.
+pub type Object<F> = crate::Object<IriBuf, BlankIdBuf, Literal<F>>;
+
 /// Located gRDF term.
-pub type LocTerm<F> = Loc<Term<IriBuf, BlankIdBuf, Literal<F>>, F>;
+pub type LocTerm<F> = Loc<Term<F>, F>;
 
 /// Located RDF object.
-pub type LocObject<F> = Loc<Object<IriBuf, BlankIdBuf, Literal<F>>, F>;
+pub type LocObject<F> = Loc<Object<F>, F>;
 
 /// Located quad.
 pub type LocQuad<S, P, O, G, F> = Loc<Quad<Loc<S, F>, Loc<P, F>, Loc<O, F>, Loc<G, F>>, F>;
