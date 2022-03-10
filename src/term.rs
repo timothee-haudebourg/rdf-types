@@ -5,7 +5,7 @@ use std::fmt;
 /// gRDF term.
 ///
 /// Either a blank node identifier, IRI or literal value.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal> {
 	/// Blank node identifier.
 	Blank(B),
@@ -137,7 +137,7 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 /// RDF Subject.
 ///
 /// Either a blank node identifier or an IRI.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum Subject<I = IriBuf, B = BlankIdBuf> {
 	/// Blank node identifier.
 	Blank(B),
