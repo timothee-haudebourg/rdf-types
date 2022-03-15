@@ -1,6 +1,6 @@
 use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
-use iref::IriBuf;
-use langtag::LanguageTagBuf;
+use iref::{Iri, IriBuf};
+use langtag::{LanguageTag, LanguageTagBuf};
 use locspan::{Loc, Strip, StrippedPartialEq};
 use std::fmt;
 
@@ -40,6 +40,44 @@ pub enum Literal<F> {
 }
 
 impl<F> Literal<F> {
+	pub fn is_typed(&self) -> bool {
+		matches!(self, Self::TypedString(_, _))
+	}
+
+	pub fn ty(&self) -> Option<Loc<Iri, &F>> {
+		match self {
+			Self::TypedString(_, ty) => Some(ty.borrow().map(|ty| ty.as_iri())),
+			_ => None,
+		}
+	}
+
+	pub fn is_lang_string(&self) -> bool {
+		matches!(self, Self::LangString(_, _))
+	}
+
+	pub fn lang_tag(&self) -> Option<Loc<LanguageTag, &F>> {
+		match self {
+			Self::LangString(_, tag) => Some(tag.borrow().map(|tag| tag.as_ref())),
+			_ => None,
+		}
+	}
+
+	pub fn string_literal(&self) -> &Loc<StringLiteral, F> {
+		match self {
+			Self::String(s) => s,
+			Self::TypedString(s, _) => s,
+			Self::LangString(s, _) => s,
+		}
+	}
+
+	pub fn into_string_literal(self) -> Loc<StringLiteral, F> {
+		match self {
+			Self::String(s) => s,
+			Self::TypedString(s, _) => s,
+			Self::LangString(s, _) => s,
+		}
+	}
+
 	pub fn strip(self) -> super::Literal {
 		match self {
 			Self::String(Loc(lit, _)) => super::Literal::String(lit),

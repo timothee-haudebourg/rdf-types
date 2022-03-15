@@ -40,6 +40,22 @@ impl Literal {
 			_ => None,
 		}
 	}
+
+	pub fn string_literal(&self) -> &StringLiteral {
+		match self {
+			Self::String(s) => s,
+			Self::TypedString(s, _) => s,
+			Self::LangString(s, _) => s,
+		}
+	}
+
+	pub fn into_string_literal(self) -> StringLiteral {
+		match self {
+			Self::String(s) => s,
+			Self::TypedString(s, _) => s,
+			Self::LangString(s, _) => s,
+		}
+	}
 }
 
 /// String literal, without type or language tag.
