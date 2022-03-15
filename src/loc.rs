@@ -4,16 +4,27 @@ use langtag::LanguageTagBuf;
 use locspan::{Loc, Strip, StrippedPartialEq};
 use std::fmt;
 
+/// gRDF term with located literal.
+pub type Term<F> = crate::Term<IriBuf, BlankIdBuf, Literal<F>>;
+
+/// RDF object with located literal.
+pub type Object<F> = crate::Object<IriBuf, BlankIdBuf, Literal<F>>;
+
+/// Located gRDF term.
+pub type LocTerm<F> = Loc<Term<F>, F>;
+
+/// Located RDF object.
+pub type LocObject<F> = Loc<Object<F>, F>;
+
 /// Located quad.
 pub type LocQuad<S, P, O, G, F> = Loc<Quad<Loc<S, F>, Loc<P, F>, Loc<O, F>, Loc<G, F>>, F>;
 
 /// Located RDF quad.
 pub type LocRdfQuad<F> =
-	Loc<Quad<Loc<Subject, F>, Loc<IriBuf, F>, Loc<Object<F>, F>, Loc<GraphLabel, F>>, F>;
+	Loc<Quad<Loc<Subject, F>, Loc<IriBuf, F>, LocObject<F>, Loc<GraphLabel, F>>, F>;
 
 /// Located gRDF quad.
-pub type LocGrdfQuad<F> =
-	Loc<Quad<Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>, Loc<Term<F>, F>>, F>;
+pub type LocGrdfQuad<F> = Loc<Quad<LocTerm<F>, LocTerm<F>, LocTerm<F>, LocTerm<F>>, F>;
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -75,21 +86,8 @@ impl<F> fmt::Display for Literal<F> {
 	}
 }
 
-/// Located gRDF term.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Term<F> {
-	/// Blank node identifier.
-	Blank(BlankIdBuf),
-
-	/// IRI reference.
-	Iri(IriBuf),
-
-	/// Literal value.
-	Literal(Literal<F>),
-}
-
-impl<F> Term<F> {
-	pub fn strip(self) -> super::Term {
+impl<I, B, L: Strip> super::Term<I, B, L> {
+	pub fn strip(self) -> super::Term<I, B, L::Stripped> {
 		match self {
 			Self::Blank(id) => super::Term::Blank(id),
 			Self::Iri(iri) => super::Term::Iri(iri),
@@ -98,7 +96,7 @@ impl<F> Term<F> {
 	}
 }
 
-impl<F> StrippedPartialEq for Term<F> {
+impl<I: PartialEq, B: PartialEq, L: StrippedPartialEq> StrippedPartialEq for super::Term<I, B, L> {
 	fn stripped_eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::Blank(a), Self::Blank(b)) => a == b,
@@ -109,25 +107,13 @@ impl<F> StrippedPartialEq for Term<F> {
 	}
 }
 
-impl<F> Strip for Term<F> {
-	type Stripped = super::Term;
+impl<I, B, L: Strip> Strip for super::Term<I, B, L> {
+	type Stripped = super::Term<I, B, L::Stripped>;
 
 	fn strip(self) -> Self::Stripped {
 		self.strip()
 	}
 }
-
-impl<F> fmt::Display for Term<F> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
-			Self::Literal(lit) => lit.fmt(f),
-		}
-	}
-}
-
-pub type Object<F> = Term<F>;
 
 impl<S: Strip, P: Strip, O: Strip> Strip for Triple<S, P, O> {
 	type Stripped = Triple<S::Stripped, P::Stripped, O::Stripped>;

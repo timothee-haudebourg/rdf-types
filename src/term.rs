@@ -5,16 +5,72 @@ use std::fmt;
 /// gRDF term.
 ///
 /// Either a blank node identifier, IRI or literal value.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Term {
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal> {
 	/// Blank node identifier.
-	Blank(BlankIdBuf),
+	Blank(B),
 
 	/// IRI.
-	Iri(IriBuf),
+	Iri(I),
 
 	/// Literal value.
-	Literal(Literal),
+	Literal(L),
+}
+
+impl<I, B, L> Term<I, B, L> {
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Literal(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&B> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn into_blank(self) -> Option<B> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<&I> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn into_iri(self) -> Option<I> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<&L> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None,
+		}
+	}
+
+	pub fn into_literal(self) -> Option<L> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None,
+		}
+	}
 }
 
 impl Term {
@@ -29,42 +85,9 @@ impl Term {
 	pub fn as_object_ref(&self) -> TermRef {
 		self.as_term_ref()
 	}
-
-	pub fn is_blank(&self) -> bool {
-		matches!(self, Self::Blank(_))
-	}
-
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Iri(_))
-	}
-
-	pub fn is_literal(&self) -> bool {
-		matches!(self, Self::Literal(_))
-	}
-
-	pub fn as_blank(&self) -> Option<&BlankId> {
-		match self {
-			Self::Blank(id) => Some(id),
-			_ => None,
-		}
-	}
-
-	pub fn as_iri(&self) -> Option<Iri> {
-		match self {
-			Self::Iri(iri) => Some(iri.as_iri()),
-			_ => None,
-		}
-	}
-
-	pub fn as_literal(&self) -> Option<&Literal> {
-		match self {
-			Self::Literal(lit) => Some(lit),
-			_ => None,
-		}
-	}
 }
 
-impl fmt::Display for Term {
+impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I, B, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
@@ -74,55 +97,36 @@ impl fmt::Display for Term {
 	}
 }
 
+impl<I, B, L> AsTerm for Term<I, B, L> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = L;
+
+	fn as_term(&self) -> Term<&I, &B, &L> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+			Self::Literal(lit) => Term::Literal(lit),
+		}
+	}
+}
+
+impl<I, B, L> IntoTerm for Term<I, B, L> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = L;
+
+	fn into_term(self) -> Term<I, B, L> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+			Self::Literal(lit) => Term::Literal(lit),
+		}
+	}
+}
+
 /// gRDF term reference.
-///
-/// Either a blank node identifier, IRI or literal value.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum TermRef<'a> {
-	/// Blank node identifier.
-	Blank(&'a BlankId),
-
-	/// IRI.
-	Iri(Iri<'a>),
-
-	/// Literal value.
-	Literal(&'a Literal),
-}
-
-impl<'a> TermRef<'a> {
-	pub fn is_blank(&self) -> bool {
-		matches!(self, Self::Blank(_))
-	}
-
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Iri(_))
-	}
-
-	pub fn is_literal(&self) -> bool {
-		matches!(self, Self::Literal(_))
-	}
-
-	pub fn as_blank(&self) -> Option<&'a BlankId> {
-		match self {
-			Self::Blank(id) => Some(id),
-			_ => None,
-		}
-	}
-
-	pub fn as_iri(&self) -> Option<Iri<'a>> {
-		match self {
-			Self::Iri(iri) => Some(*iri),
-			_ => None,
-		}
-	}
-
-	pub fn as_literal(&self) -> Option<&'a Literal> {
-		match self {
-			Self::Literal(lit) => Some(lit),
-			_ => None,
-		}
-	}
-}
+pub type TermRef<'a> = Term<Iri<'a>, &'a BlankId, &'a Literal>;
 
 impl<'a> From<&'a Term> for TermRef<'a> {
 	fn from(t: &'a Term) -> Self {
@@ -130,26 +134,47 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 	}
 }
 
-impl<'a> fmt::Display for TermRef<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
-			Self::Literal(lit) => lit.fmt(f),
-		}
-	}
-}
-
 /// RDF Subject.
 ///
 /// Either a blank node identifier or an IRI.
-#[derive(Clone, Debug)]
-pub enum Subject {
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub enum Subject<I = IriBuf, B = BlankIdBuf> {
 	/// Blank node identifier.
-	Blank(BlankIdBuf),
+	Blank(B),
 
 	/// IRI.
-	Iri(IriBuf),
+	Iri(I),
+}
+
+impl<I, B> Subject<I, B> {
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Blank(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn as_blank(&self) -> Option<&B> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<&I> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn into_term(self) -> Term<I, B> {
+		match self {
+			Self::Blank(id) => Term::Blank(id),
+			Self::Iri(iri) => Term::Iri(iri),
+		}
+	}
 }
 
 impl Subject {
@@ -164,35 +189,6 @@ impl Subject {
 		self.as_subject_ref()
 	}
 
-	pub fn is_blank(&self) -> bool {
-		matches!(self, Self::Blank(_))
-	}
-
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Iri(_))
-	}
-
-	pub fn as_blank(&self) -> Option<&BlankId> {
-		match self {
-			Self::Blank(id) => Some(id),
-			_ => None,
-		}
-	}
-
-	pub fn as_iri(&self) -> Option<Iri> {
-		match self {
-			Self::Iri(iri) => Some(iri.as_iri()),
-			_ => None,
-		}
-	}
-
-	pub fn into_term(self) -> Term {
-		match self {
-			Self::Blank(id) => Term::Blank(id),
-			Self::Iri(iri) => Term::Iri(iri),
-		}
-	}
-
 	pub fn as_term_ref(&self) -> TermRef {
 		match self {
 			Self::Blank(id) => TermRef::Blank(id),
@@ -201,7 +197,7 @@ impl Subject {
 	}
 }
 
-impl fmt::Display for Subject {
+impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
@@ -210,48 +206,7 @@ impl fmt::Display for Subject {
 	}
 }
 
-/// gRDF subject or graph label reference.
-///
-/// Either a blank node identifier or an IRI.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum SubjectRef<'a> {
-	/// Blank node identifier.
-	Blank(&'a BlankId),
-
-	/// IRI.
-	Iri(Iri<'a>),
-}
-
-impl<'a> SubjectRef<'a> {
-	pub fn is_blank(&self) -> bool {
-		matches!(self, Self::Blank(_))
-	}
-
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Iri(_))
-	}
-
-	pub fn as_blank(&self) -> Option<&'a BlankId> {
-		match self {
-			Self::Blank(id) => Some(id),
-			_ => None,
-		}
-	}
-
-	pub fn as_iri(&self) -> Option<Iri<'a>> {
-		match self {
-			Self::Iri(iri) => Some(*iri),
-			_ => None,
-		}
-	}
-
-	pub fn into_term_ref(self) -> TermRef<'a> {
-		match self {
-			Self::Blank(id) => TermRef::Blank(id),
-			Self::Iri(iri) => TermRef::Iri(iri),
-		}
-	}
-}
+pub type SubjectRef<'a> = Subject<Iri<'a>, &'a BlankId>;
 
 impl<'a> From<&'a Subject> for SubjectRef<'a> {
 	fn from(t: &'a Subject) -> Self {
@@ -259,23 +214,56 @@ impl<'a> From<&'a Subject> for SubjectRef<'a> {
 	}
 }
 
-impl<'a> fmt::Display for SubjectRef<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<I, B> AsTerm for Subject<I, B> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = std::convert::Infallible;
+
+	fn as_term(&self) -> Term<&I, &B, &Self::Literal> {
 		match self {
-			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
+		}
+	}
+}
+
+impl<I, B> IntoTerm for Subject<I, B> {
+	type Iri = I;
+	type BlankId = B;
+	type Literal = std::convert::Infallible;
+
+	fn into_term(self) -> Term<I, B, Self::Literal> {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri),
+			Self::Blank(id) => Term::Blank(id),
 		}
 	}
 }
 
 /// RDF Object.
-pub type Object = Term;
+pub type Object<I = IriBuf, B = BlankIdBuf, L = Literal> = Term<I, B, L>;
 
 /// RDF Object reference.
-pub type ObjectRef<'a> = Term;
+pub type ObjectRef<'a> = TermRef<'a>;
 
 /// RDF Graph Label.
-pub type GraphLabel = Subject;
+pub type GraphLabel<I = IriBuf, B = BlankIdBuf> = Subject<I, B>;
 
 /// RDF Graph Label reference.
 pub type GraphLabelRef<'a> = SubjectRef<'a>;
+
+pub trait AsTerm {
+	type Iri;
+	type BlankId;
+	type Literal;
+
+	fn as_term(&self) -> Term<&Self::Iri, &Self::BlankId, &Self::Literal>;
+}
+
+pub trait IntoTerm {
+	type Iri;
+	type BlankId;
+	type Literal;
+
+	fn into_term(self) -> Term<Self::Iri, Self::BlankId, Self::Literal>;
+}
