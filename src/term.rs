@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Literal};
+use crate::{BlankId, BlankIdBuf, Literal, StringLiteral};
 use iref::{Iri, IriBuf};
 use std::fmt;
 
@@ -6,7 +6,7 @@ use std::fmt;
 ///
 /// Either a blank node identifier, IRI or literal value.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal> {
+pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
 	/// Blank node identifier.
 	Blank(B),
 

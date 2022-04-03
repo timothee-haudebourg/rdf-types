@@ -1,6 +1,6 @@
 use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
-use iref::{Iri, IriBuf};
-use langtag::{LanguageTag, LanguageTagBuf};
+use iref::IriBuf;
+use langtag::LanguageTagBuf;
 use locspan::{Loc, Strip, StrippedPartialEq};
 use std::fmt;
 
@@ -28,25 +28,25 @@ pub type LocGrdfQuad<F> = Loc<Quad<LocTerm<F>, LocTerm<F>, LocTerm<F>, LocTerm<F
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Literal<F> {
+pub enum Literal<F, S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
-	String(Loc<StringLiteral, F>),
+	String(Loc<S, F>),
 
 	/// Typed string literal.
-	TypedString(Loc<StringLiteral, F>, Loc<IriBuf, F>),
+	TypedString(Loc<S, F>, Loc<I, F>),
 
 	/// Language string.
-	LangString(Loc<StringLiteral, F>, Loc<LanguageTagBuf, F>),
+	LangString(Loc<S, F>, Loc<L, F>),
 }
 
-impl<F> Literal<F> {
+impl<F, S, I, L> Literal<F, S, I, L> {
 	pub fn is_typed(&self) -> bool {
 		matches!(self, Self::TypedString(_, _))
 	}
 
-	pub fn ty(&self) -> Option<Loc<Iri, &F>> {
+	pub fn ty(&self) -> Option<&Loc<I, F>> {
 		match self {
-			Self::TypedString(_, ty) => Some(ty.borrow().map(|ty| ty.as_iri())),
+			Self::TypedString(_, ty) => Some(ty),
 			_ => None,
 		}
 	}
@@ -55,14 +55,14 @@ impl<F> Literal<F> {
 		matches!(self, Self::LangString(_, _))
 	}
 
-	pub fn lang_tag(&self) -> Option<Loc<LanguageTag, &F>> {
+	pub fn lang_tag(&self) -> Option<&Loc<L, F>> {
 		match self {
-			Self::LangString(_, tag) => Some(tag.borrow().map(|tag| tag.as_ref())),
+			Self::LangString(_, tag) => Some(tag),
 			_ => None,
 		}
 	}
 
-	pub fn string_literal(&self) -> &Loc<StringLiteral, F> {
+	pub fn string_literal(&self) -> &Loc<S, F> {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
@@ -70,7 +70,7 @@ impl<F> Literal<F> {
 		}
 	}
 
-	pub fn into_string_literal(self) -> Loc<StringLiteral, F> {
+	pub fn into_string_literal(self) -> Loc<S, F> {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
@@ -78,7 +78,7 @@ impl<F> Literal<F> {
 		}
 	}
 
-	pub fn strip(self) -> super::Literal {
+	pub fn strip(self) -> super::Literal<S, I, L> {
 		match self {
 			Self::String(Loc(lit, _)) => super::Literal::String(lit),
 			Self::TypedString(Loc(lit, _), Loc(iri_ref, _)) => {
@@ -89,15 +89,15 @@ impl<F> Literal<F> {
 	}
 }
 
-impl<F> Strip for Literal<F> {
-	type Stripped = super::Literal;
+impl<F, S, I, L> Strip for Literal<F, S, I, L> {
+	type Stripped = super::Literal<S, I, L>;
 
 	fn strip(self) -> Self::Stripped {
 		self.strip()
 	}
 }
 
-impl<F> StrippedPartialEq for Literal<F> {
+impl<F, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<F, S, I, L> {
 	fn stripped_eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::String(Loc(a, _)), Self::String(Loc(b, _))) => a == b,
@@ -114,7 +114,7 @@ impl<F> StrippedPartialEq for Literal<F> {
 	}
 }
 
-impl<F> fmt::Display for Literal<F> {
+impl<F, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Literal<F, S, I, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.value().fmt(f),

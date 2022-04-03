@@ -1,5 +1,5 @@
-use iref::{Iri, IriBuf};
-use langtag::{LanguageTag, LanguageTagBuf};
+use iref::IriBuf;
+use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
@@ -7,25 +7,25 @@ use std::str::FromStr;
 
 /// RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Literal {
+pub enum Literal<S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
-	String(StringLiteral),
+	String(S),
 
 	/// Typed string literal.
-	TypedString(StringLiteral, IriBuf),
+	TypedString(S, I),
 
 	/// Language string.
-	LangString(StringLiteral, LanguageTagBuf),
+	LangString(S, L),
 }
 
-impl Literal {
+impl<S, I, L> Literal<S, I, L> {
 	pub fn is_typed(&self) -> bool {
 		matches!(self, Self::TypedString(_, _))
 	}
 
-	pub fn ty(&self) -> Option<Iri> {
+	pub fn ty(&self) -> Option<&I> {
 		match self {
-			Self::TypedString(_, ty) => Some(ty.as_iri()),
+			Self::TypedString(_, ty) => Some(ty),
 			_ => None,
 		}
 	}
@@ -34,14 +34,14 @@ impl Literal {
 		matches!(self, Self::LangString(_, _))
 	}
 
-	pub fn lang_tag(&self) -> Option<LanguageTag> {
+	pub fn lang_tag(&self) -> Option<&L> {
 		match self {
-			Self::LangString(_, tag) => Some(tag.as_ref()),
+			Self::LangString(_, tag) => Some(tag),
 			_ => None,
 		}
 	}
 
-	pub fn string_literal(&self) -> &StringLiteral {
+	pub fn string_literal(&self) -> &S {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
@@ -49,7 +49,7 @@ impl Literal {
 		}
 	}
 
-	pub fn into_string_literal(self) -> StringLiteral {
+	pub fn into_string_literal(self) -> S {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
