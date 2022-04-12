@@ -169,7 +169,7 @@ impl<I, B> Subject<I, B> {
 		}
 	}
 
-	pub fn into_term(self) -> Term<I, B> {
+	pub fn into_term<L>(self) -> Term<I, B, L> {
 		match self {
 			Self::Blank(id) => Term::Blank(id),
 			Self::Iri(iri) => Term::Iri(iri),
