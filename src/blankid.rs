@@ -8,7 +8,7 @@ use std::str::FromStr;
 /// This error is raised by the [`BlankId::new`] and [`BlankIdBuf::new`] functions
 /// when the input string is not a valid blank node identifier.
 #[derive(Debug)]
-pub struct InvalidBlankId;
+pub struct InvalidBlankId<T>(T);
 
 /// Blank node identifier.
 ///
@@ -27,11 +27,11 @@ pub struct BlankId(str);
 impl BlankId {
 	/// Parses a blank node identifier.
 	#[inline(always)]
-	pub fn new(s: &str) -> Result<&Self, InvalidBlankId> {
+	pub fn new(s: &str) -> Result<&Self, InvalidBlankId<&str>> {
 		if check(s.chars()) {
 			Ok(unsafe { Self::new_unchecked(s) })
 		} else {
-			Err(InvalidBlankId)
+			Err(InvalidBlankId(s))
 		}
 	}
 
@@ -107,11 +107,11 @@ pub struct BlankIdBuf(String);
 impl BlankIdBuf {
 	/// Parses a blank node identifier.
 	#[inline(always)]
-	pub fn new(s: String) -> Result<Self, InvalidBlankId> {
+	pub fn new(s: String) -> Result<Self, InvalidBlankId<String>> {
 		if check(s.chars()) {
 			Ok(unsafe { Self::new_unchecked(s) })
 		} else {
-			Err(InvalidBlankId)
+			Err(InvalidBlankId(s))
 		}
 	}
 
@@ -151,15 +151,15 @@ impl BlankIdBuf {
 
 	/// Creates a blank node identifier using the given suffix.
 	#[inline(always)]
-	pub fn from_suffix(suffix: &str) -> Result<Self, InvalidBlankId> {
+	pub fn from_suffix(suffix: &str) -> Result<Self, InvalidBlankId<String>> {
 		Self::new(format!("_:{}", suffix))
 	}
 }
 
 impl FromStr for BlankIdBuf {
-	type Err = InvalidBlankId;
+	type Err = InvalidBlankId<String>;
 
-	fn from_str(s: &str) -> Result<Self, InvalidBlankId> {
+	fn from_str(s: &str) -> Result<Self, InvalidBlankId<String>> {
 		Self::new(s.to_owned())
 	}
 }
