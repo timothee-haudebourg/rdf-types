@@ -1,50 +1,52 @@
 use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
-use locspan::{Loc, Strip, StrippedPartialEq};
+use locspan::{Loc, Span, Strip, StrippedPartialEq};
 use std::fmt;
 
 /// gRDF term with located literal.
-pub type Term<F> = crate::Term<IriBuf, BlankIdBuf, Literal<F>>;
+pub type Term<F, N = Span> = crate::Term<IriBuf, BlankIdBuf, Literal<F, N>>;
 
 /// RDF object with located literal.
-pub type Object<F> = crate::Object<IriBuf, BlankIdBuf, Literal<F>>;
+pub type Object<F, N = Span> = crate::Object<IriBuf, BlankIdBuf, Literal<F, N>>;
 
 /// Located gRDF term.
-pub type LocTerm<F> = Loc<Term<F>, F>;
+pub type LocTerm<F, N = Span> = Loc<Term<F, N>, F, N>;
 
 /// Located RDF object.
-pub type LocObject<F> = Loc<Object<F>, F>;
+pub type LocObject<F, N = Span> = Loc<Object<F, N>, F, N>;
 
 /// Located quad.
-pub type LocQuad<S, P, O, G, F> = Loc<Quad<Loc<S, F>, Loc<P, F>, Loc<O, F>, Loc<G, F>>, F>;
+pub type LocQuad<S, P, O, G, F, N = Span> =
+	Loc<Quad<Loc<S, F, N>, Loc<P, F, N>, Loc<O, F, N>, Loc<G, F, N>>, F, N>;
 
 /// Located RDF quad.
-pub type LocRdfQuad<F> =
-	Loc<Quad<Loc<Subject, F>, Loc<IriBuf, F>, LocObject<F>, Loc<GraphLabel, F>>, F>;
+pub type LocRdfQuad<F, N = Span> =
+	Loc<Quad<Loc<Subject, F, N>, Loc<IriBuf, F, N>, LocObject<F, N>, Loc<GraphLabel, F, N>>, F, N>;
 
 /// Located gRDF quad.
-pub type LocGrdfQuad<F> = Loc<Quad<LocTerm<F>, LocTerm<F>, LocTerm<F>, LocTerm<F>>, F>;
+pub type LocGrdfQuad<F, N = Span> =
+	Loc<Quad<LocTerm<F, N>, LocTerm<F, N>, LocTerm<F, N>, LocTerm<F, N>>, F>;
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Literal<F, S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
+pub enum Literal<F, S = StringLiteral, I = IriBuf, L = LanguageTagBuf, N = Span> {
 	/// Untyped string literal.
-	String(Loc<S, F>),
+	String(Loc<S, F, N>),
 
 	/// Typed string literal.
-	TypedString(Loc<S, F>, Loc<I, F>),
+	TypedString(Loc<S, F, N>, Loc<I, F, N>),
 
 	/// Language string.
-	LangString(Loc<S, F>, Loc<L, F>),
+	LangString(Loc<S, F, N>, Loc<L, F, N>),
 }
 
-impl<F, S, I, L> Literal<F, S, I, L> {
+impl<F, N, S, I, L> Literal<F, S, I, L, N> {
 	pub fn is_typed(&self) -> bool {
 		matches!(self, Self::TypedString(_, _))
 	}
 
-	pub fn ty(&self) -> Option<&Loc<I, F>> {
+	pub fn ty(&self) -> Option<&Loc<I, F, N>> {
 		match self {
 			Self::TypedString(_, ty) => Some(ty),
 			_ => None,
@@ -55,14 +57,14 @@ impl<F, S, I, L> Literal<F, S, I, L> {
 		matches!(self, Self::LangString(_, _))
 	}
 
-	pub fn lang_tag(&self) -> Option<&Loc<L, F>> {
+	pub fn lang_tag(&self) -> Option<&Loc<L, F, N>> {
 		match self {
 			Self::LangString(_, tag) => Some(tag),
 			_ => None,
 		}
 	}
 
-	pub fn string_literal(&self) -> &Loc<S, F> {
+	pub fn string_literal(&self) -> &Loc<S, F, N> {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
@@ -70,7 +72,7 @@ impl<F, S, I, L> Literal<F, S, I, L> {
 		}
 	}
 
-	pub fn into_string_literal(self) -> Loc<S, F> {
+	pub fn into_string_literal(self) -> Loc<S, F, N> {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
@@ -89,7 +91,7 @@ impl<F, S, I, L> Literal<F, S, I, L> {
 	}
 }
 
-impl<F, S, I, L> Strip for Literal<F, S, I, L> {
+impl<F, N, S, I, L> Strip for Literal<F, S, I, L, N> {
 	type Stripped = super::Literal<S, I, L>;
 
 	fn strip(self) -> Self::Stripped {
@@ -97,7 +99,7 @@ impl<F, S, I, L> Strip for Literal<F, S, I, L> {
 	}
 }
 
-impl<F, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<F, S, I, L> {
+impl<F, N, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<F, S, I, L, N> {
 	fn stripped_eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::String(Loc(a, _)), Self::String(Loc(b, _))) => a == b,
@@ -114,7 +116,9 @@ impl<F, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<
 	}
 }
 
-impl<F, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Literal<F, S, I, L> {
+impl<F, N, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display
+	for Literal<F, S, I, L, N>
+{
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.value().fmt(f),

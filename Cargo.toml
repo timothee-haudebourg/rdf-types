@@ -1,6 +1,6 @@
 [package]
 name = "rdf-types"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Timothée Haudebourg <author@haudebourg.net>"]
 description = "Common RDF types definitions."
@@ -18,4 +18,4 @@ loc = ["locspan"]
 [dependencies]
 iref = "2.1.0"
 langtag = "0.2.0"
-locspan = { version = "0.3.2", optional = true }
+locspan = { version = "0.5.2", optional = true }
