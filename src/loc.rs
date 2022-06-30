@@ -30,7 +30,7 @@ pub type LocGrdfQuad<F, N = Span> =
 
 /// Located RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum Literal<F, S = StringLiteral, I = IriBuf, L = LanguageTagBuf, N = Span> {
+pub enum Literal<F, N = Span, S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
 	String(Loc<S, F, N>),
 
@@ -41,7 +41,7 @@ pub enum Literal<F, S = StringLiteral, I = IriBuf, L = LanguageTagBuf, N = Span>
 	LangString(Loc<S, F, N>, Loc<L, F, N>),
 }
 
-impl<F, N, S, I, L> Literal<F, S, I, L, N> {
+impl<F, N, S, I, L> Literal<F, N, S, I, L> {
 	pub fn is_typed(&self) -> bool {
 		matches!(self, Self::TypedString(_, _))
 	}
@@ -91,7 +91,7 @@ impl<F, N, S, I, L> Literal<F, S, I, L, N> {
 	}
 }
 
-impl<F, N, S, I, L> Strip for Literal<F, S, I, L, N> {
+impl<F, N, S, I, L> Strip for Literal<F, N, S, I, L> {
 	type Stripped = super::Literal<S, I, L>;
 
 	fn strip(self) -> Self::Stripped {
@@ -99,7 +99,7 @@ impl<F, N, S, I, L> Strip for Literal<F, S, I, L, N> {
 	}
 }
 
-impl<F, N, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<F, S, I, L, N> {
+impl<F, N, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Literal<F, N, S, I, L> {
 	fn stripped_eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::String(Loc(a, _)), Self::String(Loc(b, _))) => a == b,
@@ -117,7 +117,7 @@ impl<F, N, S: PartialEq, I: PartialEq, L: PartialEq> StrippedPartialEq for Liter
 }
 
 impl<F, N, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display
-	for Literal<F, S, I, L, N>
+	for Literal<F, N, S, I, L>
 {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
