@@ -9,12 +9,16 @@
 use iref::{Iri, IriBuf};
 use std::fmt;
 
+/// Type definitions for RDF types with metadata.
+#[cfg(feature = "meta")]
+use locspan_derive::*;
+
 mod blankid;
 mod literal;
 mod term;
 
-#[cfg(feature = "loc")]
-pub mod loc;
+#[cfg(feature = "meta")]
+pub mod meta;
 
 pub use blankid::*;
 pub use literal::*;
@@ -22,6 +26,16 @@ pub use term::*;
 
 /// RDF triple.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash
+	)
+)]
 pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 impl Triple {
@@ -103,6 +117,16 @@ pub type GrdfTripleRef<'a> = Triple<TermRef<'a>, TermRef<'a>, TermRef<'a>>;
 
 /// RDF quad.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash
+	)
+)]
 pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
 	pub S,
 	pub P,
