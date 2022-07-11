@@ -7,6 +7,7 @@
 //! with the `locspan` crate to locate every sub-component
 //! of a term.
 use iref::{Iri, IriBuf};
+use std::cmp::Ordering;
 use std::fmt;
 
 /// Type definitions for RDF types with metadata.
@@ -25,7 +26,7 @@ pub use literal::*;
 pub use term::*;
 
 /// RDF triple.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Eq, Ord, Hash)]
 #[cfg_attr(
 	feature = "meta",
 	derive(
@@ -37,6 +38,28 @@ pub use term::*;
 	)
 )]
 pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
+
+impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
+	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
+{
+	fn eq(&self, other: &Triple<S2, P2, O2>) -> bool {
+		self.0 == other.0 && self.1 == other.1 && self.2 == other.2
+	}
+}
+
+impl<S1: PartialOrd<S2>, P1: PartialOrd<P2>, O1: PartialOrd<O2>, S2, P2, O2>
+	PartialOrd<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
+{
+	fn partial_cmp(&self, other: &Triple<S2, P2, O2>) -> Option<Ordering> {
+		match self.0.partial_cmp(&other.0) {
+			Some(Ordering::Equal) => match self.1.partial_cmp(&other.1) {
+				Some(Ordering::Equal) => self.2.partial_cmp(&other.2),
+				cmp => cmp,
+			},
+			cmp => cmp,
+		}
+	}
+}
 
 impl Triple {
 	pub fn into_grdf(self) -> GrdfTriple {
@@ -116,7 +139,7 @@ pub type GrdfTriple = Triple<Term, Term, Term>;
 pub type GrdfTripleRef<'a> = Triple<TermRef<'a>, TermRef<'a>, TermRef<'a>>;
 
 /// RDF quad.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Eq, Ord, Hash)]
 #[cfg_attr(
 	feature = "meta",
 	derive(
@@ -210,6 +233,59 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 
 	pub fn into_parts(self) -> (S, P, O, Option<G>) {
 		(self.0, self.1, self.2, self.3)
+	}
+}
+
+impl<
+		S1: PartialEq<S2>,
+		P1: PartialEq<P2>,
+		O1: PartialEq<O2>,
+		G1: PartialEq<G2>,
+		S2,
+		P2,
+		O2,
+		G2,
+	> PartialEq<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
+{
+	fn eq(&self, other: &Quad<S2, P2, O2, G2>) -> bool {
+		self.0 == other.0
+			&& self.1 == other.1
+			&& self.2 == other.2
+			&& match (&self.3, &other.3) {
+				(Some(a), Some(b)) => a == b,
+				(None, None) => true,
+				_ => false,
+			}
+	}
+}
+
+impl<
+		S1: PartialOrd<S2>,
+		P1: PartialOrd<P2>,
+		O1: PartialOrd<O2>,
+		G1: PartialOrd<G2>,
+		S2,
+		P2,
+		O2,
+		G2,
+	> PartialOrd<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
+{
+	fn partial_cmp(&self, other: &Quad<S2, P2, O2, G2>) -> Option<Ordering> {
+		match self.0.partial_cmp(&other.0) {
+			Some(Ordering::Equal) => match self.1.partial_cmp(&other.1) {
+				Some(Ordering::Equal) => match self.2.partial_cmp(&other.2) {
+					Some(Ordering::Equal) => match (&self.3, &other.3) {
+						(Some(a), Some(b)) => a.partial_cmp(b),
+						(Some(_), None) => Some(Ordering::Greater),
+						(None, Some(_)) => Some(Ordering::Less),
+						(None, None) => Some(Ordering::Equal),
+					},
+					cmp => cmp,
+				},
+				cmp => cmp,
+			},
+			cmp => cmp,
+		}
 	}
 }
 

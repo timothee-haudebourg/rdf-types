@@ -1,11 +1,12 @@
 use crate::{BlankId, BlankIdBuf, Literal, StringLiteral};
 use iref::{Iri, IriBuf};
+use std::cmp::Ordering;
 use std::fmt;
 
 /// gRDF term.
 ///
 /// Either a blank node identifier, IRI or literal value.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
 pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
 	/// Blank node identifier.
 	Blank(B),
@@ -87,6 +88,35 @@ impl Term {
 	}
 }
 
+impl<I1: PartialEq<I2>, B1: PartialEq<B2>, L1: PartialEq<L2>, I2, B2, L2>
+	PartialEq<Term<I2, B2, L2>> for Term<I1, B1, L1>
+{
+	fn eq(&self, other: &Term<I2, B2, L2>) -> bool {
+		match (self, other) {
+			(Self::Blank(a), Term::Blank(b)) => a == b,
+			(Self::Iri(a), Term::Iri(b)) => a == b,
+			(Self::Literal(a), Term::Literal(b)) => a == b,
+			_ => false,
+		}
+	}
+}
+
+impl<I1: PartialOrd<I2>, B1: PartialOrd<B2>, L1: PartialOrd<L2>, I2, B2, L2>
+	PartialOrd<Term<I2, B2, L2>> for Term<I1, B1, L1>
+{
+	fn partial_cmp(&self, other: &Term<I2, B2, L2>) -> Option<Ordering> {
+		match (self, other) {
+			(Self::Blank(a), Term::Blank(b)) => a.partial_cmp(b),
+			(Self::Blank(_), _) => Some(Ordering::Less),
+			(Self::Iri(a), Term::Iri(b)) => a.partial_cmp(b),
+			(Self::Iri(_), Term::Blank(_)) => Some(Ordering::Greater),
+			(Self::Iri(_), _) => Some(Ordering::Less),
+			(Self::Literal(a), Term::Literal(b)) => a.partial_cmp(b),
+			_ => Some(Ordering::Greater),
+		}
+	}
+}
+
 impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I, B, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
@@ -137,7 +167,7 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 /// RDF Subject.
 ///
 /// Either a blank node identifier or an IRI.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
 pub enum Subject<I = IriBuf, B = BlankIdBuf> {
 	/// Blank node identifier.
 	Blank(B),
@@ -193,6 +223,29 @@ impl Subject {
 		match self {
 			Self::Blank(id) => TermRef::Blank(id),
 			Self::Iri(iri) => TermRef::Iri(iri.as_iri()),
+		}
+	}
+}
+
+impl<I1: PartialEq<I2>, B1: PartialEq<B2>, I2, B2> PartialEq<Subject<I2, B2>> for Subject<I1, B1> {
+	fn eq(&self, other: &Subject<I2, B2>) -> bool {
+		match (self, other) {
+			(Self::Blank(a), Subject::Blank(b)) => a == b,
+			(Self::Iri(a), Subject::Iri(b)) => a == b,
+			_ => false,
+		}
+	}
+}
+
+impl<I1: PartialOrd<I2>, B1: PartialOrd<B2>, I2, B2> PartialOrd<Subject<I2, B2>>
+	for Subject<I1, B1>
+{
+	fn partial_cmp(&self, other: &Subject<I2, B2>) -> Option<Ordering> {
+		match (self, other) {
+			(Self::Blank(a), Subject::Blank(b)) => a.partial_cmp(b),
+			(Self::Blank(_), _) => Some(Ordering::Less),
+			(Self::Iri(a), Subject::Iri(b)) => a.partial_cmp(b),
+			_ => Some(Ordering::Greater),
 		}
 	}
 }
