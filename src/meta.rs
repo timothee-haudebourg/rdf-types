@@ -42,16 +42,17 @@ pub type MetaGrdfQuad<M> = Meta<Quad<MetaTerm<M>, MetaTerm<M>, MetaTerm<M>, Meta
 	StrippedOrd,
 	StrippedHash,
 )]
-#[stripped(M)]
+#[stripped_ignore(M)]
+#[stripped(S, I, L)]
 pub enum Literal<M, S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
-	String(Meta<S, M>),
+	String(#[stripped_deref] Meta<S, M>),
 
 	/// Typed string literal.
-	TypedString(Meta<S, M>, Meta<I, M>),
+	TypedString(#[stripped_deref] Meta<S, M>, #[stripped_deref] Meta<I, M>),
 
 	/// Language string.
-	LangString(Meta<S, M>, Meta<L, M>),
+	LangString(#[stripped_deref] Meta<S, M>, #[stripped_deref] Meta<L, M>),
 }
 
 impl<M, S, I, L> Literal<M, S, I, L> {
