@@ -3,10 +3,23 @@ use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
 use std::fmt;
 
+#[cfg(feature = "meta")]
+use locspan_derive::*;
+
 /// gRDF term.
 ///
 /// Either a blank node identifier, IRI or literal value.
 #[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash
+	)
+)]
 pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
 	/// Blank node identifier.
 	Blank(B),
@@ -168,6 +181,16 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 ///
 /// Either a blank node identifier or an IRI.
 #[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash
+	)
+)]
 pub enum Subject<I = IriBuf, B = BlankIdBuf> {
 	/// Blank node identifier.
 	Blank(B),
