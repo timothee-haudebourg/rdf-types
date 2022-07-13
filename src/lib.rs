@@ -26,7 +26,7 @@ pub use literal::*;
 pub use term::*;
 
 /// RDF triple.
-#[derive(Clone, Copy, Eq, Ord, Hash)]
+#[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(
 	feature = "meta",
 	derive(
@@ -139,7 +139,7 @@ pub type GrdfTriple = Triple<Term, Term, Term>;
 pub type GrdfTripleRef<'a> = Triple<TermRef<'a>, TermRef<'a>, TermRef<'a>>;
 
 /// RDF quad.
-#[derive(Clone, Copy, Eq, Ord, Hash)]
+#[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(
 	feature = "meta",
 	derive(
