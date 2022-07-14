@@ -67,6 +67,18 @@ impl Deref for BlankId {
 	}
 }
 
+impl AsRef<str> for BlankId {
+	fn as_ref(&self) -> &str {
+		self.as_str()
+	}
+}
+
+impl Borrow<str> for BlankId {
+	fn borrow(&self) -> &str {
+		self.as_str()
+	}
+}
+
 impl ToOwned for BlankId {
 	type Owned = BlankIdBuf;
 
