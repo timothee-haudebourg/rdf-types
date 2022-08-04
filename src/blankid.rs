@@ -73,9 +73,21 @@ impl AsRef<str> for BlankId {
 	}
 }
 
+impl AsRef<[u8]> for BlankId {
+	fn as_ref(&self) -> &[u8] {
+		self.as_bytes()
+	}
+}
+
 impl Borrow<str> for BlankId {
 	fn borrow(&self) -> &str {
 		self.as_str()
+	}
+}
+
+impl Borrow<[u8]> for BlankId {
+	fn borrow(&self) -> &[u8] {
+		self.as_bytes()
 	}
 }
 
@@ -166,6 +178,12 @@ impl BlankIdBuf {
 	pub fn from_suffix(suffix: &str) -> Result<Self, InvalidBlankId<String>> {
 		Self::new(format!("_:{}", suffix))
 	}
+
+	/// Returns a reference to this blank id as a `BlankId`.
+	#[inline(always)]
+	pub fn as_blank_id_ref(&self) -> &BlankId {
+		unsafe { BlankId::new_unchecked(&self.0) }
+	}
 }
 
 impl FromStr for BlankIdBuf {
@@ -181,28 +199,70 @@ impl Deref for BlankIdBuf {
 
 	#[inline(always)]
 	fn deref(&self) -> &BlankId {
-		unsafe { BlankId::new_unchecked(&self.0) }
+		self.as_blank_id_ref()
 	}
 }
 
 impl AsRef<BlankId> for BlankIdBuf {
 	#[inline(always)]
 	fn as_ref(&self) -> &BlankId {
-		unsafe { BlankId::new_unchecked(&self.0) }
+		self.as_blank_id_ref()
 	}
 }
 
 impl Borrow<BlankId> for BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &BlankId {
-		unsafe { BlankId::new_unchecked(&self.0) }
+		self.as_blank_id_ref()
+	}
+}
+
+impl AsRef<str> for BlankIdBuf {
+	#[inline(always)]
+	fn as_ref(&self) -> &str {
+		self.0.as_str()
+	}
+}
+
+impl Borrow<str> for BlankIdBuf {
+	#[inline(always)]
+	fn borrow(&self) -> &str {
+		self.0.as_str()
+	}
+}
+
+impl AsRef<[u8]> for BlankIdBuf {
+	#[inline(always)]
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_bytes()
+	}
+}
+
+impl Borrow<[u8]> for BlankIdBuf {
+	#[inline(always)]
+	fn borrow(&self) -> &[u8] {
+		self.0.as_bytes()
 	}
 }
 
 impl Borrow<BlankId> for &BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &BlankId {
-		unsafe { BlankId::new_unchecked(&self.0) }
+		self.as_blank_id_ref()
+	}
+}
+
+impl Borrow<str> for &BlankIdBuf {
+	#[inline(always)]
+	fn borrow(&self) -> &str {
+		self.0.as_str()
+	}
+}
+
+impl Borrow<[u8]> for &BlankIdBuf {
+	#[inline(always)]
+	fn borrow(&self) -> &[u8] {
+		self.0.as_bytes()
 	}
 }
 
@@ -229,25 +289,25 @@ impl fmt::Debug for BlankIdBuf {
 
 impl PartialEq<BlankId> for BlankIdBuf {
 	fn eq(&self, other: &BlankId) -> bool {
-		self.as_ref() == other
+		self.as_blank_id_ref() == other
 	}
 }
 
 impl<'a> PartialEq<&'a BlankId> for BlankIdBuf {
 	fn eq(&self, other: &&'a BlankId) -> bool {
-		self.as_ref() == *other
+		self.as_blank_id_ref() == *other
 	}
 }
 
 impl<'a> PartialEq<BlankIdBuf> for &'a BlankId {
 	fn eq(&self, other: &BlankIdBuf) -> bool {
-		*self == other.as_ref()
+		*self == other.as_blank_id_ref()
 	}
 }
 
 impl PartialEq<BlankIdBuf> for BlankId {
 	fn eq(&self, other: &BlankIdBuf) -> bool {
-		self == other.as_ref()
+		self == other.as_blank_id_ref()
 	}
 }
 
