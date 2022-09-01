@@ -26,8 +26,8 @@ pub use blankid::*;
 pub use literal::*;
 pub use term::*;
 pub use vocabulary::{
-	BlankIdVocabulary, BlankIdVocabularyMut, DisplayWithVocabulary, IndexVocabulary, IriVocabulary,
-	IriVocabularyMut, NoVocabulary, Vocabulary, VocabularyMut,
+	BlankIdVocabulary, BlankIdVocabularyMut, BorrowWithVocabulary, DisplayWithVocabulary,
+	IndexVocabulary, IriVocabulary, IriVocabularyMut, NoVocabulary, Vocabulary, VocabularyMut,
 };
 
 /// RDF triple.
