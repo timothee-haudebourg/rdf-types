@@ -1,4 +1,7 @@
-use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
+use crate::{
+	BlankIdBuf, DisplayWithVocabulary, GraphLabel, IriVocabulary, Quad, StringLiteral, Subject,
+	Triple,
+};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Meta, Strip};
@@ -118,6 +121,23 @@ impl<M, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Lite
 		match self {
 			Self::String(s) => s.value().fmt(f),
 			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s.value(), ty.value()),
+			Self::LangString(s, tag) => write!(f, "{}@{}", s.value(), tag.value()),
+		}
+	}
+}
+
+impl<M, S: fmt::Display, I, L: fmt::Display, V: IriVocabulary<I>> DisplayWithVocabulary<V>
+	for Literal<M, S, I, L>
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::String(s) => s.value().fmt(f),
+			Self::TypedString(s, ty) => write!(
+				f,
+				"{}^^<{}>",
+				s.value(),
+				vocabulary.iri(ty.value()).unwrap()
+			),
 			Self::LangString(s, tag) => write!(f, "{}@{}", s.value(), tag.value()),
 		}
 	}

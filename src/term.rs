@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Literal, StringLiteral};
+use crate::{BlankId, BlankIdBuf, DisplayWithVocabulary, Literal, StringLiteral, Vocabulary};
 use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
 use std::fmt;
@@ -137,6 +137,19 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 			Self::Blank(id) => id.fmt(f),
 			Self::Iri(iri) => write!(f, "<{}>", iri),
 			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
+impl<I, B, L: DisplayWithVocabulary<V>, V: Vocabulary<I, B>> DisplayWithVocabulary<V>
+	for Term<I, B, L>
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		match self {
+			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", vocabulary.iri(iri).unwrap()),
+			Self::Literal(lit) => lit.fmt_with(vocabulary, f),
 		}
 	}
 }
@@ -280,6 +293,16 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 		match self {
 			Self::Blank(id) => id.fmt(f),
 			Self::Iri(iri) => write!(f, "<{}>", iri),
+		}
+	}
+}
+
+impl<I, B, V: Vocabulary<I, B>> DisplayWithVocabulary<V> for Subject<I, B> {
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		match self {
+			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", vocabulary.iri(iri).unwrap()),
 		}
 	}
 }

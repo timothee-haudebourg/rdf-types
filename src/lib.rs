@@ -17,6 +17,7 @@ use locspan_derive::*;
 mod blankid;
 mod literal;
 mod term;
+pub mod vocabulary;
 
 #[cfg(feature = "meta")]
 pub mod meta;
@@ -24,6 +25,10 @@ pub mod meta;
 pub use blankid::*;
 pub use literal::*;
 pub use term::*;
+pub use vocabulary::{
+	BlankIdVocabulary, BlankIdVocabularyMut, DisplayWithVocabulary, IndexVocabulary, IriVocabulary,
+	IriVocabularyMut, NoVocabulary, Vocabulary, VocabularyMut,
+};
 
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]

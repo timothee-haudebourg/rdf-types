@@ -5,6 +5,9 @@ use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
+use crate::vocabulary::DisplayWithVocabulary;
+use crate::IriVocabulary;
+
 /// RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum Literal<S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
@@ -171,11 +174,23 @@ impl fmt::Display for StringLiteral {
 	}
 }
 
-impl fmt::Display for Literal {
+impl<S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Literal<S, I, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.fmt(f),
 			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s, ty),
+			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
+		}
+	}
+}
+
+impl<S: fmt::Display, I, L: fmt::Display, V: IriVocabulary<I>> DisplayWithVocabulary<V>
+	for Literal<S, I, L>
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::String(s) => s.fmt(f),
+			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s, vocabulary.iri(ty).unwrap()),
 			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
 		}
 	}
