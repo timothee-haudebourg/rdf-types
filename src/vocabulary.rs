@@ -120,6 +120,13 @@ impl<'t, 'n, T: AsStrWithVocabulary<V>, V> AsRef<str> for WithVocabulary<&'t T, 
 	}
 }
 
+impl<'n, T: 'n + IntoStrWithVocabulary<V>, V> WithVocabulary<T, &'n V> {
+	#[inline(always)]
+	pub fn into_str(self) -> &'n str {
+		self.0.into_str_with(self.1)
+	}
+}
+
 /// Display function with a vocabulary.
 pub trait DisplayWithVocabulary<V> {
 	/// Displays the value with the given vocabulary and formatter.
@@ -130,4 +137,12 @@ pub trait DisplayWithVocabulary<V> {
 pub trait AsStrWithVocabulary<V> {
 	/// Returns a string representation of the value using the given vocabulary.
 	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str;
+}
+
+/// String representation with a vocabulary.
+pub trait IntoStrWithVocabulary<V> {
+	/// Returns a string representation of the value using the given vocabulary.
+	fn into_str_with<'a>(self, vocabulary: &'a V) -> &'a str
+	where
+		Self: 'a;
 }
