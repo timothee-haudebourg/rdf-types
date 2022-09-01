@@ -1,12 +1,12 @@
-use crate::{
-	BlankIdBuf, DisplayWithVocabulary, GraphLabel, IriVocabulary, Quad, StringLiteral, Subject,
-	Triple,
-};
+use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Meta, Strip};
 use locspan_derive::*;
 use std::fmt;
+
+#[cfg(feature = "contextual")]
+use contextual::DisplayWithContext;
 
 /// gRDF term with literal with metadata.
 pub type Term<M> = crate::Term<IriBuf, BlankIdBuf, Literal<M>>;
@@ -126,7 +126,8 @@ impl<M, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Lite
 	}
 }
 
-impl<M, S: fmt::Display, I, L: fmt::Display, V: IriVocabulary<I>> DisplayWithVocabulary<V>
+#[cfg(feature = "contextual")]
+impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<I>> DisplayWithContext<V>
 	for Literal<M, S, I, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {

@@ -10,6 +10,9 @@ use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
 use std::fmt;
 
+#[cfg(feature = "contextual")]
+use contextual::{DisplayWithContext, WithContext};
+
 /// Type definitions for RDF types with metadata.
 #[cfg(feature = "meta")]
 use locspan_derive::*;
@@ -26,8 +29,8 @@ pub use blankid::*;
 pub use literal::*;
 pub use term::*;
 pub use vocabulary::{
-	BlankIdVocabulary, BlankIdVocabularyMut, BorrowWithVocabulary, DisplayWithVocabulary,
-	IndexVocabulary, IriVocabulary, IriVocabularyMut, NoVocabulary, Vocabulary, VocabularyMut,
+	BlankIdVocabulary, BlankIdVocabularyMut, IndexVocabulary, IriVocabulary, IriVocabularyMut,
+	NoVocabulary, Vocabulary, VocabularyMut,
 };
 
 /// RDF triple.
@@ -134,16 +137,17 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<
 	}
 }
 
-impl<S: DisplayWithVocabulary<V>, P: DisplayWithVocabulary<V>, O: DisplayWithVocabulary<V>, V>
-	DisplayWithVocabulary<V> for Triple<S, P, O>
+#[cfg(feature = "contextual")]
+impl<S: DisplayWithContext<V>, P: DisplayWithContext<V>, O: DisplayWithContext<V>, V>
+	DisplayWithContext<V> for Triple<S, P, O>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(
 			f,
 			"{} {} {}",
-			self.0.with_vocabulary(vocabulary),
-			self.1.with_vocabulary(vocabulary),
-			self.2.with_vocabulary(vocabulary)
+			self.0.with(vocabulary),
+			self.1.with(vocabulary),
+			self.2.with(vocabulary)
 		)
 	}
 }
@@ -319,30 +323,31 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Di
 	}
 }
 
+#[cfg(feature = "contextual")]
 impl<
-		S: DisplayWithVocabulary<V>,
-		P: DisplayWithVocabulary<V>,
-		O: DisplayWithVocabulary<V>,
-		G: DisplayWithVocabulary<V>,
+		S: DisplayWithContext<V>,
+		P: DisplayWithContext<V>,
+		O: DisplayWithContext<V>,
+		G: DisplayWithContext<V>,
 		V,
-	> DisplayWithVocabulary<V> for Quad<S, P, O, G>
+	> DisplayWithContext<V> for Quad<S, P, O, G>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self.graph() {
 			Some(graph) => write!(
 				f,
 				"{} {} {} {}",
-				self.0.with_vocabulary(vocabulary),
-				self.1.with_vocabulary(vocabulary),
-				self.2.with_vocabulary(vocabulary),
-				graph.with_vocabulary(vocabulary)
+				self.0.with(vocabulary),
+				self.1.with(vocabulary),
+				self.2.with(vocabulary),
+				graph.with(vocabulary)
 			),
 			None => write!(
 				f,
 				"{} {} {}",
-				self.0.with_vocabulary(vocabulary),
-				self.1.with_vocabulary(vocabulary),
-				self.2.with_vocabulary(vocabulary)
+				self.0.with(vocabulary),
+				self.1.with(vocabulary),
+				self.2.with(vocabulary)
 			),
 		}
 	}

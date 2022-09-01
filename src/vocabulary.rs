@@ -1,6 +1,5 @@
 use crate::BlankId;
 use iref::Iri;
-use std::fmt;
 
 mod index;
 mod none;
@@ -56,93 +55,4 @@ pub trait BlankIdVocabularyMut<B>: BlankIdVocabulary<B> {
 	/// If the blank id was already present in the vocabulary, no new
 	/// vocabulary id is created and the current one is returned.
 	fn insert_blank_id(&mut self, id: &BlankId) -> B;
-}
-
-/// Borrow some value with a vocabulary.
-///
-/// Useful to print the value with the lexical representation of IRIs and
-/// blank node identifiers.
-pub trait BorrowWithVocabulary {
-	/// Borrows the value with the given vocabulary.
-	fn with_vocabulary<'n, V>(&self, vocabulary: &'n V) -> WithVocabulary<&Self, &'n V> {
-		WithVocabulary(self, vocabulary)
-	}
-
-	/// Attaches the value to the given vocabulary.
-	fn into_with_vocabulary<V>(self, vocabulary: &V) -> WithVocabulary<Self, &V>
-	where
-		Self: Sized,
-	{
-		WithVocabulary(self, vocabulary)
-	}
-}
-
-impl<T> BorrowWithVocabulary for T {}
-
-/// Some value with a vocabulary.
-#[derive(Clone, Copy)]
-pub struct WithVocabulary<T, V>(pub T, pub V);
-
-impl<T, V> std::ops::Deref for WithVocabulary<T, V> {
-	type Target = T;
-
-	#[inline(always)]
-	fn deref(&self) -> &T {
-		&self.0
-	}
-}
-
-impl<T, V> std::ops::DerefMut for WithVocabulary<T, V> {
-	#[inline(always)]
-	fn deref_mut(&mut self) -> &mut T {
-		&mut self.0
-	}
-}
-
-impl<'t, 'n, T: DisplayWithVocabulary<V>, V> fmt::Display for WithVocabulary<&'t T, &'n V> {
-	#[inline(always)]
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		self.0.fmt_with(self.1, f)
-	}
-}
-
-impl<'t, 'n, T: AsStrWithVocabulary<V>, V> WithVocabulary<&'t T, &'n V> {
-	#[inline(always)]
-	pub fn as_str(&self) -> &str {
-		self.0.as_str_with(self.1)
-	}
-}
-
-impl<'t, 'n, T: AsStrWithVocabulary<V>, V> AsRef<str> for WithVocabulary<&'t T, &'n V> {
-	#[inline(always)]
-	fn as_ref(&self) -> &str {
-		self.as_str()
-	}
-}
-
-impl<'n, T: 'n + IntoStrWithVocabulary<V>, V> WithVocabulary<T, &'n V> {
-	#[inline(always)]
-	pub fn into_str(self) -> &'n str {
-		self.0.into_str_with(self.1)
-	}
-}
-
-/// Display function with a vocabulary.
-pub trait DisplayWithVocabulary<V> {
-	/// Displays the value with the given vocabulary and formatter.
-	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result;
-}
-
-/// String representation with a vocabulary.
-pub trait AsStrWithVocabulary<V> {
-	/// Returns a string representation of the value using the given vocabulary.
-	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str;
-}
-
-/// String representation with a vocabulary.
-pub trait IntoStrWithVocabulary<V> {
-	/// Returns a string representation of the value using the given vocabulary.
-	fn into_str_with<'a>(self, vocabulary: &'a V) -> &'a str
-	where
-		Self: 'a;
 }

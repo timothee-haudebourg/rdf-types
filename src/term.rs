@@ -1,8 +1,10 @@
-use crate::vocabulary::AsStrWithVocabulary;
-use crate::{BlankId, BlankIdBuf, DisplayWithVocabulary, Literal, StringLiteral, Vocabulary};
+use crate::{BlankId, BlankIdBuf, Literal, StringLiteral};
 use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
 use std::fmt;
+
+#[cfg(feature = "contextual")]
+use contextual::{AsRefWithContext, DisplayWithContext};
 
 #[cfg(feature = "meta")]
 use locspan_derive::*;
@@ -142,7 +144,8 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 	}
 }
 
-impl<I, B, L: DisplayWithVocabulary<V>, V: Vocabulary<I, B>> DisplayWithVocabulary<V>
+#[cfg(feature = "contextual")]
+impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<I, B>> DisplayWithContext<V>
 	for Term<I, B, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
@@ -155,8 +158,9 @@ impl<I, B, L: DisplayWithVocabulary<V>, V: Vocabulary<I, B>> DisplayWithVocabula
 	}
 }
 
-impl<I, B, L: AsRef<str>, V: Vocabulary<I, B>> AsStrWithVocabulary<V> for Term<I, B, L> {
-	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
+#[cfg(feature = "contextual")]
+impl<I, B, L: AsRef<str>, V: crate::Vocabulary<I, B>> AsRefWithContext<str, V> for Term<I, B, L> {
+	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
 			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),
@@ -308,7 +312,8 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 	}
 }
 
-impl<I, B, V: Vocabulary<I, B>> DisplayWithVocabulary<V> for Subject<I, B> {
+#[cfg(feature = "contextual")]
+impl<I, B, V: crate::Vocabulary<I, B>> DisplayWithContext<V> for Subject<I, B> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		match self {
@@ -318,8 +323,9 @@ impl<I, B, V: Vocabulary<I, B>> DisplayWithVocabulary<V> for Subject<I, B> {
 	}
 }
 
-impl<I, B, V: Vocabulary<I, B>> AsStrWithVocabulary<V> for Subject<I, B> {
-	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
+#[cfg(feature = "contextual")]
+impl<I, B, V: crate::Vocabulary<I, B>> AsRefWithContext<str, V> for Subject<I, B> {
+	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
 			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),

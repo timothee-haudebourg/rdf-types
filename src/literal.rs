@@ -5,8 +5,8 @@ use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use crate::vocabulary::DisplayWithVocabulary;
-use crate::IriVocabulary;
+#[cfg(feature = "contextual")]
+use contextual::DisplayWithContext;
 
 /// RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -216,7 +216,8 @@ impl<S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Literal
 	}
 }
 
-impl<S: fmt::Display, I, L: fmt::Display, V: IriVocabulary<I>> DisplayWithVocabulary<V>
+#[cfg(feature = "contextual")]
+impl<S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<I>> DisplayWithContext<V>
 	for Literal<S, I, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {

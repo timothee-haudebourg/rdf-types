@@ -1,14 +1,15 @@
+use super::{
+	BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut, Vocabulary,
+	VocabularyMut,
+};
 use crate::{BlankId, BlankIdBuf};
 use iref::{Iri, IriBuf};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::fmt;
 use std::hash::Hash;
 
-use super::{
-	BlankIdVocabulary, BlankIdVocabularyMut, DisplayWithVocabulary, IriVocabulary,
-	IriVocabularyMut, Vocabulary, VocabularyMut,
-};
+#[cfg(feature = "contextual")]
+use contextual::DisplayWithContext;
 
 /// Vocabulary term index.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -78,9 +79,10 @@ impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriIndex<I> {
 	}
 }
 
-impl<I, V: IriVocabulary<IriIndex<I>>> DisplayWithVocabulary<V> for IriIndex<I> {
-	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
+#[cfg(feature = "contextual")]
+impl<I, V: IriVocabulary<IriIndex<I>>> DisplayWithContext<V> for IriIndex<I> {
+	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
 	}
 }
 
@@ -115,9 +117,10 @@ impl<'a, I: TryFrom<&'a BlankId>> TryFrom<&'a BlankId> for BlankIdIndex<I> {
 	}
 }
 
-impl<I, V: BlankIdVocabulary<BlankIdIndex<I>>> DisplayWithVocabulary<V> for BlankIdIndex<I> {
-	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
+#[cfg(feature = "contextual")]
+impl<I, V: BlankIdVocabulary<BlankIdIndex<I>>> DisplayWithContext<V> for BlankIdIndex<I> {
+	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
 	}
 }
 
