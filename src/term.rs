@@ -1,3 +1,4 @@
+use crate::vocabulary::AsStrWithVocabulary;
 use crate::{BlankId, BlankIdBuf, DisplayWithVocabulary, Literal, StringLiteral, Vocabulary};
 use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
@@ -154,6 +155,16 @@ impl<I, B, L: DisplayWithVocabulary<V>, V: Vocabulary<I, B>> DisplayWithVocabula
 	}
 }
 
+impl<I, B, L: AsRef<str>, V: Vocabulary<I, B>> AsStrWithVocabulary<V> for Term<I, B, L> {
+	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
+		match self {
+			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
+			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),
+			Self::Literal(l) => l.as_ref(),
+		}
+	}
+}
+
 impl<I, B, L> AsTerm for Term<I, B, L> {
 	type Iri = I;
 	type BlankId = B;
@@ -303,6 +314,15 @@ impl<I, B, V: Vocabulary<I, B>> DisplayWithVocabulary<V> for Subject<I, B> {
 		match self {
 			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
 			Self::Iri(iri) => write!(f, "<{}>", vocabulary.iri(iri).unwrap()),
+		}
+	}
+}
+
+impl<I, B, V: Vocabulary<I, B>> AsStrWithVocabulary<V> for Subject<I, B> {
+	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
+		match self {
+			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
+			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),
 		}
 	}
 }

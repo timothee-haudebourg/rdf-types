@@ -86,20 +86,37 @@ pub struct WithVocabulary<T, V>(pub T, pub V);
 impl<T, V> std::ops::Deref for WithVocabulary<T, V> {
 	type Target = T;
 
+	#[inline(always)]
 	fn deref(&self) -> &T {
 		&self.0
 	}
 }
 
 impl<T, V> std::ops::DerefMut for WithVocabulary<T, V> {
+	#[inline(always)]
 	fn deref_mut(&mut self) -> &mut T {
 		&mut self.0
 	}
 }
 
 impl<'t, 'n, T: DisplayWithVocabulary<V>, V> fmt::Display for WithVocabulary<&'t T, &'n V> {
+	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.0.fmt_with(self.1, f)
+	}
+}
+
+impl<'t, 'n, T: AsStrWithVocabulary<V>, V> WithVocabulary<&'t T, &'n V> {
+	#[inline(always)]
+	pub fn as_str(&self) -> &str {
+		self.0.as_str_with(self.1)
+	}
+}
+
+impl<'t, 'n, T: AsStrWithVocabulary<V>, V> AsRef<str> for WithVocabulary<&'t T, &'n V> {
+	#[inline(always)]
+	fn as_ref(&self) -> &str {
+		self.as_str()
 	}
 }
 
@@ -107,4 +124,10 @@ impl<'t, 'n, T: DisplayWithVocabulary<V>, V> fmt::Display for WithVocabulary<&'t
 pub trait DisplayWithVocabulary<V> {
 	/// Displays the value with the given vocabulary and formatter.
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result;
+}
+
+/// String representation with a vocabulary.
+pub trait AsStrWithVocabulary<V> {
+	/// Returns a string representation of the value using the given vocabulary.
+	fn as_str_with<'a>(&'a self, vocabulary: &'a V) -> &'a str;
 }

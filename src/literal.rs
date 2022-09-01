@@ -52,12 +52,44 @@ impl<S, I, L> Literal<S, I, L> {
 		}
 	}
 
+	pub fn string_literal_mut(&mut self) -> &mut S {
+		match self {
+			Self::String(s) => s,
+			Self::TypedString(s, _) => s,
+			Self::LangString(s, _) => s,
+		}
+	}
+
 	pub fn into_string_literal(self) -> S {
 		match self {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
 			Self::LangString(s, _) => s,
 		}
+	}
+}
+
+impl<S: Borrow<str>, I, L> Borrow<str> for Literal<S, I, L> {
+	fn borrow(&self) -> &str {
+		self.string_literal().borrow()
+	}
+}
+
+impl<S: BorrowMut<str>, I, L> BorrowMut<str> for Literal<S, I, L> {
+	fn borrow_mut(&mut self) -> &mut str {
+		self.string_literal_mut().borrow_mut()
+	}
+}
+
+impl<S: AsRef<str>, I, L> AsRef<str> for Literal<S, I, L> {
+	fn as_ref(&self) -> &str {
+		self.string_literal().as_ref()
+	}
+}
+
+impl<S: AsMut<str>, I, L> AsMut<str> for Literal<S, I, L> {
+	fn as_mut(&mut self) -> &mut str {
+		self.string_literal_mut().as_mut()
 	}
 }
 

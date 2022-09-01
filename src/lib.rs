@@ -134,6 +134,20 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<
 	}
 }
 
+impl<S: DisplayWithVocabulary<V>, P: DisplayWithVocabulary<V>, O: DisplayWithVocabulary<V>, V>
+	DisplayWithVocabulary<V> for Triple<S, P, O>
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{} {} {}",
+			self.0.with_vocabulary(vocabulary),
+			self.1.with_vocabulary(vocabulary),
+			self.2.with_vocabulary(vocabulary)
+		)
+	}
+}
+
 /// RDF triple reference.
 pub type TripleRef<'a> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>>;
 
@@ -301,6 +315,35 @@ impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Di
 		match self.graph() {
 			Some(graph) => write!(f, "{} {} {} {}", self.0, self.1, self.2, graph),
 			None => write!(f, "{} {} {}", self.0, self.1, self.2),
+		}
+	}
+}
+
+impl<
+		S: DisplayWithVocabulary<V>,
+		P: DisplayWithVocabulary<V>,
+		O: DisplayWithVocabulary<V>,
+		G: DisplayWithVocabulary<V>,
+		V,
+	> DisplayWithVocabulary<V> for Quad<S, P, O, G>
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self.graph() {
+			Some(graph) => write!(
+				f,
+				"{} {} {} {}",
+				self.0.with_vocabulary(vocabulary),
+				self.1.with_vocabulary(vocabulary),
+				self.2.with_vocabulary(vocabulary),
+				graph.with_vocabulary(vocabulary)
+			),
+			None => write!(
+				f,
+				"{} {} {}",
+				self.0.with_vocabulary(vocabulary),
+				self.1.with_vocabulary(vocabulary),
+				self.2.with_vocabulary(vocabulary)
+			),
 		}
 	}
 }
