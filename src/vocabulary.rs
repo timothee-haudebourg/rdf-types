@@ -81,7 +81,7 @@ impl<T> BorrowWithVocabulary for T {}
 
 /// Some value with a vocabulary.
 #[derive(Clone, Copy)]
-pub struct WithVocabulary<T, V>(pub(crate) T, pub(crate) V);
+pub struct WithVocabulary<T, V>(pub T, pub V);
 
 impl<T, V> std::ops::Deref for WithVocabulary<T, V> {
 	type Target = T;
