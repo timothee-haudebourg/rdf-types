@@ -145,8 +145,8 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<I, B>> DisplayWithContext<V>
-	for Term<I, B, L>
+impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
+	DisplayWithContext<V> for Term<I, B, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -159,7 +159,9 @@ impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<I, B>> DisplayWithCont
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, L: AsRef<str>, V: crate::Vocabulary<I, B>> AsRefWithContext<str, V> for Term<I, B, L> {
+impl<I, B, L: AsRef<str>, V: crate::Vocabulary<Iri = I, BlankId = B>> AsRefWithContext<str, V>
+	for Term<I, B, L>
+{
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
@@ -313,7 +315,7 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, V: crate::Vocabulary<I, B>> DisplayWithContext<V> for Subject<I, B> {
+impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> DisplayWithContext<V> for Subject<I, B> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		match self {
@@ -324,7 +326,7 @@ impl<I, B, V: crate::Vocabulary<I, B>> DisplayWithContext<V> for Subject<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, V: crate::Vocabulary<I, B>> AsRefWithContext<str, V> for Subject<I, B> {
+impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> AsRefWithContext<str, V> for Subject<I, B> {
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),

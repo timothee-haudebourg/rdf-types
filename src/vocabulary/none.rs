@@ -1,7 +1,4 @@
-use super::{
-	BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut, Vocabulary,
-	VocabularyMut,
-};
+use super::{BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut};
 use crate::{BlankId, BlankIdBuf};
 use iref::{Iri, IriBuf};
 
@@ -25,7 +22,9 @@ pub fn no_vocabulary_mut() -> &'static mut NoVocabulary {
 	unsafe { &mut NO_NAMESPACE }
 }
 
-impl IriVocabulary<IriBuf> for NoVocabulary {
+impl IriVocabulary for NoVocabulary {
+	type Iri = IriBuf;
+
 	fn iri<'i>(&'i self, id: &'i IriBuf) -> Option<Iri<'i>> {
 		Some(id.as_iri())
 	}
@@ -35,13 +34,15 @@ impl IriVocabulary<IriBuf> for NoVocabulary {
 	}
 }
 
-impl IriVocabularyMut<IriBuf> for NoVocabulary {
+impl IriVocabularyMut for NoVocabulary {
 	fn insert(&mut self, iri: Iri) -> IriBuf {
 		iri.into()
 	}
 }
 
-impl BlankIdVocabulary<BlankIdBuf> for NoVocabulary {
+impl BlankIdVocabulary for NoVocabulary {
+	type BlankId = BlankIdBuf;
+
 	fn blank_id<'b>(&'b self, id: &'b BlankIdBuf) -> Option<&'b BlankId> {
 		Some(id.as_blank_id_ref())
 	}
@@ -51,11 +52,8 @@ impl BlankIdVocabulary<BlankIdBuf> for NoVocabulary {
 	}
 }
 
-impl BlankIdVocabularyMut<BlankIdBuf> for NoVocabulary {
+impl BlankIdVocabularyMut for NoVocabulary {
 	fn insert_blank_id(&mut self, id: &BlankId) -> BlankIdBuf {
 		id.to_owned()
 	}
 }
-
-impl Vocabulary<IriBuf, BlankIdBuf> for NoVocabulary {}
-impl VocabularyMut<IriBuf, BlankIdBuf> for NoVocabulary {}

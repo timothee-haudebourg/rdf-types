@@ -127,7 +127,7 @@ impl<M, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Lite
 }
 
 #[cfg(feature = "contextual")]
-impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<I>> DisplayWithContext<V>
+impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> DisplayWithContext<V>
 	for Literal<M, S, I, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {

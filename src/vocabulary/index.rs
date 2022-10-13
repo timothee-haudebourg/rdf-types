@@ -1,12 +1,10 @@
-use super::{
-	BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut, Vocabulary,
-	VocabularyMut,
-};
+use super::{BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut};
 use crate::{BlankId, BlankIdBuf};
 use iref::{Iri, IriBuf};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 #[cfg(feature = "contextual")]
 use contextual::DisplayWithContext;
@@ -80,7 +78,7 @@ impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriIndex<I> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: IriVocabulary<IriIndex<I>>> DisplayWithContext<V> for IriIndex<I> {
+impl<I, V: IriVocabulary<Iri = IriIndex<I>>> DisplayWithContext<V> for IriIndex<I> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
 	}
@@ -118,7 +116,7 @@ impl<'a, I: TryFrom<&'a BlankId>> TryFrom<&'a BlankId> for BlankIdIndex<I> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: BlankIdVocabulary<BlankIdIndex<I>>> DisplayWithContext<V> for BlankIdIndex<I> {
+impl<I, V: BlankIdVocabulary<BlankId = BlankIdIndex<I>>> DisplayWithContext<V> for BlankIdIndex<I> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
 	}
@@ -160,21 +158,35 @@ where
 
 /// Vocabulary that stores IRIs and blank node identifiers
 /// with a unique index.
-#[derive(Default)]
-pub struct IndexVocabulary {
+pub struct IndexVocabulary<I = Index, B = Index> {
 	allocated: Vec<IriBuf>,
 	map: HashMap<IriBuf, usize>,
 	blank_allocated: Vec<BlankIdBuf>,
 	blank_map: HashMap<BlankIdBuf, usize>,
+	types: PhantomData<(I, B)>,
 }
 
-impl IndexVocabulary {
+impl<I, B> Default for IndexVocabulary<I, B> {
+	fn default() -> Self {
+		Self {
+			allocated: Vec::default(),
+			map: HashMap::default(),
+			blank_allocated: Vec::default(),
+			blank_map: HashMap::default(),
+			types: PhantomData,
+		}
+	}
+}
+
+impl<I, B> IndexVocabulary<I, B> {
 	pub fn new() -> Self {
 		Self::default()
 	}
 }
 
-impl<I: IndexedIri> IriVocabulary<I> for IndexVocabulary {
+impl<I: IndexedIri, B> IriVocabulary for IndexVocabulary<I, B> {
+	type Iri = I;
+
 	fn iri<'i>(&'i self, id: &'i I) -> Option<Iri<'i>> {
 		match id.index() {
 			IriIndex::Iri(iri) => Some(iri),
@@ -190,7 +202,7 @@ impl<I: IndexedIri> IriVocabulary<I> for IndexVocabulary {
 	}
 }
 
-impl<I: IndexedIri> IriVocabularyMut<I> for IndexVocabulary {
+impl<I: IndexedIri, B> IriVocabularyMut for IndexVocabulary<I, B> {
 	fn insert(&mut self, iri: Iri) -> I {
 		match I::try_from(iri) {
 			Ok(id) => id,
@@ -203,7 +215,9 @@ impl<I: IndexedIri> IriVocabularyMut<I> for IndexVocabulary {
 	}
 }
 
-impl<B: IndexedBlankId> BlankIdVocabulary<B> for IndexVocabulary {
+impl<I, B: IndexedBlankId> BlankIdVocabulary for IndexVocabulary<I, B> {
+	type BlankId = B;
+
 	fn blank_id<'b>(&'b self, id: &'b B) -> Option<&'b BlankId> {
 		match id.blank_id_index() {
 			BlankIdIndex::BlankId(id) => Some(id),
@@ -219,7 +233,7 @@ impl<B: IndexedBlankId> BlankIdVocabulary<B> for IndexVocabulary {
 	}
 }
 
-impl<B: IndexedBlankId> BlankIdVocabularyMut<B> for IndexVocabulary {
+impl<I, B: IndexedBlankId> BlankIdVocabularyMut for IndexVocabulary<I, B> {
 	fn insert_blank_id(&mut self, blank_id: &BlankId) -> B {
 		match B::try_from(blank_id) {
 			Ok(id) => id,
@@ -236,7 +250,3 @@ impl<B: IndexedBlankId> BlankIdVocabularyMut<B> for IndexVocabulary {
 		}
 	}
 }
-
-impl<I: IndexedIri, B: IndexedBlankId> Vocabulary<I, B> for IndexVocabulary {}
-
-impl<I: IndexedIri, B: IndexedBlankId> VocabularyMut<I, B> for IndexVocabulary {}
