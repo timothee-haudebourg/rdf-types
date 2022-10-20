@@ -129,6 +129,30 @@ impl Blank {
 		}
 	}
 
+	#[cfg(feature = "meta")]
+	/// Generates identifiers annotated with the given metadata.
+	pub fn with_metadata<M>(self, metadata: M) -> WithMetadata<Self, M>
+	where
+		Self: Sized,
+	{
+		WithMetadata {
+			metadata,
+			generator: self,
+		}
+	}
+
+	#[cfg(feature = "meta")]
+	/// Generates identifiers annotated with the default value of type `M`.
+	pub fn with_default_metadata<M: Default>(self) -> WithMetadata<Self, M>
+	where
+		Self: Sized,
+	{
+		WithMetadata {
+			metadata: M::default(),
+			generator: self,
+		}
+	}
+
 	/// Returns the prefix of this generator.
 	pub fn prefix(&self) -> &str {
 		&self.prefix
@@ -199,6 +223,30 @@ impl Uuid {
 			Self::V4 => uuid::Uuid::new_v4(),
 			#[cfg(feature = "uuid-generator-v5")]
 			Self::V5(vocabulary, name) => uuid::Uuid::new_v5(vocabulary, name.as_bytes()),
+		}
+	}
+
+	#[cfg(feature = "meta")]
+	/// Generates identifiers annotated with the given metadata.
+	pub fn with_metadata<M>(self, metadata: M) -> WithMetadata<Self, M>
+	where
+		Self: Sized,
+	{
+		WithMetadata {
+			metadata,
+			generator: self,
+		}
+	}
+
+	#[cfg(feature = "meta")]
+	/// Generates identifiers annotated with the default value of type `M`.
+	pub fn with_default_metadata<M: Default>(self) -> WithMetadata<Self, M>
+	where
+		Self: Sized,
+	{
+		WithMetadata {
+			metadata: M::default(),
+			generator: self,
 		}
 	}
 }
