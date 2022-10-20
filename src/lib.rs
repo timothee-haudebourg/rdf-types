@@ -18,6 +18,7 @@ use contextual::{DisplayWithContext, WithContext};
 use locspan_derive::*;
 
 mod blankid;
+pub mod generator;
 mod literal;
 mod term;
 pub mod vocabulary;
@@ -26,6 +27,7 @@ pub mod vocabulary;
 pub mod meta;
 
 pub use blankid::*;
+pub use generator::Generator;
 pub use literal::*;
 pub use term::*;
 pub use vocabulary::{

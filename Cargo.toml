@@ -1,6 +1,6 @@
 [package]
 name = "rdf-types"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2021"
 authors = ["Timothée Haudebourg <author@haudebourg.net>"]
 description = "Common RDF types definitions."
@@ -14,6 +14,10 @@ readme = "README.md"
 [features]
 default = []
 meta = ["locspan", "locspan-derive"]
+uuid-generator = ["uuid-generator-v3", "uuid-generator-v4", "uuid-generator-v5"]
+uuid-generator-v3 = ["uuid", "uuid/v3"]
+uuid-generator-v4 = ["uuid", "uuid/v4"]
+uuid-generator-v5 = ["uuid", "uuid/v5"]
 
 [dependencies]
 iref = "2.1"
@@ -21,3 +25,4 @@ langtag = "0.3"
 locspan = { version = "0.7.2", optional = true }
 locspan-derive = { version = "0.5.1", optional = true }
 contextual = { version = "0.1.1", optional = true }
+uuid = { version = "0.8", optional = true }
