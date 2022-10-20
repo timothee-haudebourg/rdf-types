@@ -237,12 +237,11 @@ mod tests {
 	#[test]
 	fn uuidv3_iri() {
 		let mut uuid_gen = Uuid::V3(
-			(),
 			uuid::Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap(),
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: ValidId = uuid_gen.next(&mut ());
+			let reference: Subject = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}
@@ -250,9 +249,9 @@ mod tests {
 	#[cfg(feature = "uuid-generator-v4")]
 	#[test]
 	fn uuidv4_iri() {
-		let mut uuid_gen = Uuid::V4(());
+		let mut uuid_gen = Uuid::V4;
 		for _ in 0..100 {
-			let reference: ValidId = uuid_gen.next(&mut ());
+			let reference: Subject = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}
@@ -261,12 +260,11 @@ mod tests {
 	#[test]
 	fn uuidv5_iri() {
 		let mut uuid_gen = Uuid::V5(
-			(),
 			uuid::Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap(),
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: ValidId = uuid_gen.next(&mut ());
+			let reference: Subject = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}

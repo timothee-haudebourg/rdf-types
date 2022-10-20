@@ -260,6 +260,17 @@ impl<I, B> Subject<I, B> {
 			Self::Iri(iri) => Term::Iri(iri),
 		}
 	}
+
+	pub fn as_str(&self) -> &str
+	where
+		I: AsRef<str>,
+		B: AsRef<str>,
+	{
+		match self {
+			Self::Iri(i) => i.as_ref(),
+			Self::Blank(i) => i.as_ref(),
+		}
+	}
 }
 
 impl Subject {
