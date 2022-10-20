@@ -35,6 +35,9 @@ pub use vocabulary::{
 	NoVocabulary, Vocabulary, VocabularyMut,
 };
 
+#[cfg(feature = "meta")]
+pub use generator::MetaGenerator;
+
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(

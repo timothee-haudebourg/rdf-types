@@ -46,6 +46,13 @@ pub trait MetaGenerator<I, B, N, M> {
 }
 
 #[cfg(feature = "meta")]
+impl<'a, T, B, N, M, G: MetaGenerator<T, B, N, M>> MetaGenerator<T, B, N, M> for &'a mut G {
+	fn next(&mut self, vocabulary: &mut N) -> Meta<Subject<T, B>, M> {
+		(*self).next(vocabulary)
+	}
+}
+
+#[cfg(feature = "meta")]
 pub struct WithMetadata<G, M> {
 	metadata: M,
 	generator: G,
