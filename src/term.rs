@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Literal, StringLiteral};
+use crate::{BlankId, BlankIdBuf, Literal, RdfDisplay, StringLiteral};
 use iref::{Iri, IriBuf};
 use std::cmp::Ordering;
 use std::fmt;
@@ -138,6 +138,16 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => iri.fmt(f),
+			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
+impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> RdfDisplay for Term<I, B, L> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
 			Self::Iri(iri) => write!(f, "<{}>", iri),
 			Self::Literal(lit) => lit.fmt(f),
 		}
@@ -152,8 +162,22 @@ impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
 		use fmt::Display;
 		match self {
 			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", vocabulary.iri(iri).unwrap()),
+			Self::Iri(iri) => vocabulary.iri(iri).unwrap().fmt(f),
 			Self::Literal(lit) => lit.fmt_with(vocabulary, f),
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<I, B, L: crate::RdfDisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
+	crate::RdfDisplayWithContext<V> for Term<I, B, L>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		match self {
+			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", vocabulary.iri(iri).unwrap()),
+			Self::Literal(lit) => lit.rdf_fmt_with(vocabulary, f),
 		}
 	}
 }
@@ -320,7 +344,7 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Iri(iri) => write!(f, "{}", iri),
 		}
 	}
 }
@@ -328,6 +352,28 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 #[cfg(feature = "contextual")]
 impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> DisplayWithContext<V> for Subject<I, B> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		match self {
+			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),
+			Self::Iri(iri) => write!(f, "{}", vocabulary.iri(iri).unwrap()),
+		}
+	}
+}
+
+impl<I: fmt::Display, B: fmt::Display> RdfDisplay for Subject<I, B> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Blank(id) => id.fmt(f),
+			Self::Iri(iri) => write!(f, "<{}>", iri),
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> crate::RdfDisplayWithContext<V>
+	for Subject<I, B>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		match self {
 			Self::Blank(id) => vocabulary.blank_id(id).unwrap().fmt(f),

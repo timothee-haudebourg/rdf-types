@@ -18,6 +18,7 @@ use contextual::{DisplayWithContext, WithContext};
 use locspan_derive::*;
 
 mod blankid;
+mod display;
 pub mod generator;
 mod literal;
 mod term;
@@ -27,6 +28,7 @@ pub mod vocabulary;
 pub mod meta;
 
 pub use blankid::*;
+pub use display::*;
 pub use generator::Generator;
 pub use literal::*;
 pub use term::*;
@@ -136,23 +138,44 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
-impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<S, P, O> {
+impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> fmt::Display for Triple<S, P, O> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{} {} {}", self.0, self.1, self.2)
+		write!(
+			f,
+			"{} {} {}",
+			self.0.rdf_display(),
+			self.1.rdf_display(),
+			self.2.rdf_display()
+		)
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<S: DisplayWithContext<V>, P: DisplayWithContext<V>, O: DisplayWithContext<V>, V>
+impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWithContext<V>, V>
 	DisplayWithContext<V> for Triple<S, P, O>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(
 			f,
 			"{} {} {}",
-			self.0.with(vocabulary),
-			self.1.with(vocabulary),
-			self.2.with(vocabulary)
+			self.0.with(vocabulary).rdf_display(),
+			self.1.with(vocabulary).rdf_display(),
+			self.2.with(vocabulary).rdf_display()
+		)
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWithContext<V>, V>
+	RdfDisplayWithContext<V> for Triple<S, P, O>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{} {} {}",
+			self.0.with(vocabulary).rdf_display(),
+			self.1.with(vocabulary).rdf_display(),
+			self.2.with(vocabulary).rdf_display()
 		)
 	}
 }
@@ -317,23 +340,34 @@ impl<
 	}
 }
 
-impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Display
-	for Quad<S, P, O, G>
-{
+impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> fmt::Display for Quad<S, P, O, G> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self.graph() {
-			Some(graph) => write!(f, "{} {} {} {}", self.0, self.1, self.2, graph),
-			None => write!(f, "{} {} {}", self.0, self.1, self.2),
+			Some(graph) => write!(
+				f,
+				"{} {} {} {}",
+				self.0.rdf_display(),
+				self.1.rdf_display(),
+				self.2.rdf_display(),
+				graph.rdf_display()
+			),
+			None => write!(
+				f,
+				"{} {} {}",
+				self.0.rdf_display(),
+				self.1.rdf_display(),
+				self.2.rdf_display()
+			),
 		}
 	}
 }
 
 #[cfg(feature = "contextual")]
 impl<
-		S: DisplayWithContext<V>,
-		P: DisplayWithContext<V>,
-		O: DisplayWithContext<V>,
-		G: DisplayWithContext<V>,
+		S: RdfDisplayWithContext<V>,
+		P: RdfDisplayWithContext<V>,
+		O: RdfDisplayWithContext<V>,
+		G: RdfDisplayWithContext<V>,
 		V,
 	> DisplayWithContext<V> for Quad<S, P, O, G>
 {
@@ -342,17 +376,47 @@ impl<
 			Some(graph) => write!(
 				f,
 				"{} {} {} {}",
-				self.0.with(vocabulary),
-				self.1.with(vocabulary),
-				self.2.with(vocabulary),
-				graph.with(vocabulary)
+				self.0.with(vocabulary).rdf_display(),
+				self.1.with(vocabulary).rdf_display(),
+				self.2.with(vocabulary).rdf_display(),
+				graph.with(vocabulary).rdf_display()
 			),
 			None => write!(
 				f,
 				"{} {} {}",
-				self.0.with(vocabulary),
-				self.1.with(vocabulary),
-				self.2.with(vocabulary)
+				self.0.with(vocabulary).rdf_display(),
+				self.1.with(vocabulary).rdf_display(),
+				self.2.with(vocabulary).rdf_display()
+			),
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<
+		S: RdfDisplayWithContext<V>,
+		P: RdfDisplayWithContext<V>,
+		O: RdfDisplayWithContext<V>,
+		G: RdfDisplayWithContext<V>,
+		V,
+	> RdfDisplayWithContext<V> for Quad<S, P, O, G>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self.graph() {
+			Some(graph) => write!(
+				f,
+				"{} {} {} {}",
+				self.0.with(vocabulary).rdf_display(),
+				self.1.with(vocabulary).rdf_display(),
+				self.2.with(vocabulary).rdf_display(),
+				graph.with(vocabulary).rdf_display()
+			),
+			None => write!(
+				f,
+				"{} {} {}",
+				self.0.with(vocabulary).rdf_display(),
+				self.1.with(vocabulary).rdf_display(),
+				self.2.with(vocabulary).rdf_display()
 			),
 		}
 	}
