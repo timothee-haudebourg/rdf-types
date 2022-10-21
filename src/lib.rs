@@ -150,6 +150,18 @@ impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> fmt::Display for Triple<S, P, 
 	}
 }
 
+impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> RdfDisplay for Triple<S, P, O> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{} {} {}",
+			self.0.rdf_display(),
+			self.1.rdf_display(),
+			self.2.rdf_display()
+		)
+	}
+}
+
 #[cfg(feature = "contextual")]
 impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWithContext<V>, V>
 	DisplayWithContext<V> for Triple<S, P, O>
@@ -342,6 +354,28 @@ impl<
 
 impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> fmt::Display for Quad<S, P, O, G> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self.graph() {
+			Some(graph) => write!(
+				f,
+				"{} {} {} {}",
+				self.0.rdf_display(),
+				self.1.rdf_display(),
+				self.2.rdf_display(),
+				graph.rdf_display()
+			),
+			None => write!(
+				f,
+				"{} {} {}",
+				self.0.rdf_display(),
+				self.1.rdf_display(),
+				self.2.rdf_display()
+			),
+		}
+	}
+}
+
+impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> RdfDisplay for Quad<S, P, O, G> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self.graph() {
 			Some(graph) => write!(
 				f,
