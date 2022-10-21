@@ -8,6 +8,30 @@ pub trait RdfDisplay {
 	}
 }
 
+impl<'a> RdfDisplay for iref::Iri<'a> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "<{}>", self)
+	}
+}
+
+impl RdfDisplay for iref::IriBuf {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "<{}>", self)
+	}
+}
+
+impl<'a> RdfDisplay for iref::IriRef<'a> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "<{}>", self)
+	}
+}
+
+impl RdfDisplay for iref::IriRefBuf {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "<{}>", self)
+	}
+}
+
 impl<'a, T: RdfDisplay + ?Sized> RdfDisplay for &'a T {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		T::rdf_fmt(*self, f)

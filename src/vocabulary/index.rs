@@ -84,6 +84,13 @@ impl<I, V: IriVocabulary<Iri = IriIndex<I>>> DisplayWithContext<V> for IriIndex<
 	}
 }
 
+#[cfg(feature = "contextual")]
+impl<I, V: IriVocabulary<Iri = IriIndex<I>>> crate::RdfDisplayWithContext<V> for IriIndex<I> {
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "<{}>", &vocabulary.iri(self).unwrap())
+	}
+}
+
 /// Blank node identifier index.
 ///
 /// This can be used as an blank id identifier that mixes blank ids that are
@@ -118,6 +125,15 @@ impl<'a, I: TryFrom<&'a BlankId>> TryFrom<&'a BlankId> for BlankIdIndex<I> {
 #[cfg(feature = "contextual")]
 impl<I, V: BlankIdVocabulary<BlankId = BlankIdIndex<I>>> DisplayWithContext<V> for BlankIdIndex<I> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<I, V: BlankIdVocabulary<BlankId = BlankIdIndex<I>>> crate::RdfDisplayWithContext<V>
+	for BlankIdIndex<I>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
 	}
 }
