@@ -23,13 +23,13 @@ use locspan_derive::*;
 		StrippedHash
 	)
 )]
-#[cfg_attr(feature = "meta", stripped(B, I))]
+#[cfg_attr(feature = "meta", locspan(stripped(B, I)))]
 pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
 	/// Blank node identifier.
-	Blank(#[cfg_attr(feature = "meta", stripped)] B),
+	Blank(#[cfg_attr(feature = "meta", locspan(stripped))] B),
 
 	/// IRI.
-	Iri(#[cfg_attr(feature = "meta", stripped)] I),
+	Iri(#[cfg_attr(feature = "meta", locspan(stripped))] I),
 
 	/// Literal value.
 	Literal(L),
@@ -246,13 +246,13 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 		StrippedHash
 	)
 )]
-#[cfg_attr(feature = "meta", stripped(B, I))]
+#[cfg_attr(feature = "meta", locspan(stripped(B, I)))]
 pub enum Subject<I = IriBuf, B = BlankIdBuf> {
 	/// Blank node identifier.
-	Blank(#[cfg_attr(feature = "meta", stripped)] B),
+	Blank(#[cfg_attr(feature = "meta", locspan(stripped))] B),
 
 	/// IRI.
-	Iri(#[cfg_attr(feature = "meta", stripped)] I),
+	Iri(#[cfg_attr(feature = "meta", locspan(stripped))] I),
 }
 
 impl<I, B> Subject<I, B> {
