@@ -1,7 +1,7 @@
 use crate::{BlankId, BlankIdBuf, Literal, RdfDisplay, StringLiteral};
 use iref::{Iri, IriBuf};
-use std::cmp::Ordering;
 use std::fmt;
+use std::{cmp::Ordering, hash::Hash};
 
 #[cfg(feature = "contextual")]
 use contextual::{AsRefWithContext, DisplayWithContext};
@@ -12,16 +12,17 @@ use locspan_derive::*;
 /// gRDF term.
 ///
 /// Either a blank node identifier, IRI or literal value.
-#[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
+///
+/// # `Hash` implementation
+///
+/// It is guaranteed that the `Hash` implementation of `Term` is *transparent*,
+/// meaning that the hash of `Term::Blank(id)` the same as `id`, the hash of
+/// `Term::Iri(iri)` is the same as `iri` and the hash of `Term::Literal(l)` is
+/// the same as `l`.
+#[derive(Clone, Copy, Eq, Ord, Debug)]
 #[cfg_attr(
 	feature = "meta",
-	derive(
-		StrippedPartialEq,
-		StrippedEq,
-		StrippedPartialOrd,
-		StrippedOrd,
-		StrippedHash
-	)
+	derive(StrippedPartialEq, StrippedEq, StrippedPartialOrd, StrippedOrd)
 )]
 #[cfg_attr(feature = "meta", locspan(stripped(B, I)))]
 pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
@@ -33,6 +34,27 @@ pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<StringLiteral, I>> {
 
 	/// Literal value.
 	Literal(L),
+}
+
+impl<I: Hash, B: Hash, L: Hash> Hash for Term<I, B, L> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		match self {
+			Self::Blank(id) => id.hash(state),
+			Self::Iri(i) => i.hash(state),
+			Self::Literal(l) => l.hash(state),
+		}
+	}
+}
+
+#[cfg(feature = "meta")]
+impl<I: Hash, B: Hash, L: locspan::StrippedHash> locspan::StrippedHash for Term<I, B, L> {
+	fn stripped_hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		match self {
+			Self::Blank(id) => id.hash(state),
+			Self::Iri(i) => i.hash(state),
+			Self::Literal(l) => l.stripped_hash(state),
+		}
+	}
 }
 
 impl<I, B, L> Term<I, B, L> {
@@ -235,16 +257,16 @@ impl<'a> From<&'a Term> for TermRef<'a> {
 /// RDF Subject.
 ///
 /// Either a blank node identifier or an IRI.
-#[derive(Clone, Copy, Eq, Hash, Ord, Debug)]
+///
+/// # `Hash` implementation
+///
+/// It is guaranteed that the `Hash` implementation of `Subject` is
+/// *transparent*, meaning that the hash of `Term::Blank(id)` the same as `id`
+/// and the hash of `Subject::Iri(iri)` is the same as `iri`.
+#[derive(Clone, Copy, Eq, Ord, Debug)]
 #[cfg_attr(
 	feature = "meta",
-	derive(
-		StrippedPartialEq,
-		StrippedEq,
-		StrippedPartialOrd,
-		StrippedOrd,
-		StrippedHash
-	)
+	derive(StrippedPartialEq, StrippedEq, StrippedPartialOrd, StrippedOrd)
 )]
 #[cfg_attr(feature = "meta", locspan(stripped(B, I)))]
 pub enum Subject<I = IriBuf, B = BlankIdBuf> {
@@ -313,6 +335,25 @@ impl Subject {
 		match self {
 			Self::Blank(id) => TermRef::Blank(id),
 			Self::Iri(iri) => TermRef::Iri(iri.as_iri()),
+		}
+	}
+}
+
+impl<I: Hash, B: Hash> Hash for Subject<I, B> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		match self {
+			Self::Blank(id) => id.hash(state),
+			Self::Iri(i) => i.hash(state),
+		}
+	}
+}
+
+#[cfg(feature = "meta")]
+impl<I: Hash, B: Hash> locspan::StrippedHash for Subject<I, B> {
+	fn stripped_hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		match self {
+			Self::Blank(id) => id.hash(state),
+			Self::Iri(i) => i.hash(state),
 		}
 	}
 }
