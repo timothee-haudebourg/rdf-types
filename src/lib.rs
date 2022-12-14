@@ -153,6 +153,88 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
+impl<S, L> Triple<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>> {
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Subject<V::Iri, V::BlankId>,
+		V::Iri,
+		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		Triple(
+			self.0.inserted_into(vocabulary),
+			vocabulary.insert(self.1.as_iri()),
+			self.2.inserted_into(vocabulary),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Subject<V::Iri, V::BlankId>,
+		V::Iri,
+		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	> {
+		Triple(
+			self.0.insert_into(vocabulary),
+			vocabulary.insert(self.1.as_iri()),
+			self.2.insert_into(vocabulary),
+		)
+	}
+}
+
+impl<S, L>
+	Quad<
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+	>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		Triple(
+			self.0.inserted_into(vocabulary),
+			self.1.inserted_into(vocabulary),
+			self.2.inserted_into(vocabulary),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	> {
+		Triple(
+			self.0.insert_into(vocabulary),
+			self.1.insert_into(vocabulary),
+			self.2.insert_into(vocabulary),
+		)
+	}
+}
+
 impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> fmt::Display for Triple<S, P, O> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(
@@ -251,6 +333,97 @@ impl Quad {
 			TermRef::Iri(self.1.as_iri()),
 			self.2.as_term_ref(),
 			self.3.as_ref().map(GraphLabel::as_term_ref),
+		)
+	}
+}
+
+impl<S, L> Quad<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>, GraphLabel> {
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Subject<V::Iri, V::BlankId>,
+		V::Iri,
+		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		GraphLabel<V::Iri, V::BlankId>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		Quad(
+			self.0.inserted_into(vocabulary),
+			vocabulary.insert(self.1.as_iri()),
+			self.2.inserted_into(vocabulary),
+			self.3.as_ref().map(|g| g.inserted_into(vocabulary)),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Subject<V::Iri, V::BlankId>,
+		V::Iri,
+		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		GraphLabel<V::Iri, V::BlankId>,
+	> {
+		Quad(
+			self.0.insert_into(vocabulary),
+			vocabulary.insert(self.1.as_iri()),
+			self.2.insert_into(vocabulary),
+			self.3.map(|g| g.insert_into(vocabulary)),
+		)
+	}
+}
+
+impl<S, L>
+	Quad<
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+		Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>,
+	>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		Quad(
+			self.0.inserted_into(vocabulary),
+			self.1.inserted_into(vocabulary),
+			self.2.inserted_into(vocabulary),
+			self.3.as_ref().map(|g| g.inserted_into(vocabulary)),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+		Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
+	> {
+		Quad(
+			self.0.insert_into(vocabulary),
+			self.1.insert_into(vocabulary),
+			self.2.insert_into(vocabulary),
+			self.3.map(|g| g.insert_into(vocabulary)),
 		)
 	}
 }
