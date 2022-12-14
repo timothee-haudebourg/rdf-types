@@ -30,6 +30,14 @@ pub type MetaRdfQuad<M> =
 /// gRDF quad with metadata.
 pub type MetaGrdfQuad<M> = Meta<Quad<MetaTerm<M>, MetaTerm<M>, MetaTerm<M>, MetaTerm<M>>, M>;
 
+impl<I, B> Strip for Subject<I, B> {
+	type Stripped = Self;
+
+	fn strip(self) -> Self {
+		self
+	}
+}
+
 /// RDF Literal with metadata.
 #[derive(
 	Clone,
