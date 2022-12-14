@@ -136,6 +136,21 @@ impl<S, P, O> Triple<S, P, O> {
 	pub fn into_parts(self) -> (S, P, O) {
 		(self.0, self.1, self.2)
 	}
+
+	/// Maps the subject with the given function.
+	pub fn map_subject<U>(self, f: impl FnOnce(S) -> U) -> Triple<U, P, O> {
+		Triple(f(self.0), self.1, self.2)
+	}
+
+	/// Maps the subject with the given function.
+	pub fn map_predicate<U>(self, f: impl FnOnce(P) -> U) -> Triple<S, U, O> {
+		Triple(self.0, f(self.1), self.2)
+	}
+
+	/// Maps the subject with the given function.
+	pub fn map_object<U>(self, f: impl FnOnce(O) -> U) -> Triple<S, P, U> {
+		Triple(self.0, self.1, f(self.2))
+	}
 }
 
 impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> fmt::Display for Triple<S, P, O> {
@@ -296,6 +311,26 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 
 	pub fn into_parts(self) -> (S, P, O, Option<G>) {
 		(self.0, self.1, self.2, self.3)
+	}
+
+	/// Maps the subject with the given function.
+	pub fn map_subject<U>(self, f: impl FnOnce(S) -> U) -> Quad<U, P, O, G> {
+		Quad(f(self.0), self.1, self.2, self.3)
+	}
+
+	/// Maps the subject with the given function.
+	pub fn map_predicate<U>(self, f: impl FnOnce(P) -> U) -> Quad<S, U, O, G> {
+		Quad(self.0, f(self.1), self.2, self.3)
+	}
+
+	/// Maps the subject with the given function.
+	pub fn map_object<U>(self, f: impl FnOnce(O) -> U) -> Quad<S, P, U, G> {
+		Quad(self.0, self.1, f(self.2), self.3)
+	}
+
+	/// Maps the graph with the given function.
+	pub fn map_graph<U>(self, f: impl FnOnce(Option<G>) -> Option<U>) -> Quad<S, P, O, U> {
+		Quad(self.0, self.1, self.2, f(self.3))
 	}
 }
 
