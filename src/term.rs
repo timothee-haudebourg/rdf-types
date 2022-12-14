@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Literal, RdfDisplay, StringLiteral};
+use crate::{BlankId, BlankIdBuf, Literal, RdfDisplay, StringLiteral, VocabularyMut};
 use iref::{Iri, IriBuf};
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
@@ -124,6 +124,36 @@ impl Term {
 
 	pub fn as_object_ref(&self) -> TermRef {
 		self.as_term_ref()
+	}
+}
+
+impl<S, L> Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>> {
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		match self {
+			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Literal(l) => Term::Literal(l.inserted_into(vocabulary)),
+		}
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>> {
+		match self {
+			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
+		}
 	}
 }
 

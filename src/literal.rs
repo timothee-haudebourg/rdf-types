@@ -1,4 +1,4 @@
-use crate::RdfDisplay;
+use crate::{IriVocabularyMut, RdfDisplay};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
@@ -66,6 +66,30 @@ impl<S, I, L> Literal<S, I, L> {
 			Self::String(s) => s,
 			Self::TypedString(s, _) => s,
 			Self::LangString(s, _) => s,
+		}
+	}
+}
+
+impl<S, L> Literal<S, IriBuf, L> {
+	pub fn inserted_into<V: IriVocabularyMut>(&self, vocabulary: &mut V) -> Literal<S, V::Iri, L>
+	where
+		S: Clone,
+		L: Clone,
+	{
+		match self {
+			Self::String(s) => Literal::String(s.clone()),
+			Self::TypedString(s, t) => {
+				Literal::TypedString(s.clone(), vocabulary.insert(t.as_iri()))
+			}
+			Self::LangString(s, l) => Literal::LangString(s.clone(), l.clone()),
+		}
+	}
+
+	pub fn insert_into<V: IriVocabularyMut>(self, vocabulary: &mut V) -> Literal<S, V::Iri, L> {
+		match self {
+			Self::String(s) => Literal::String(s),
+			Self::TypedString(s, t) => Literal::TypedString(s, vocabulary.insert(t.as_iri())),
+			Self::LangString(s, l) => Literal::LangString(s, l),
 		}
 	}
 }
