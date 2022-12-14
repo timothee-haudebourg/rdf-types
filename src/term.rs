@@ -367,6 +367,23 @@ impl Subject {
 			Self::Iri(iri) => TermRef::Iri(iri.as_iri()),
 		}
 	}
+
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Subject<V::Iri, V::BlankId> {
+		match self {
+			Self::Blank(b) => Subject::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Subject::Iri(vocabulary.insert(i.as_iri())),
+		}
+	}
+
+	pub fn insert_into<V: VocabularyMut>(self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId> {
+		match self {
+			Self::Blank(b) => Subject::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Subject::Iri(vocabulary.insert(i.as_iri())),
+		}
+	}
 }
 
 impl<I: Hash, B: Hash> Hash for Subject<I, B> {
