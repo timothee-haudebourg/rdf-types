@@ -216,13 +216,13 @@ impl fmt::Display for StringLiteral {
 
 		for c in self.0.chars() {
 			match c {
-				'"' => write!(f, "\\u0022"),
-				'\\' => write!(f, "\\u005c"),
+				'"' => write!(f, "\\\""),
+				'\\' => write!(f, "\\\\"),
 				'\n' => write!(f, "\\n"),
 				'\r' => write!(f, "\\r"),
-				'\t' => write!(f, "\\t"),
-				'\u{08}' => write!(f, "\\b"),
-				'\u{0c}' => write!(f, "\\f"),
+				// '\t' => write!(f, "\\t"),
+				// '\u{08}' => write!(f, "\\b"),
+				// '\u{0c}' => write!(f, "\\f"),
 				c => c.fmt(f),
 			}?
 		}
