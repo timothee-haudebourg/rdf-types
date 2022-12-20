@@ -766,6 +766,18 @@ impl<'a> From<&'a Quad> for QuadRef<'a> {
 	}
 }
 
+impl<'a> From<Quad<&'a Subject, &'a IriBuf, &'a Object, &'a GraphLabel>> for QuadRef<'a> {
+	#[inline(always)]
+	fn from(Quad(s, p, o, g): Quad<&'a Subject, &'a IriBuf, &'a Object, &'a GraphLabel>) -> Self {
+		Quad(
+			s.as_subject_ref(),
+			p.as_iri(),
+			o.as_object_ref(),
+			g.map(GraphLabel::as_graph_label_ref),
+		)
+	}
+}
+
 /// gRDF quad.
 pub type GrdfQuad = Quad<Term, Term, Term, Term>;
 
@@ -788,5 +800,17 @@ impl<'a> From<&'a GrdfQuad> for GrdfQuadRef<'a> {
 	#[inline(always)]
 	fn from(q: &'a GrdfQuad) -> Self {
 		q.as_grdf_quad_ref()
+	}
+}
+
+impl<'a> From<Quad<&'a Term, &'a Term, &'a Term, &'a Term>> for GrdfQuadRef<'a> {
+	#[inline(always)]
+	fn from(Quad(s, p, o, g): Quad<&'a Term, &'a Term, &'a Term, &'a Term>) -> Self {
+		Quad(
+			s.as_term_ref(),
+			p.as_term_ref(),
+			o.as_term_ref(),
+			g.map(Term::as_term_ref),
+		)
 	}
 }
