@@ -727,7 +727,7 @@ impl<'a> From<QuadRef<'a>> for Quad {
 
 impl GrdfQuad {
 	#[inline(always)]
-	pub fn as_quad_ref(&self) -> GrdfQuadRef {
+	pub fn as_grdf_quad_ref(&self) -> GrdfQuadRef {
 		Quad(
 			self.0.as_term_ref(),
 			self.1.as_term_ref(),
@@ -787,6 +787,6 @@ impl<'a> GrdfQuadRef<'a> {
 impl<'a> From<&'a GrdfQuad> for GrdfQuadRef<'a> {
 	#[inline(always)]
 	fn from(q: &'a GrdfQuad) -> Self {
-		q.as_quad_ref()
+		q.as_grdf_quad_ref()
 	}
 }
