@@ -102,6 +102,12 @@ impl<S, P, O> Triple<S, P, O> {
 		&self.0
 	}
 
+	/// Returns a mutable reference to the subject of the triple,
+	/// the first component.
+	pub fn subject_mut(&mut self) -> &mut S {
+		&mut self.0
+	}
+
 	/// Turns the triple into its subject,
 	/// the first component.
 	pub fn into_subject(self) -> S {
@@ -114,6 +120,12 @@ impl<S, P, O> Triple<S, P, O> {
 		&self.1
 	}
 
+	/// Returns a mutable reference to the predicate of the triple,
+	/// the second component.
+	pub fn predicate_mut(&mut self) -> &mut P {
+		&mut self.1
+	}
+
 	/// Turns the triple into its predicate,
 	/// the second component.
 	pub fn into_predicate(self) -> P {
@@ -124,6 +136,12 @@ impl<S, P, O> Triple<S, P, O> {
 	/// the third component.
 	pub fn object(&self) -> &O {
 		&self.2
+	}
+
+	/// Returns a mutable reference to the object of the triple,
+	/// the third component.
+	pub fn object_mut(&mut self) -> &mut O {
+		&mut self.2
 	}
 
 	/// Turns the triple into its object,
@@ -440,6 +458,12 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		&self.0
 	}
 
+	/// Returns a mutable reference to the subject of the quad,
+	/// the first component.
+	pub fn subject_mut(&mut self) -> &mut S {
+		&mut self.0
+	}
+
 	/// Turns the quad into its subject,
 	/// the first component.
 	pub fn into_subject(self) -> S {
@@ -450,6 +474,12 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	/// the second component.
 	pub fn predicate(&self) -> &P {
 		&self.1
+	}
+
+	/// Returns a mutable reference to the predicate of the quad,
+	/// the second component.
+	pub fn predicate_mut(&mut self) -> &mut P {
+		&mut self.1
 	}
 
 	/// Turns the quad into its predicate,
@@ -464,6 +494,12 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		&self.2
 	}
 
+	/// Returns a mutable reference to the object of the quad,
+	/// the third component.
+	pub fn object_mut(&mut self) -> &mut O {
+		&mut self.2
+	}
+
 	/// Turns the quad into its object,
 	/// the third component.
 	pub fn into_object(self) -> O {
@@ -474,6 +510,12 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	/// the fourth component.
 	pub fn graph(&self) -> Option<&G> {
 		self.3.as_ref()
+	}
+
+	/// Returns a mutable reference to the graph of the quad,
+	/// the fourth component.
+	pub fn graph_mut(&mut self) -> Option<&mut G> {
+		self.3.as_mut()
 	}
 
 	/// Turns the quad into its graph,
@@ -664,11 +706,87 @@ impl<
 	}
 }
 
+impl Quad {
+	#[inline(always)]
+	pub fn as_quad_ref(&self) -> QuadRef {
+		Quad(
+			self.0.as_subject_ref(),
+			self.1.as_iri(),
+			self.2.as_object_ref(),
+			self.3.as_ref().map(GraphLabel::as_graph_label_ref),
+		)
+	}
+}
+
+impl<'a> From<QuadRef<'a>> for Quad {
+	#[inline(always)]
+	fn from(q: QuadRef<'a>) -> Self {
+		q.into_owned()
+	}
+}
+
+impl GrdfQuad {
+	#[inline(always)]
+	pub fn as_quad_ref(&self) -> GrdfQuadRef {
+		Quad(
+			self.0.as_term_ref(),
+			self.1.as_term_ref(),
+			self.2.as_term_ref(),
+			self.3.as_ref().map(Term::as_term_ref),
+		)
+	}
+}
+
+impl<'a> From<GrdfQuadRef<'a>> for GrdfQuad {
+	#[inline(always)]
+	fn from(q: GrdfQuadRef<'a>) -> Self {
+		q.into_owned()
+	}
+}
+
 /// RDF quad reference.
 pub type QuadRef<'a> = Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
+
+impl<'a> QuadRef<'a> {
+	#[inline(always)]
+	pub fn into_owned(self) -> Quad {
+		Quad(
+			self.0.into_owned(),
+			self.1.to_owned(),
+			self.2.into_owned(),
+			self.3.map(GraphLabelRef::into_owned),
+		)
+	}
+}
+
+impl<'a> From<&'a Quad> for QuadRef<'a> {
+	#[inline(always)]
+	fn from(q: &'a Quad) -> Self {
+		q.as_quad_ref()
+	}
+}
 
 /// gRDF quad.
 pub type GrdfQuad = Quad<Term, Term, Term, Term>;
 
 /// gRDF quad reference.
 pub type GrdfQuadRef<'a> = Quad<TermRef<'a>, TermRef<'a>, TermRef<'a>, TermRef<'a>>;
+
+impl<'a> GrdfQuadRef<'a> {
+	#[inline(always)]
+	pub fn into_owned(self) -> GrdfQuad {
+		Quad(
+			self.0.into_owned(),
+			self.1.into_owned(),
+			self.2.into_owned(),
+			self.3.map(Term::into_owned),
+		)
+	}
+}
+
+impl<'a> From<&'a GrdfQuad> for GrdfQuadRef<'a> {
+	#[inline(always)]
+	fn from(q: &'a GrdfQuad) -> Self {
+		q.as_quad_ref()
+	}
+}

@@ -278,6 +278,16 @@ impl<I, B, L> IntoTerm for Term<I, B, L> {
 /// gRDF term reference.
 pub type TermRef<'a> = Term<Iri<'a>, &'a BlankId, &'a Literal>;
 
+impl<'a> TermRef<'a> {
+	pub fn into_owned(self) -> Term {
+		match self {
+			Self::Iri(iri) => Term::Iri(iri.to_owned()),
+			Self::Blank(b) => Term::Blank(b.to_owned()),
+			Self::Literal(l) => Term::Literal(l.clone()),
+		}
+	}
+}
+
 impl<'a> From<&'a Term> for TermRef<'a> {
 	fn from(t: &'a Term) -> Self {
 		t.as_term_ref()
@@ -481,6 +491,15 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> AsRefWithContext<str, V> 
 }
 
 pub type SubjectRef<'a> = Subject<Iri<'a>, &'a BlankId>;
+
+impl<'a> SubjectRef<'a> {
+	pub fn into_owned(self) -> Subject {
+		match self {
+			Self::Iri(iri) => Subject::Iri(iri.to_owned()),
+			Self::Blank(b) => Subject::Blank(b.to_owned()),
+		}
+	}
+}
 
 impl<'a> From<&'a Subject> for SubjectRef<'a> {
 	fn from(t: &'a Subject) -> Self {
