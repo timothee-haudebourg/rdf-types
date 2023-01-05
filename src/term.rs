@@ -340,6 +340,20 @@ impl<I, B> Subject<I, B> {
 		}
 	}
 
+	pub fn into_blank(self) -> Option<B> {
+		match self {
+			Self::Blank(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn into_iri(self) -> Option<I> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
 	pub fn into_term<L>(self) -> Term<I, B, L> {
 		match self {
 			Self::Blank(id) => Term::Blank(id),
