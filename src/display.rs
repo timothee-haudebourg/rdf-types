@@ -3,36 +3,53 @@ use std::fmt;
 pub trait RdfDisplay {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 
+	#[inline(always)]
 	fn rdf_display(&self) -> RdfDisplayed<&Self> {
 		RdfDisplayed(self)
 	}
 }
 
-impl<'a> RdfDisplay for iref::Iri<'a> {
+impl<'a> RdfDisplay for iref::IriRef<'a> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "<{}>", self)
+		write!(f, "<")?;
+
+		for c in self.as_str().chars() {
+			match c {
+				'\x00'..='\x20' | '<' | '>' | '"' | '{' | '}' | '|' | '^' | '`' | '\\' => {
+					let bytes: u32 = c.into();
+					write!(f, "\\u{:#04x}", bytes)
+				}
+				_ => fmt::Display::fmt(&c, f),
+			}?;
+		}
+
+		write!(f, ">")
+	}
+}
+
+impl<'a> RdfDisplay for iref::Iri<'a> {
+	#[inline(always)]
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.as_iri_ref().rdf_fmt(f)
 	}
 }
 
 impl RdfDisplay for iref::IriBuf {
+	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "<{}>", self)
-	}
-}
-
-impl<'a> RdfDisplay for iref::IriRef<'a> {
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "<{}>", self)
+		self.as_iri_ref().rdf_fmt(f)
 	}
 }
 
 impl RdfDisplay for iref::IriRefBuf {
+	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "<{}>", self)
+		self.as_iri_ref().rdf_fmt(f)
 	}
 }
 
 impl<'a, T: RdfDisplay + ?Sized> RdfDisplay for &'a T {
+	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		T::rdf_fmt(*self, f)
 	}
@@ -41,6 +58,7 @@ impl<'a, T: RdfDisplay + ?Sized> RdfDisplay for &'a T {
 pub struct RdfDisplayed<T>(T);
 
 impl<T: RdfDisplay> fmt::Display for RdfDisplayed<T> {
+	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		self.0.rdf_fmt(f)
 	}
@@ -53,6 +71,7 @@ pub trait RdfDisplayWithContext<C: ?Sized> {
 
 #[cfg(feature = "contextual")]
 impl<'a, T: RdfDisplayWithContext<C> + ?Sized, C: ?Sized> RdfDisplayWithContext<C> for &'a T {
+	#[inline(always)]
 	fn rdf_fmt_with(&self, context: &C, f: &mut fmt::Formatter) -> fmt::Result {
 		T::rdf_fmt_with(*self, context, f)
 	}
@@ -60,6 +79,7 @@ impl<'a, T: RdfDisplayWithContext<C> + ?Sized, C: ?Sized> RdfDisplayWithContext<
 
 #[cfg(feature = "contextual")]
 impl<'c, T: RdfDisplayWithContext<C>, C: ?Sized> RdfDisplay for contextual::Contextual<T, &'c C> {
+	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.0.rdf_fmt_with(self.1, f)
 	}
@@ -69,6 +89,7 @@ impl<'c, T: RdfDisplayWithContext<C>, C: ?Sized> RdfDisplay for contextual::Cont
 impl<'c, T: RdfDisplayWithContext<C>, C: ?Sized> RdfDisplay
 	for contextual::Contextual<T, &'c mut C>
 {
+	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.0.rdf_fmt_with(self.1, f)
 	}
