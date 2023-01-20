@@ -1,4 +1,6 @@
-use crate::{BlankIdBuf, GraphLabel, Quad, StringLiteral, Subject, Triple};
+use crate::{
+	BlankIdBuf, GraphLabel, IriVocabularyMut, Quad, StringLiteral, Subject, Triple, VocabularyMut,
+};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Meta, Strip};
@@ -9,16 +11,20 @@ use std::fmt;
 use contextual::DisplayWithContext;
 
 /// gRDF term with literal with metadata.
-pub type Term<M> = crate::Term<IriBuf, BlankIdBuf, Literal<M>>;
+pub type Term<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+	crate::Term<I, B, Literal<M, S, I, L>>;
 
 /// RDF object with literal with metadata.
-pub type Object<M> = crate::Object<IriBuf, BlankIdBuf, Literal<M>>;
+pub type Object<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+	crate::Object<I, B, Literal<M, S, I, L>>;
 
 /// gRDF term with metadata.
-pub type MetaTerm<M> = Meta<Term<M>, M>;
+pub type MetaTerm<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+	Meta<Term<M, I, B, S, L>, M>;
 
 /// RDF object with metadata.
-pub type MetaObject<M> = Meta<Object<M>, M>;
+pub type MetaObject<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+	Meta<Object<M, I, B, S, L>, M>;
 
 /// Quad with metadata.
 pub type MetaQuad<S, P, O, G, M> = Meta<Quad<Meta<S, M>, Meta<P, M>, Meta<O, M>, Meta<G, M>>, M>;
@@ -208,6 +214,260 @@ impl<S: Strip, P, O: Strip, G: Strip, M> Quad<S, Meta<P, M>, O, G> {
 			self.1.into_value(),
 			self.2.strip(),
 			self.3.strip(),
+		)
+	}
+}
+
+impl<S, L, M> Literal<M, S, IriBuf, L> {
+	pub fn inserted_into<V: IriVocabularyMut>(&self, vocabulary: &mut V) -> Literal<M, S, V::Iri, L>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		match self {
+			Self::String(s) => Literal::String(s.clone()),
+			Self::TypedString(s, Meta(t, m)) => {
+				Literal::TypedString(s.clone(), Meta(vocabulary.insert(t.as_iri()), m.clone()))
+			}
+			Self::LangString(s, l) => Literal::LangString(s.clone(), l.clone()),
+		}
+	}
+
+	pub fn insert_into<V: IriVocabularyMut>(self, vocabulary: &mut V) -> Literal<M, S, V::Iri, L> {
+		match self {
+			Self::String(s) => Literal::String(s),
+			Self::TypedString(s, Meta(t, m)) => {
+				Literal::TypedString(s, Meta(vocabulary.insert(t.as_iri()), m))
+			}
+			Self::LangString(s, l) => Literal::LangString(s, l),
+		}
+	}
+}
+
+impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Term<M, V::Iri, V::BlankId, S, L>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		match self {
+			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Literal(l) => Term::Literal(l.inserted_into(vocabulary)),
+		}
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Term<M, V::Iri, V::BlankId, S, L> {
+		match self {
+			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
+			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
+		}
+	}
+}
+
+impl<S, L, M>
+	Triple<Meta<Subject, M>, Meta<IriBuf, M>, Meta<Object<M, IriBuf, BlankIdBuf, S, L>, M>>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Meta<Subject<V::Iri, V::BlankId>, M>,
+		Meta<V::Iri, M>,
+		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		Triple(
+			Meta(self.0.inserted_into(vocabulary), self.0.metadata().clone()),
+			Meta(
+				vocabulary.insert(self.1.as_iri()),
+				self.1.metadata().clone(),
+			),
+			Meta(self.2.inserted_into(vocabulary), self.2.metadata().clone()),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Meta<Subject<V::Iri, V::BlankId>, M>,
+		Meta<V::Iri, M>,
+		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+	> {
+		Triple(
+			self.0.map(|s| s.insert_into(vocabulary)),
+			self.1.map(|p| vocabulary.insert(p.as_iri())),
+			self.2.map(|o| o.insert_into(vocabulary)),
+		)
+	}
+}
+
+impl<S, L, M>
+	Triple<
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+	>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		Triple(
+			Meta(self.0.inserted_into(vocabulary), self.0.metadata().clone()),
+			Meta(self.1.inserted_into(vocabulary), self.1.metadata().clone()),
+			Meta(self.2.inserted_into(vocabulary), self.2.metadata().clone()),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Triple<
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+	> {
+		Triple(
+			self.0.map(|s| s.insert_into(vocabulary)),
+			self.1.map(|p| p.insert_into(vocabulary)),
+			self.2.map(|o| o.insert_into(vocabulary)),
+		)
+	}
+}
+
+impl<S, L, M>
+	Quad<
+		Meta<Subject, M>,
+		Meta<IriBuf, M>,
+		Meta<Object<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<GraphLabel, M>,
+	>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Meta<Subject<V::Iri, V::BlankId>, M>,
+		Meta<V::Iri, M>,
+		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<GraphLabel<V::Iri, V::BlankId>, M>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		Quad(
+			Meta(self.0.inserted_into(vocabulary), self.0.metadata().clone()),
+			Meta(
+				vocabulary.insert(self.1.as_iri()),
+				self.1.metadata().clone(),
+			),
+			Meta(self.2.inserted_into(vocabulary), self.2.metadata().clone()),
+			self.3
+				.as_ref()
+				.map(|Meta(g, m)| Meta(g.inserted_into(vocabulary), m.clone())),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Meta<Subject<V::Iri, V::BlankId>, M>,
+		Meta<V::Iri, M>,
+		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<GraphLabel<V::Iri, V::BlankId>, M>,
+	> {
+		Quad(
+			self.0.map(|s| s.insert_into(vocabulary)),
+			self.1.map(|p| vocabulary.insert(p.as_iri())),
+			self.2.map(|o| o.insert_into(vocabulary)),
+			self.3.map(|Meta(g, m)| Meta(g.insert_into(vocabulary), m)),
+		)
+	}
+}
+
+impl<S, L, M>
+	Quad<
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+	>
+{
+	#[allow(clippy::type_complexity)]
+	pub fn inserted_into<V: VocabularyMut>(
+		&self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+	>
+	where
+		S: Clone,
+		L: Clone,
+		M: Clone,
+	{
+		Quad(
+			Meta(self.0.inserted_into(vocabulary), self.0.metadata().clone()),
+			Meta(self.1.inserted_into(vocabulary), self.1.metadata().clone()),
+			Meta(self.2.inserted_into(vocabulary), self.2.metadata().clone()),
+			self.3
+				.as_ref()
+				.map(|Meta(g, m)| Meta(g.inserted_into(vocabulary), m.clone())),
+		)
+	}
+
+	#[allow(clippy::type_complexity)]
+	pub fn insert_into<V: VocabularyMut>(
+		self,
+		vocabulary: &mut V,
+	) -> Quad<
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+	> {
+		Quad(
+			self.0.map(|s| s.insert_into(vocabulary)),
+			self.1.map(|p| p.insert_into(vocabulary)),
+			self.2.map(|o| o.insert_into(vocabulary)),
+			self.3.map(|Meta(g, m)| Meta(g.insert_into(vocabulary), m)),
 		)
 	}
 }
