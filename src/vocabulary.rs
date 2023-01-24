@@ -3,9 +3,11 @@ use iref::Iri;
 
 mod index;
 mod none;
+mod scoped;
 
 pub use index::*;
 pub use none::*;
+pub use scoped::*;
 
 /// Vocabulary.
 ///
