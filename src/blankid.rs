@@ -114,6 +114,13 @@ impl fmt::Debug for BlankId {
 	}
 }
 
+impl PartialEq<str> for BlankId {
+	#[inline(always)]
+	fn eq(&self, other: &str) -> bool {
+		self.0 == *other
+	}
+}
+
 /// Owned blank node identifier.
 ///
 /// A blank node identifier is a string matching
