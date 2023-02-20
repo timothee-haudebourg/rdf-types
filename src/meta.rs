@@ -190,6 +190,16 @@ impl<S: Strip, P: Strip, O: Strip> Strip for Triple<S, P, O> {
 	}
 }
 
+impl<S: Strip, P, O: Strip, M> Triple<S, Meta<P, M>, O> {
+	/// Utility function to strip metadata off a triple when the predicate type
+	/// `P` does not implement the [`Strip`] trait.
+	/// This often happens for RDF triples because the predicate is an IRI usually
+	/// represented with the [`IriBuf`] which does not implement [`Strip`].
+	pub fn strip_all_but_predicate(self) -> Triple<S::Stripped, P, O::Stripped> {
+		Triple(self.0.strip(), self.1.into_value(), self.2.strip())
+	}
+}
+
 impl<S: Strip, P: Strip, O: Strip, G: Strip> Strip for Quad<S, P, O, G> {
 	type Stripped = Quad<S::Stripped, P::Stripped, O::Stripped, G::Stripped>;
 
