@@ -155,6 +155,11 @@ impl<S, P, O> Triple<S, P, O> {
 		(self.0, self.1, self.2)
 	}
 
+	/// Turns the triple into a quad with the given `graph` component.
+	pub fn into_quad<G>(self, graph: Option<G>) -> Quad<S, P, O, G> {
+		Quad(self.0, self.1, self.2, graph)
+	}
+
 	/// Maps the subject with the given function.
 	pub fn map_subject<U>(self, f: impl FnOnce(S) -> U) -> Triple<U, P, O> {
 		Triple(f(self.0), self.1, self.2)
@@ -526,6 +531,11 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 
 	pub fn into_parts(self) -> (S, P, O, Option<G>) {
 		(self.0, self.1, self.2, self.3)
+	}
+
+	/// Turns this quad into a triple and its graph component.
+	pub fn into_triple(self) -> (Triple<S, P, O>, Option<G>) {
+		(Triple(self.0, self.1, self.2), self.3)
 	}
 
 	/// Maps the subject with the given function.

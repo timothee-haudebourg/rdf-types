@@ -17,7 +17,7 @@ impl<'a> RdfDisplay for iref::IriRef<'a> {
 			match c {
 				'\x00'..='\x20' | '<' | '>' | '"' | '{' | '}' | '|' | '^' | '`' | '\\' => {
 					let bytes: u32 = c.into();
-					write!(f, "\\u{:#04x}", bytes)
+					write!(f, "\\u{bytes:#04x}")
 				}
 				_ => fmt::Display::fmt(&c, f),
 			}?;

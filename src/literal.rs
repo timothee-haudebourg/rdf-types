@@ -235,8 +235,8 @@ impl<S: fmt::Display, I: RdfDisplay, L: fmt::Display> fmt::Display for Literal<S
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{}^^{}", s, ty.rdf_display()),
-			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
+			Self::TypedString(s, ty) => write!(f, "{s}^^{}", ty.rdf_display()),
+			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
 		}
 	}
 }
@@ -245,8 +245,8 @@ impl<S: fmt::Display, I: RdfDisplay, L: fmt::Display> RdfDisplay for Literal<S, 
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{}^^{}", s, ty.rdf_display()),
-			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
+			Self::TypedString(s, ty) => write!(f, "{s}^^{}", ty.rdf_display()),
+			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
 		}
 	}
 }
@@ -258,8 +258,8 @@ impl<S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> Disp
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s, vocabulary.iri(ty).unwrap()),
-			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
+			Self::TypedString(s, ty) => write!(f, "{s}^^<{}>", vocabulary.iri(ty).unwrap()),
+			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
 		}
 	}
 }
@@ -271,8 +271,8 @@ impl<S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>>
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{}^^<{}>", s, vocabulary.iri(ty).unwrap()),
-			Self::LangString(s, tag) => write!(f, "{}@{}", s, tag),
+			Self::TypedString(s, ty) => write!(f, "{s}^^<{}>", vocabulary.iri(ty).unwrap()),
+			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
 		}
 	}
 }

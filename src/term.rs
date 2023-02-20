@@ -200,7 +200,7 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> RdfDisplay for Term<I, B
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Iri(iri) => write!(f, "<{iri}>"),
 			Self::Literal(lit) => lit.fmt(f),
 		}
 	}
@@ -456,7 +456,7 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Subject<I, B> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "{}", iri),
+			Self::Iri(iri) => write!(f, "{iri}"),
 		}
 	}
 }
@@ -476,7 +476,7 @@ impl<I: fmt::Display, B: fmt::Display> RdfDisplay for Subject<I, B> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Blank(id) => id.fmt(f),
-			Self::Iri(iri) => write!(f, "<{}>", iri),
+			Self::Iri(iri) => write!(f, "<{iri}>"),
 		}
 	}
 }

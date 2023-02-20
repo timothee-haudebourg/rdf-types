@@ -159,31 +159,31 @@ impl BlankIdBuf {
 	/// Creates a blank node identifier using the given `u8` as suffix.
 	#[inline(always)]
 	pub fn from_u8(i: u8) -> Self {
-		unsafe { Self::new_unchecked(format!("_:{}", i)) }
+		unsafe { Self::new_unchecked(format!("_:{i}")) }
 	}
 
 	/// Creates a blank node identifier using the given `u16` as suffix.
 	#[inline(always)]
 	pub fn from_u16(i: u16) -> Self {
-		unsafe { Self::new_unchecked(format!("_:{}", i)) }
+		unsafe { Self::new_unchecked(format!("_:{i}")) }
 	}
 
 	/// Creates a blank node identifier using the given `u32` as suffix.
 	#[inline(always)]
 	pub fn from_u32(i: u32) -> Self {
-		unsafe { Self::new_unchecked(format!("_:{}", i)) }
+		unsafe { Self::new_unchecked(format!("_:{i}")) }
 	}
 
 	/// Creates a blank node identifier using the given `u64` as suffix.
 	#[inline(always)]
 	pub fn from_u64(i: u64) -> Self {
-		unsafe { Self::new_unchecked(format!("_:{}", i)) }
+		unsafe { Self::new_unchecked(format!("_:{i}")) }
 	}
 
 	/// Creates a blank node identifier using the given suffix.
 	#[inline(always)]
 	pub fn from_suffix(suffix: &str) -> Result<Self, InvalidBlankId<String>> {
-		Self::new(format!("_:{}", suffix))
+		Self::new(format!("_:{suffix}"))
 	}
 
 	/// Returns a reference to this blank id as a `BlankId`.
