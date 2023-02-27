@@ -1,4 +1,4 @@
-use crate::{vocabulary, BlankIdBuf, BlankIdVocabularyMut, Subject, Vocabulary, VocabularyMut};
+use crate::{vocabulary, BlankIdBuf, BlankIdVocabularyMut, Id, Vocabulary, VocabularyMut};
 
 #[cfg(feature = "meta")]
 use locspan::Meta;
@@ -6,7 +6,7 @@ use locspan::Meta;
 /// Subject identifier generator.
 pub trait Generator<V: Vocabulary> {
 	/// Generates the next fresh identifier in the given vocabulary.
-	fn next(&mut self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId>;
+	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId>;
 
 	#[cfg(feature = "meta")]
 	/// Generates identifiers annotated with the given metadata.
@@ -34,7 +34,7 @@ pub trait Generator<V: Vocabulary> {
 }
 
 impl<'a, V: Vocabulary, G: Generator<V>> Generator<V> for &'a mut G {
-	fn next(&mut self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId> {
+	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
 		(*self).next(vocabulary)
 	}
 }
@@ -42,12 +42,12 @@ impl<'a, V: Vocabulary, G: Generator<V>> Generator<V> for &'a mut G {
 #[cfg(feature = "meta")]
 /// Subject identifier generator, with metadata.
 pub trait MetaGenerator<V: Vocabulary, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Subject<V::Iri, V::BlankId>, M>;
+	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M>;
 }
 
 #[cfg(feature = "meta")]
 impl<'a, V: Vocabulary, M, G: MetaGenerator<V, M>> MetaGenerator<V, M> for &'a mut G {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Subject<V::Iri, V::BlankId>, M> {
+	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M> {
 		(*self).next(vocabulary)
 	}
 }
@@ -71,14 +71,14 @@ impl<G, M> WithMetadata<G, M> {
 
 #[cfg(feature = "meta")]
 impl<V: Vocabulary, G: Generator<V>, M> Generator<V> for WithMetadata<G, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId> {
+	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
 		self.generator.next(vocabulary)
 	}
 }
 
 #[cfg(feature = "meta")]
 impl<V: Vocabulary, G: Generator<V>, M: Clone> MetaGenerator<V, M> for WithMetadata<G, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Subject<V::Iri, V::BlankId>, M> {
+	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M> {
 		Meta(self.generator.next(vocabulary), self.metadata.clone())
 	}
 }
@@ -171,8 +171,8 @@ impl Blank {
 }
 
 impl<V: Vocabulary + BlankIdVocabularyMut> Generator<V> for Blank {
-	fn next(&mut self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId> {
-		Subject::Blank(vocabulary.insert_blank_id(&self.next_blank_id()))
+	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
+		Id::Blank(vocabulary.insert_blank_id(&self.next_blank_id()))
 	}
 }
 
@@ -257,7 +257,7 @@ impl Uuid {
 	feature = "uuid-generator-v5"
 ))]
 impl<V: crate::Vocabulary + crate::IriVocabularyMut> Generator<V> for Uuid {
-	fn next(&mut self, vocabulary: &mut V) -> Subject<V::Iri, V::BlankId> {
+	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
 		unsafe {
 			let mut buffer = Vec::with_capacity(uuid::adapter::Urn::LENGTH);
 			let ptr = buffer.as_mut_ptr();
@@ -274,7 +274,7 @@ impl<V: crate::Vocabulary + crate::IriVocabularyMut> Generator<V> for Uuid {
 			let buffer = Vec::from_raw_parts(ptr, len, capacity);
 			let p = iref::parsing::ParsedIriRef::new(&buffer).unwrap();
 			let iri = iref::IriBuf::from_raw_parts(buffer, p);
-			Subject::Iri(vocabulary.insert(iri.as_iri()))
+			Id::Iri(vocabulary.insert(iri.as_iri()))
 		}
 	}
 }
@@ -296,7 +296,7 @@ mod tests {
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: Subject = uuid_gen.next(&mut ());
+			let reference: Id = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}
@@ -306,7 +306,7 @@ mod tests {
 	fn uuidv4_iri() {
 		let mut uuid_gen = Uuid::V4;
 		for _ in 0..100 {
-			let reference: Subject = uuid_gen.next(&mut ());
+			let reference: Id = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}
@@ -319,7 +319,7 @@ mod tests {
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: Subject = uuid_gen.next(&mut ());
+			let reference: Id = uuid_gen.next(&mut ());
 			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
 		}
 	}
@@ -340,10 +340,7 @@ impl<'a, 'v, G: Generator<V>, V: VocabularyMut, S> Generator<vocabulary::Scoped<
 where
 	V::BlankId: Clone,
 {
-	fn next(
-		&mut self,
-		vocabulary: &mut vocabulary::Scoped<'v, V, S>,
-	) -> Subject<V::Iri, V::BlankId> {
+	fn next(&mut self, vocabulary: &mut vocabulary::Scoped<'v, V, S>) -> Id<V::Iri, V::BlankId> {
 		self.0.next(vocabulary.inner)
 	}
 }

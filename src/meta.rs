@@ -1,6 +1,4 @@
-use crate::{
-	BlankIdBuf, GraphLabel, IriVocabularyMut, Quad, StringLiteral, Subject, Triple, VocabularyMut,
-};
+use crate::{BlankIdBuf, GraphLabel, Id, IriVocabularyMut, Quad, Subject, Triple, VocabularyMut};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use locspan::{Meta, Strip};
@@ -11,19 +9,19 @@ use std::fmt;
 use contextual::DisplayWithContext;
 
 /// gRDF term with literal with metadata.
-pub type Term<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+pub type Term<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
 	crate::Term<I, B, Literal<M, S, I, L>>;
 
 /// RDF object with literal with metadata.
-pub type Object<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+pub type Object<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
 	crate::Object<I, B, Literal<M, S, I, L>>;
 
 /// gRDF term with metadata.
-pub type MetaTerm<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+pub type MetaTerm<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
 	Meta<Term<M, I, B, S, L>, M>;
 
 /// RDF object with metadata.
-pub type MetaObject<M, I = IriBuf, B = BlankIdBuf, S = StringLiteral, L = LanguageTagBuf> =
+pub type MetaObject<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
 	Meta<Object<M, I, B, S, L>, M>;
 
 /// Quad with metadata.
@@ -36,7 +34,7 @@ pub type MetaRdfQuad<M> =
 /// gRDF quad with metadata.
 pub type MetaGrdfQuad<M> = Meta<Quad<MetaTerm<M>, MetaTerm<M>, MetaTerm<M>, MetaTerm<M>>, M>;
 
-impl<I, B> Strip for Subject<I, B> {
+impl<I, B> Strip for Id<I, B> {
 	type Stripped = Self;
 
 	fn strip(self) -> Self {
@@ -61,7 +59,7 @@ impl<I, B> Strip for Subject<I, B> {
 )]
 #[locspan(ignore(M))]
 #[locspan(stripped(S, I, L))]
-pub enum Literal<M, S = StringLiteral, I = IriBuf, L = LanguageTagBuf> {
+pub enum Literal<M, S = String, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
 	String(#[locspan(deref_stripped)] Meta<S, M>),
 
@@ -167,8 +165,7 @@ impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> D
 impl<I, B, L: Strip> super::Term<I, B, L> {
 	pub fn strip(self) -> super::Term<I, B, L::Stripped> {
 		match self {
-			Self::Blank(id) => super::Term::Blank(id),
-			Self::Iri(iri) => super::Term::Iri(iri),
+			Self::Id(id) => super::Term::Id(id.strip()),
 			Self::Literal(lit) => super::Term::Literal(lit.strip()),
 		}
 	}
@@ -267,8 +264,7 @@ impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
 		M: Clone,
 	{
 		match self {
-			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
-			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Id(id) => Term::Id(id.inserted_into(vocabulary)),
 			Self::Literal(l) => Term::Literal(l.inserted_into(vocabulary)),
 		}
 	}
@@ -279,8 +275,7 @@ impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
 		vocabulary: &mut V,
 	) -> Term<M, V::Iri, V::BlankId, S, L> {
 		match self {
-			Self::Blank(b) => Term::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
-			Self::Iri(i) => Term::Iri(vocabulary.insert(i.as_iri())),
+			Self::Id(id) => Term::Id(id.insert_into(vocabulary)),
 			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
 		}
 	}

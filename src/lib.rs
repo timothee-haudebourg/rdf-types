@@ -52,7 +52,7 @@ pub use generator::MetaGenerator;
 		StrippedHash
 	)
 )]
-pub struct Triple<S = Subject, P = IriBuf, O = Object>(pub S, pub P, pub O);
+pub struct Triple<S = Id, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
@@ -78,13 +78,13 @@ impl<S1: PartialOrd<S2>, P1: PartialOrd<P2>, O1: PartialOrd<O2>, S2, P2, O2>
 
 impl Triple {
 	pub fn into_grdf(self) -> GrdfTriple {
-		Triple(self.0.into_term(), Term::Iri(self.1), self.2)
+		Triple(self.0.into_term(), Term::Id(Id::Iri(self.1)), self.2)
 	}
 
 	pub fn as_grdf(&self) -> GrdfTripleRef {
 		Triple(
 			self.0.as_term_ref(),
-			TermRef::Iri(self.1.as_iri()),
+			TermRef::Id(Id::Iri(self.1.as_iri())),
 			self.2.as_term_ref(),
 		)
 	}
@@ -176,16 +176,12 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
-impl<S, L> Triple<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>> {
+impl<S, L> Triple<Id, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>> {
 	#[allow(clippy::type_complexity)]
 	pub fn inserted_into<V: VocabularyMut>(
 		&self,
 		vocabulary: &mut V,
-	) -> Triple<
-		Subject<V::Iri, V::BlankId>,
-		V::Iri,
-		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
-	>
+	) -> Triple<Id<V::Iri, V::BlankId>, V::Iri, Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>>
 	where
 		S: Clone,
 		L: Clone,
@@ -201,11 +197,7 @@ impl<S, L> Triple<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf,
 	pub fn insert_into<V: VocabularyMut>(
 		self,
 		vocabulary: &mut V,
-	) -> Triple<
-		Subject<V::Iri, V::BlankId>,
-		V::Iri,
-		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
-	> {
+	) -> Triple<Id<V::Iri, V::BlankId>, V::Iri, Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>> {
 		Triple(
 			self.0.insert_into(vocabulary),
 			vocabulary.insert(self.1.as_iri()),
@@ -313,7 +305,7 @@ impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWith
 }
 
 /// RDF triple reference.
-pub type TripleRef<'a> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>>;
+pub type TripleRef<'a> = Triple<IdRef<'a>, Iri<'a>, ObjectRef<'a>>;
 
 /// gRDF triple.
 pub type GrdfTriple = Triple<Term, Term, Term>;
@@ -333,18 +325,13 @@ pub type GrdfTripleRef<'a> = Triple<TermRef<'a>, TermRef<'a>, TermRef<'a>>;
 		StrippedHash
 	)
 )]
-pub struct Quad<S = Subject, P = IriBuf, O = Object, G = GraphLabel>(
-	pub S,
-	pub P,
-	pub O,
-	pub Option<G>,
-);
+pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
 
 impl Quad {
 	pub fn into_grdf(self) -> GrdfQuad {
 		Quad(
 			self.0.into_term(),
-			Term::Iri(self.1),
+			Term::Id(Id::Iri(self.1)),
 			self.2,
 			self.3.map(GraphLabel::into_term),
 		)
@@ -353,20 +340,20 @@ impl Quad {
 	pub fn as_grdf(&self) -> GrdfQuadRef {
 		Quad(
 			self.0.as_term_ref(),
-			TermRef::Iri(self.1.as_iri()),
+			TermRef::Id(Id::Iri(self.1.as_iri())),
 			self.2.as_term_ref(),
 			self.3.as_ref().map(GraphLabel::as_term_ref),
 		)
 	}
 }
 
-impl<S, L> Quad<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>, GraphLabel> {
+impl<S, L> Quad<Id, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>>, GraphLabel> {
 	#[allow(clippy::type_complexity)]
 	pub fn inserted_into<V: VocabularyMut>(
 		&self,
 		vocabulary: &mut V,
 	) -> Quad<
-		Subject<V::Iri, V::BlankId>,
+		Id<V::Iri, V::BlankId>,
 		V::Iri,
 		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
 		GraphLabel<V::Iri, V::BlankId>,
@@ -388,7 +375,7 @@ impl<S, L> Quad<Subject, IriBuf, Object<IriBuf, BlankIdBuf, Literal<S, IriBuf, L
 		self,
 		vocabulary: &mut V,
 	) -> Quad<
-		Subject<V::Iri, V::BlankId>,
+		Id<V::Iri, V::BlankId>,
 		V::Iri,
 		Object<V::Iri, V::BlankId, Literal<S, V::Iri, L>>,
 		GraphLabel<V::Iri, V::BlankId>,
@@ -755,7 +742,7 @@ impl<'a> From<GrdfQuadRef<'a>> for GrdfQuad {
 }
 
 /// RDF quad reference.
-pub type QuadRef<'a> = Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
+pub type QuadRef<'a> = Quad<IdRef<'a>, Iri<'a>, ObjectRef<'a>, GraphLabelRef<'a>>;
 
 impl<'a> QuadRef<'a> {
 	#[inline(always)]
@@ -776,9 +763,9 @@ impl<'a> From<&'a Quad> for QuadRef<'a> {
 	}
 }
 
-impl<'a> From<Quad<&'a Subject, &'a IriBuf, &'a Object, &'a GraphLabel>> for QuadRef<'a> {
+impl<'a> From<Quad<&'a Id, &'a IriBuf, &'a Object, &'a GraphLabel>> for QuadRef<'a> {
 	#[inline(always)]
-	fn from(Quad(s, p, o, g): Quad<&'a Subject, &'a IriBuf, &'a Object, &'a GraphLabel>) -> Self {
+	fn from(Quad(s, p, o, g): Quad<&'a Id, &'a IriBuf, &'a Object, &'a GraphLabel>) -> Self {
 		Quad(
 			s.as_subject_ref(),
 			p.as_iri(),

@@ -9,6 +9,25 @@ pub trait RdfDisplay {
 	}
 }
 
+impl RdfDisplay for String {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		write!(f, "\"")?;
+
+		for c in self.chars() {
+			match c {
+				'"' => write!(f, "\\\""),
+				'\\' => write!(f, "\\\\"),
+				'\n' => write!(f, "\\n"),
+				'\r' => write!(f, "\\r"),
+				c => c.fmt(f),
+			}?
+		}
+
+		write!(f, "\"")
+	}
+}
+
 impl<'a> RdfDisplay for iref::IriRef<'a> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "<")?;
