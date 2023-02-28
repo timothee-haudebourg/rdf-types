@@ -1,0 +1,230 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.14.0] - 2023-02-28
+
+### Added
+
+- [6f1d2b6] Added a `Namespace` trait.
+- [6f1d2b6] Added `AsRdfTerm` trait.
+
+### Changed
+
+- [6f1d2b6] Changed type parameters of `Term`.
+- [6f1d2b6] Changed meaning of the `I` param in `Term`: it is now the node id type.
+- [6f1d2b6] Changed the `Generator` parameter: `V: Vocabulary` -> 'N: Namespace'.
+
+### Removed
+
+- [6f1d2b6] Removed the `B` param in `Term`, now included in `I`.
+- [6f1d2b6] Removed `*Ref` types.
+
+## [0.13.0] - 2023-02-28
+
+### Changed
+
+- [f8b3571] Change: factorize `Subject` (now `Id`) type in `Term`.
+- [f8b3571] Changed `Subject` type name for `Id` (a type alias remains).
+
+### Removed
+
+- [f8b3571] Removed `Term` variants `Iri` and `Blank` for a single `Id` variant.
+
+## [0.12.19] - 2023-02-20
+
+### Added
+
+- [621caf6] Add `Triple::strip_all_but_predicate`.
+
+## [0.12.18] - 2023-02-20
+
+### Added
+
+- [fdffc81] Add `Triple::into_quad` and `Quad::into_triple`.
+
+## [0.12.17] - 2023-01-24
+
+### Added
+
+- [59cb892] Add `PartialEq<str>` impl for `BlankId`.
+- [a902355] Add `vocabulary::Scoped` & `genarator::Unscoped`.
+
+## [0.12.16] - 2023-01-20
+
+### Added
+
+- [82a66d2] Add `insert_into` function to `meta` types.
+- [82a66d2] Add more type parameters to `meta::Term` & `meta::Object`.
+
+## [0.12.15] - 2023-01-09
+
+### Fixed
+
+- [4955511] Fix RDF display of IRIs.
+
+## [0.12.14] - 2023-01-05
+
+### Added
+
+- [c4eabdf] Add `Subject::into_iri` and `into_blank`.
+
+## [0.12.13] - 2022-12-20
+
+### Added
+
+- [c63d3b2] Add `QuadRef` from `Quad`-of-refs conversion.
+
+## [0.12.12] - 2022-12-20
+
+### Fixed
+
+- [5d58558] Fix `GrdfQuad::as_quad_ref` name into `as_grdf_quad_ref`.
+
+## [0.12.11] - 2022-12-20
+
+### Added
+
+- [bc79911] Add mut accessors & owned/borrowed conversions.
+
+## [0.12.10] - 2022-12-19
+
+### Changed
+
+- [26ac486] Change string literal display function to be compatible with URDNA2015.
+
+## [0.12.9] - 2022-12-14
+
+### Added
+
+- [28e67fa] Add `insert_into` methods for `Quad` & `Triple`.
+
+## [0.12.8] - 2022-12-14
+
+### Added
+
+- [4ddc0fd] Add `insert_into` method for `Subject`.
+
+## [0.12.7] - 2022-12-14
+
+### Added
+
+- [c5d8e30] Add `Strip` impl for `Subject`.
+
+## [0.12.6] - 2022-12-14
+
+### Added
+
+- [4357754] Add `strip_all_but_predicate` & map functions.
+
+## [0.12.5] - 2022-12-14
+
+### Added
+
+- [7d9c1e2] Add `insert_into` method to insert into vocab.
+
+## [0.12.2] - 2022-10-21
+
+### Added
+
+- [fc97f5e] impl `RdfDisplay` for `IriIndex`/`BlankIdIndex`.
+
+## [0.12.1] - 2022-10-21
+
+### Added
+
+- [31c3d3b] Add `RdfDisplay` impl for `Quad`/`Triple`.
+
+## [0.11.0] - 2022-10-20
+
+### Added
+
+- [e4b35a1] Add `RdfDisplay` trait.
+
+### Changed
+
+- [e4b35a1] Changes the way terms are displayed.
+
+## [0.10.4] - 2022-10-20
+
+### Added
+
+- [7dcf841] Add `with_metadata` methods for generators.
+
+## [0.10.3] - 2022-10-20
+
+### Added
+
+- [35fdd1d] Impl `MetaGenerator` for `&mut G`.
+
+## [0.10.2] - 2022-10-20
+
+### Added
+
+- [d67fe91] Add `Subject::as_str`.
+
+### Fixed
+
+- [d67fe91] Fix generator tests.
+
+## [0.10.1] - 2022-10-20
+
+### Added
+
+- [b71180e] Add README.md
+- [cbba710] Add `new` constructors.
+- [ac82e7d] Add blank id creation utility functions.
+- [3174eaa] Add CI.
+- [d35c668] Add more functions.
+- [29bcfdf] Add derives.
+- [b6d2f49] Add `Debug` impl on `InvalidBlankId`
+- [2df77fc] Add `Display` impl for terms.
+- [2d04c7a] Add `BlankId` `PartialEq` impls.
+- [617148f] Add `locspan::Strip` impls.
+- [8b0c3d8] Add `gRDF` related functions & types.
+- [f5f597b] Add `Strip` impl for quads & triples.
+- [2ae2f4e] Add convenient `Loc` type aliases.
+- [1536170] Add parameters to `Term`.
+- [db23eed] Add `Borrow` impl for `&BlankIdBuf`.
+- [9ac6deb] Add `Term`/`Object` in `loc` module.
+- [c60d1a5] Add `StrippedPartialEq` impl in `loc` module.
+- [0224b0f] Add type parameters to the `Literal` type.
+- [f7d8f29] Add `PartialEq<BlankIdBuf>` impl for `&BlankId`.
+- [fcf4591] Add `Stripped*` impls for `Term` and `Subject`.
+- [a7c373a] Add `Debug` impls.
+- [5fe7505] Add `AsRef<str>` impls.
+- [0d59ff1] Add more `AsRef` impls for `BlankId*`.
+- [eb70cea] Add vocabulary types and traits.
+- [49c89c4] Add `AsStrWithVocabulary` trait.
+- [dd57479] Add `IntoStrWithVocabulary` trait.
+- [ed344d8] Add subject id generators.
+
+### Build
+
+- [8f34716] Upgrade `locspan` to version 0.7
+- [f4f908a] Upgrade `langtag` to 0.3, move to 0.8.
+
+### Changed
+
+- [9fc6cd6] Move to version 0.1.2
+- [046c463] Move to 0.2.0
+- [6ac8c9d] Move to version `0.7.1`
+
+### Fixed
+
+- [2216d99] Fix `loc` feature.
+- [959ace4] Fix wront iri type.
+- [5cfc14b] Fix the `loc` module.
+- [72a9b46] Fix loc module.
+- [313ed93] Fix `Subject::into_term` signature.
+- [ff9661f] Fix type parameters on `loc::Literal`
+- [62b6175] Fix `Stripped*` impls.
+- [845ee33] Fix `Stripped*` impls for `meta::Literal`
+
+### Removed
+
+- [78aa012] Remove one keyword.
+
