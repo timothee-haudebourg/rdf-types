@@ -38,20 +38,24 @@ impl<I: AsBlankId, L> AsBlankId for Term<I, L> {
 }
 
 /// Types that can be turned into a blank node identifier.
-pub trait IntoBlankId: MaybeBlankId {
+pub trait IntoBlankId: MaybeBlankId + Sized {
 	/// Converts the value into a blank node identifier, if any.
-	fn into_blank(self) -> Option<Self::BlankId>;
+	fn into_blank(self) -> Option<Self::BlankId> {
+		self.try_into_blank().ok()
+	}
+
+	fn try_into_blank(self) -> Result<Self::BlankId, Self>;
 }
 
 impl<I, B> IntoBlankId for Id<I, B> {
-	fn into_blank(self) -> Option<Self::BlankId> {
-		self.into_blank()
+	fn try_into_blank(self) -> Result<Self::BlankId, Self> {
+		self.try_into_blank().map_err(Self::Iri)
 	}
 }
 
 impl<I: IntoBlankId, L> IntoBlankId for Term<I, L> {
-	fn into_blank(self) -> Option<Self::BlankId> {
-		self.into_blank()
+	fn try_into_blank(self) -> Result<Self::BlankId, Self> {
+		self.try_into_blank()
 	}
 }
 

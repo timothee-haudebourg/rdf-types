@@ -95,6 +95,13 @@ impl<I, L> Term<I, L> {
 		}
 	}
 
+	pub fn try_into_id(self) -> Result<I, L> {
+		match self {
+			Self::Id(id) => Ok(id),
+			Self::Literal(l) => Err(l),
+		}
+	}
+
 	pub fn as_literal(&self) -> Option<&L> {
 		match self {
 			Self::Literal(lit) => Some(lit),
@@ -106,6 +113,13 @@ impl<I, L> Term<I, L> {
 		match self {
 			Self::Literal(lit) => Some(lit),
 			_ => None,
+		}
+	}
+
+	pub fn try_into_literal(self) -> Result<L, I> {
+		match self {
+			Self::Literal(lit) => Ok(lit),
+			Self::Id(id) => Err(id),
 		}
 	}
 
@@ -139,14 +153,21 @@ impl<I, L> Term<I, L> {
 		}
 	}
 
-	pub fn into_blank(self) -> Option<I::BlankId>
+	pub fn try_into_blank(self) -> Result<I::BlankId, Self>
 	where
 		I: IntoBlankId,
 	{
 		match self {
-			Self::Id(id) => id.into_blank(),
-			_ => None,
+			Self::Id(id) => id.try_into_blank().map_err(Self::Id),
+			other => Err(other),
 		}
+	}
+
+	pub fn into_blank(self) -> Option<I::BlankId>
+	where
+		I: IntoBlankId,
+	{
+		self.try_into_blank().ok()
 	}
 
 	pub fn as_iri(&self) -> Option<&I::Iri>
@@ -159,14 +180,21 @@ impl<I, L> Term<I, L> {
 		}
 	}
 
-	pub fn into_iri(self) -> Option<I::Iri>
+	pub fn try_into_iri(self) -> Result<I::Iri, Self>
 	where
 		I: IntoIri,
 	{
 		match self {
-			Self::Id(id) => id.into_iri(),
-			_ => None,
+			Self::Id(id) => id.try_into_iri().map_err(Self::Id),
+			other => Err(other),
 		}
+	}
+
+	pub fn into_iri(self) -> Option<I::Iri>
+	where
+		I: IntoIri,
+	{
+		self.try_into_iri().ok()
 	}
 
 	/// Converts from `&Term<I, L>` to `Term<&I, &L>`.

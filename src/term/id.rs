@@ -52,18 +52,26 @@ impl<I, B> Id<I, B> {
 		}
 	}
 
-	pub fn into_blank(self) -> Option<B> {
+	pub fn try_into_blank(self) -> Result<B, I> {
 		match self {
-			Self::Blank(id) => Some(id),
-			_ => None,
+			Self::Blank(id) => Ok(id),
+			Self::Iri(iri) => Err(iri),
+		}
+	}
+
+	pub fn into_blank(self) -> Option<B> {
+		self.try_into_blank().ok()
+	}
+
+	pub fn try_into_iri(self) -> Result<I, B> {
+		match self {
+			Self::Iri(iri) => Ok(iri),
+			Self::Blank(b) => Err(b),
 		}
 	}
 
 	pub fn into_iri(self) -> Option<I> {
-		match self {
-			Self::Iri(iri) => Some(iri),
-			_ => None,
-		}
+		self.try_into_iri().ok()
 	}
 
 	/// Converts this id reference into the term `Term::Id(&id)`.

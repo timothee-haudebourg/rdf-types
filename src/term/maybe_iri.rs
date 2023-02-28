@@ -38,20 +38,24 @@ impl<I: AsIri, L> AsIri for Term<I, L> {
 }
 
 /// Types that can be turned into an iri.
-pub trait IntoIri: MaybeIri {
+pub trait IntoIri: MaybeIri + Sized {
 	/// Converts the value into an iri, if any.
-	fn into_iri(self) -> Option<Self::Iri>;
+	fn into_iri(self) -> Option<Self::Iri> {
+		self.try_into_iri().ok()
+	}
+
+	fn try_into_iri(self) -> Result<Self::Iri, Self>;
 }
 
 impl<I, B> IntoIri for Id<I, B> {
-	fn into_iri(self) -> Option<I> {
-		self.into_iri()
+	fn try_into_iri(self) -> Result<I, Self> {
+		self.try_into_iri().map_err(Self::Blank)
 	}
 }
 
 impl<I: IntoIri, L> IntoIri for Term<I, L> {
-	fn into_iri(self) -> Option<Self::Iri> {
-		self.into_iri()
+	fn try_into_iri(self) -> Result<Self::Iri, Self> {
+		self.try_into_iri()
 	}
 }
 
