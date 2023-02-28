@@ -59,6 +59,20 @@ impl<I: locspan::StrippedHash, L: locspan::StrippedHash> locspan::StrippedHash f
 }
 
 impl<I, L> Term<I, L> {
+	pub fn blank(id: I::BlankId) -> Self
+	where
+		I: FromBlankId,
+	{
+		Self::Id(I::from_blank(id))
+	}
+
+	pub fn iri(iri: I::Iri) -> Self
+	where
+		I: FromIri,
+	{
+		Self::Id(I::from_iri(iri))
+	}
+
 	pub fn is_id(&self) -> bool {
 		matches!(self, Self::Id(_))
 	}
