@@ -9,20 +9,20 @@ use std::fmt;
 use contextual::DisplayWithContext;
 
 /// gRDF term with literal with metadata.
-pub type Term<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
-	crate::Term<I, B, Literal<M, S, I, L>>;
+pub type Term<M, I = Id, S = String, T = IriBuf, L = LanguageTagBuf> =
+	crate::Term<I, Literal<M, S, T, L>>;
 
 /// RDF object with literal with metadata.
-pub type Object<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
-	crate::Object<I, B, Literal<M, S, I, L>>;
+pub type Object<M, I = Id, S = String, T = IriBuf, L = LanguageTagBuf> =
+	crate::Object<I, Literal<M, S, T, L>>;
 
 /// gRDF term with metadata.
-pub type MetaTerm<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
-	Meta<Term<M, I, B, S, L>, M>;
+pub type MetaTerm<M, I = Id, S = String, T = IriBuf, L = LanguageTagBuf> =
+	Meta<Term<M, I, S, T, L>, M>;
 
 /// RDF object with metadata.
-pub type MetaObject<M, I = IriBuf, B = BlankIdBuf, S = String, L = LanguageTagBuf> =
-	Meta<Object<M, I, B, S, L>, M>;
+pub type MetaObject<M, I = Id, S = String, T = IriBuf, L = LanguageTagBuf> =
+	Meta<Object<M, I, S, T, L>, M>;
 
 /// Quad with metadata.
 pub type MetaQuad<S, P, O, G, M> = Meta<Quad<Meta<S, M>, Meta<P, M>, Meta<O, M>, Meta<G, M>>, M>;
@@ -58,15 +58,15 @@ impl<I, B> Strip for Id<I, B> {
 	StrippedHash,
 )]
 #[locspan(ignore(M))]
-#[locspan(stripped(S, I, L))]
-pub enum Literal<M, S = String, I = IriBuf, L = LanguageTagBuf> {
+#[locspan(stripped(S, T, L))]
+pub enum Literal<M, S = String, T = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
 	String(#[locspan(deref_stripped)] Meta<S, M>),
 
 	/// Typed string literal.
 	TypedString(
 		#[locspan(deref_stripped)] Meta<S, M>,
-		#[locspan(deref_stripped)] Meta<I, M>,
+		#[locspan(deref_stripped)] Meta<T, M>,
 	),
 
 	/// Language string.
@@ -76,12 +76,12 @@ pub enum Literal<M, S = String, I = IriBuf, L = LanguageTagBuf> {
 	),
 }
 
-impl<M, S, I, L> Literal<M, S, I, L> {
+impl<M, S, T, L> Literal<M, S, T, L> {
 	pub fn is_typed(&self) -> bool {
 		matches!(self, Self::TypedString(_, _))
 	}
 
-	pub fn ty(&self) -> Option<&Meta<I, M>> {
+	pub fn ty(&self) -> Option<&Meta<T, M>> {
 		match self {
 			Self::TypedString(_, ty) => Some(ty),
 			_ => None,
@@ -115,7 +115,7 @@ impl<M, S, I, L> Literal<M, S, I, L> {
 		}
 	}
 
-	pub fn strip(self) -> super::Literal<S, I, L> {
+	pub fn strip(self) -> super::Literal<S, T, L> {
 		match self {
 			Self::String(Meta(lit, _)) => super::Literal::String(lit),
 			Self::TypedString(Meta(lit, _), Meta(iri_ref, _)) => {
@@ -126,15 +126,15 @@ impl<M, S, I, L> Literal<M, S, I, L> {
 	}
 }
 
-impl<M, S, I, L> Strip for Literal<M, S, I, L> {
-	type Stripped = super::Literal<S, I, L>;
+impl<M, S, T, L> Strip for Literal<M, S, T, L> {
+	type Stripped = super::Literal<S, T, L>;
 
 	fn strip(self) -> Self::Stripped {
 		self.strip()
 	}
 }
 
-impl<M, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Literal<M, S, I, L> {
+impl<M, S: fmt::Display, T: fmt::Display, L: fmt::Display> fmt::Display for Literal<M, S, T, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::String(s) => s.value().fmt(f),
@@ -145,8 +145,8 @@ impl<M, S: fmt::Display, I: fmt::Display, L: fmt::Display> fmt::Display for Lite
 }
 
 #[cfg(feature = "contextual")]
-impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> DisplayWithContext<V>
-	for Literal<M, S, I, L>
+impl<M, S: fmt::Display, T, L: fmt::Display, V: crate::IriVocabulary<Iri = T>> DisplayWithContext<V>
+	for Literal<M, S, T, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
@@ -162,8 +162,8 @@ impl<M, S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> D
 	}
 }
 
-impl<I, B, L: Strip> super::Term<I, B, L> {
-	pub fn strip(self) -> super::Term<I, B, L::Stripped> {
+impl<I: Strip, L: Strip> super::Term<I, L> {
+	pub fn strip(self) -> super::Term<I::Stripped, L::Stripped> {
 		match self {
 			Self::Id(id) => super::Term::Id(id.strip()),
 			Self::Literal(lit) => super::Term::Literal(lit.strip()),
@@ -171,8 +171,8 @@ impl<I, B, L: Strip> super::Term<I, B, L> {
 	}
 }
 
-impl<I, B, L: Strip> Strip for super::Term<I, B, L> {
-	type Stripped = super::Term<I, B, L::Stripped>;
+impl<I: Strip, L: Strip> Strip for super::Term<I, L> {
+	type Stripped = super::Term<I::Stripped, L::Stripped>;
 
 	fn strip(self) -> Self::Stripped {
 		self.strip()
@@ -252,12 +252,12 @@ impl<S, L, M> Literal<M, S, IriBuf, L> {
 	}
 }
 
-impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
+impl<S, L, M> Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L> {
 	#[allow(clippy::type_complexity)]
 	pub fn inserted_into<V: VocabularyMut>(
 		&self,
 		vocabulary: &mut V,
-	) -> Term<M, V::Iri, V::BlankId, S, L>
+	) -> Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>
 	where
 		S: Clone,
 		L: Clone,
@@ -273,7 +273,7 @@ impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
 	pub fn insert_into<V: VocabularyMut>(
 		self,
 		vocabulary: &mut V,
-	) -> Term<M, V::Iri, V::BlankId, S, L> {
+	) -> Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L> {
 		match self {
 			Self::Id(id) => Term::Id(id.insert_into(vocabulary)),
 			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
@@ -282,7 +282,7 @@ impl<S, L, M> Term<M, IriBuf, BlankIdBuf, S, L> {
 }
 
 impl<S, L, M>
-	Triple<Meta<Subject, M>, Meta<IriBuf, M>, Meta<Object<M, IriBuf, BlankIdBuf, S, L>, M>>
+	Triple<Meta<Subject, M>, Meta<IriBuf, M>, Meta<Object<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>>
 {
 	#[allow(clippy::type_complexity)]
 	pub fn inserted_into<V: VocabularyMut>(
@@ -291,7 +291,7 @@ impl<S, L, M>
 	) -> Triple<
 		Meta<Subject<V::Iri, V::BlankId>, M>,
 		Meta<V::Iri, M>,
-		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Object<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	>
 	where
 		S: Clone,
@@ -315,7 +315,7 @@ impl<S, L, M>
 	) -> Triple<
 		Meta<Subject<V::Iri, V::BlankId>, M>,
 		Meta<V::Iri, M>,
-		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Object<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	> {
 		Triple(
 			self.0.map(|s| s.insert_into(vocabulary)),
@@ -327,9 +327,9 @@ impl<S, L, M>
 
 impl<S, L, M>
 	Triple<
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
 	>
 {
 	#[allow(clippy::type_complexity)]
@@ -337,9 +337,9 @@ impl<S, L, M>
 		&self,
 		vocabulary: &mut V,
 	) -> Triple<
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	>
 	where
 		S: Clone,
@@ -358,9 +358,9 @@ impl<S, L, M>
 		self,
 		vocabulary: &mut V,
 	) -> Triple<
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	> {
 		Triple(
 			self.0.map(|s| s.insert_into(vocabulary)),
@@ -374,7 +374,7 @@ impl<S, L, M>
 	Quad<
 		Meta<Subject, M>,
 		Meta<IriBuf, M>,
-		Meta<Object<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Object<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
 		Meta<GraphLabel, M>,
 	>
 {
@@ -385,7 +385,7 @@ impl<S, L, M>
 	) -> Quad<
 		Meta<Subject<V::Iri, V::BlankId>, M>,
 		Meta<V::Iri, M>,
-		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Object<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 		Meta<GraphLabel<V::Iri, V::BlankId>, M>,
 	>
 	where
@@ -413,7 +413,7 @@ impl<S, L, M>
 	) -> Quad<
 		Meta<Subject<V::Iri, V::BlankId>, M>,
 		Meta<V::Iri, M>,
-		Meta<Object<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Object<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 		Meta<GraphLabel<V::Iri, V::BlankId>, M>,
 	> {
 		Quad(
@@ -427,10 +427,10 @@ impl<S, L, M>
 
 impl<S, L, M>
 	Quad<
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
-		Meta<Term<M, IriBuf, BlankIdBuf, S, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
+		Meta<Term<M, Id<IriBuf, BlankIdBuf>, S, IriBuf, L>, M>,
 	>
 {
 	#[allow(clippy::type_complexity)]
@@ -438,10 +438,10 @@ impl<S, L, M>
 		&self,
 		vocabulary: &mut V,
 	) -> Quad<
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	>
 	where
 		S: Clone,
@@ -463,10 +463,10 @@ impl<S, L, M>
 		self,
 		vocabulary: &mut V,
 	) -> Quad<
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
-		Meta<Term<M, V::Iri, V::BlankId, S, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
+		Meta<Term<M, Id<V::Iri, V::BlankId>, S, V::Iri, L>, M>,
 	> {
 		Quad(
 			self.0.map(|s| s.insert_into(vocabulary)),

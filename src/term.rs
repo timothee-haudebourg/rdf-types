@@ -1,5 +1,5 @@
-use crate::{BlankId, BlankIdBuf, Literal, RdfDisplay, VocabularyMut};
-use iref::{Iri, IriBuf};
+use crate::{BlankIdBuf, Literal, RdfDisplay, VocabularyMut};
+use iref::IriBuf;
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
 
@@ -11,29 +11,27 @@ use locspan_derive::*;
 
 /// gRDF term.
 ///
-/// Either a blank node identifier, IRI or literal value.
+/// Either a node identifier or a literal value.
 ///
 /// # `Hash` implementation
 ///
 /// It is guaranteed that the `Hash` implementation of `Term` is *transparent*,
-/// meaning that the hash of `Term::Blank(id)` the same as `id`, the hash of
-/// `Term::Iri(iri)` is the same as `iri` and the hash of `Term::Literal(l)` is
-/// the same as `l`.
+/// meaning that the hash of `Term::Id(id)` the same as `id` and the hash of
+/// `Term::Literal(l)` is the same as `l`.
 #[derive(Clone, Copy, Eq, Ord, Debug)]
 #[cfg_attr(
 	feature = "meta",
 	derive(StrippedPartialEq, StrippedEq, StrippedPartialOrd, StrippedOrd)
 )]
-#[cfg_attr(feature = "meta", locspan(stripped(B, I)))]
-pub enum Term<I = IriBuf, B = BlankIdBuf, L = Literal<String, I>> {
+pub enum Term<I = Id, L = Literal> {
 	/// Node identifier.
-	Id(Id<I, B>),
+	Id(I),
 
 	/// Literal value.
 	Literal(L),
 }
 
-impl<I: Hash, B: Hash, L: Hash> Hash for Term<I, B, L> {
+impl<I: Hash, L: Hash> Hash for Term<I, L> {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 		match self {
 			Self::Id(id) => id.hash(state),
@@ -43,37 +41,92 @@ impl<I: Hash, B: Hash, L: Hash> Hash for Term<I, B, L> {
 }
 
 #[cfg(feature = "meta")]
-impl<I: Hash, B: Hash, L: locspan::StrippedHash> locspan::StrippedHash for Term<I, B, L> {
+impl<I: locspan::StrippedHash, L: locspan::StrippedHash> locspan::StrippedHash for Term<I, L> {
 	fn stripped_hash<H: std::hash::Hasher>(&self, state: &mut H) {
 		match self {
-			Self::Id(id) => id.hash(state),
+			Self::Id(id) => id.stripped_hash(state),
 			Self::Literal(l) => l.stripped_hash(state),
 		}
 	}
 }
 
-impl<I, B, L> Term<I, B, L> {
+impl<I, L> Term<I, L> {
 	pub fn is_id(&self) -> bool {
 		matches!(self, Self::Id(_))
-	}
-
-	pub fn is_blank(&self) -> bool {
-		matches!(self, Self::Id(Id::Blank(_)))
-	}
-
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Id(Id::Iri(_)))
 	}
 
 	pub fn is_literal(&self) -> bool {
 		matches!(self, Self::Literal(_))
 	}
 
-	pub fn as_id(&self) -> Option<&Id<I, B>> {
+	pub fn as_id(&self) -> Option<&I> {
 		match self {
 			Self::Id(id) => Some(id),
 			_ => None,
 		}
+	}
+
+	pub fn into_id(self) -> Option<I> {
+		match self {
+			Self::Id(id) => Some(id),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<&L> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None,
+		}
+	}
+
+	pub fn into_literal(self) -> Option<L> {
+		match self {
+			Self::Literal(lit) => Some(lit),
+			_ => None,
+		}
+	}
+
+	/// Converts from `&Term<I, L>` to `Term<&I, &L>`.
+	pub fn as_ref(&self) -> Term<&I, &L> {
+		match self {
+			Self::Id(id) => Term::Id(id),
+			Self::Literal(l) => Term::Literal(l),
+		}
+	}
+}
+
+impl<'a, I, L> Term<&'a I, &'a L> {
+	pub fn cloned(self) -> Term<I, L>
+	where
+		I: Clone,
+		L: Clone,
+	{
+		match self {
+			Self::Id(id) => Term::Id(id.clone()),
+			Self::Literal(l) => Term::Literal(l.clone()),
+		}
+	}
+
+	pub fn copied(self) -> Term<I, L>
+	where
+		I: Copy,
+		L: Copy,
+	{
+		match self {
+			Self::Id(id) => Term::Id(*id),
+			Self::Literal(l) => Term::Literal(*l),
+		}
+	}
+}
+
+impl<I, B, L> Term<Id<I, B>, L> {
+	pub fn is_blank(&self) -> bool {
+		matches!(self, Self::Id(Id::Blank(_)))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Id(Id::Iri(_)))
 	}
 
 	pub fn as_blank(&self) -> Option<&B> {
@@ -97,54 +150,20 @@ impl<I, B, L> Term<I, B, L> {
 		}
 	}
 
-	pub fn into_id(self) -> Option<Id<I, B>> {
-		match self {
-			Self::Id(id) => Some(id),
-			_ => None,
-		}
-	}
-
 	pub fn into_iri(self) -> Option<I> {
 		match self {
 			Self::Id(id) => id.into_iri(),
 			_ => None,
 		}
 	}
-
-	pub fn as_literal(&self) -> Option<&L> {
-		match self {
-			Self::Literal(lit) => Some(lit),
-			_ => None,
-		}
-	}
-
-	pub fn into_literal(self) -> Option<L> {
-		match self {
-			Self::Literal(lit) => Some(lit),
-			_ => None,
-		}
-	}
 }
 
-impl Term {
-	pub fn as_term_ref(&self) -> TermRef {
-		match self {
-			Self::Id(id) => TermRef::Id(id.as_subject_ref()),
-			Self::Literal(lit) => TermRef::Literal(lit),
-		}
-	}
-
-	pub fn as_object_ref(&self) -> TermRef {
-		self.as_term_ref()
-	}
-}
-
-impl<S, L> Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>> {
+impl<S, L> Term<Id<IriBuf, BlankIdBuf>, Literal<S, IriBuf, L>> {
 	#[allow(clippy::type_complexity)]
 	pub fn inserted_into<V: VocabularyMut>(
 		&self,
 		vocabulary: &mut V,
-	) -> Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>>
+	) -> Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>
 	where
 		S: Clone,
 		L: Clone,
@@ -159,7 +178,7 @@ impl<S, L> Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>> {
 	pub fn insert_into<V: VocabularyMut>(
 		self,
 		vocabulary: &mut V,
-	) -> Term<V::Iri, V::BlankId, Literal<S, V::Iri, L>> {
+	) -> Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>> {
 		match self {
 			Self::Id(id) => Term::Id(id.insert_into(vocabulary)),
 			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
@@ -167,10 +186,8 @@ impl<S, L> Term<IriBuf, BlankIdBuf, Literal<S, IriBuf, L>> {
 	}
 }
 
-impl<I1: PartialEq<I2>, B1: PartialEq<B2>, L1: PartialEq<L2>, I2, B2, L2>
-	PartialEq<Term<I2, B2, L2>> for Term<I1, B1, L1>
-{
-	fn eq(&self, other: &Term<I2, B2, L2>) -> bool {
+impl<I1: PartialEq<I2>, L1: PartialEq<L2>, I2, L2> PartialEq<Term<I2, L2>> for Term<I1, L1> {
+	fn eq(&self, other: &Term<I2, L2>) -> bool {
 		match (self, other) {
 			(Self::Id(a), Term::Id(b)) => a == b,
 			(Self::Literal(a), Term::Literal(b)) => a == b,
@@ -179,10 +196,8 @@ impl<I1: PartialEq<I2>, B1: PartialEq<B2>, L1: PartialEq<L2>, I2, B2, L2>
 	}
 }
 
-impl<I1: PartialOrd<I2>, B1: PartialOrd<B2>, L1: PartialOrd<L2>, I2, B2, L2>
-	PartialOrd<Term<I2, B2, L2>> for Term<I1, B1, L1>
-{
-	fn partial_cmp(&self, other: &Term<I2, B2, L2>) -> Option<Ordering> {
+impl<I1: PartialOrd<I2>, L1: PartialOrd<L2>, I2, L2> PartialOrd<Term<I2, L2>> for Term<I1, L1> {
+	fn partial_cmp(&self, other: &Term<I2, L2>) -> Option<Ordering> {
 		match (self, other) {
 			(Self::Id(a), Term::Id(b)) => a.partial_cmp(b),
 			(Self::Id(_), Term::Literal(_)) => Some(Ordering::Less),
@@ -192,7 +207,7 @@ impl<I1: PartialOrd<I2>, B1: PartialOrd<B2>, L1: PartialOrd<L2>, I2, B2, L2>
 	}
 }
 
-impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I, B, L> {
+impl<I: fmt::Display, L: fmt::Display> fmt::Display for Term<I, L> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Id(id) => id.fmt(f),
@@ -201,7 +216,7 @@ impl<I: fmt::Display, B: fmt::Display, L: fmt::Display> fmt::Display for Term<I,
 	}
 }
 
-impl<I: fmt::Display, B: fmt::Display, L: RdfDisplay> RdfDisplay for Term<I, B, L> {
+impl<I: RdfDisplay, L: RdfDisplay> RdfDisplay for Term<I, L> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Id(id) => id.rdf_fmt(f),
@@ -211,9 +226,7 @@ impl<I: fmt::Display, B: fmt::Display, L: RdfDisplay> RdfDisplay for Term<I, B, 
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
-	DisplayWithContext<V> for Term<I, B, L>
-{
+impl<I: DisplayWithContext<V>, L: DisplayWithContext<V>, V> DisplayWithContext<V> for Term<I, L> {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Id(id) => id.fmt_with(vocabulary, f),
@@ -223,8 +236,8 @@ impl<I, B, L: DisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, L: crate::RdfDisplayWithContext<V>, V: crate::Vocabulary<Iri = I, BlankId = B>>
-	crate::RdfDisplayWithContext<V> for Term<I, B, L>
+impl<I: crate::RdfDisplayWithContext<V>, L: crate::RdfDisplayWithContext<V>, V>
+	crate::RdfDisplayWithContext<V> for Term<I, L>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
@@ -235,60 +248,12 @@ impl<I, B, L: crate::RdfDisplayWithContext<V>, V: crate::Vocabulary<Iri = I, Bla
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, L: AsRef<str>, V: crate::Vocabulary<Iri = I, BlankId = B>> AsRefWithContext<str, V>
-	for Term<I, B, L>
-{
+impl<I: AsRefWithContext<str, V>, L: AsRef<str>, V> AsRefWithContext<str, V> for Term<I, L> {
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Id(id) => id.as_ref_with(vocabulary),
 			Self::Literal(l) => l.as_ref(),
 		}
-	}
-}
-
-impl<I, B, L> AsTerm for Term<I, B, L> {
-	type Iri = I;
-	type BlankId = B;
-	type Literal = L;
-
-	fn as_term(&self) -> Term<&I, &B, &L> {
-		match self {
-			Self::Id(Id::Iri(iri)) => Term::Id(Id::Iri(iri)),
-			Self::Id(Id::Blank(id)) => Term::Id(Id::Blank(id)),
-			Self::Literal(lit) => Term::Literal(lit),
-		}
-	}
-}
-
-impl<I, B, L> IntoTerm for Term<I, B, L> {
-	type Iri = I;
-	type BlankId = B;
-	type Literal = L;
-
-	fn into_term(self) -> Term<I, B, L> {
-		match self {
-			Self::Id(Id::Iri(iri)) => Term::Id(Id::Iri(iri)),
-			Self::Id(Id::Blank(id)) => Term::Id(Id::Blank(id)),
-			Self::Literal(lit) => Term::Literal(lit),
-		}
-	}
-}
-
-/// gRDF term reference.
-pub type TermRef<'a> = Term<Iri<'a>, &'a BlankId, &'a Literal>;
-
-impl<'a> TermRef<'a> {
-	pub fn into_owned(self) -> Term {
-		match self {
-			Self::Id(id) => Term::Id(id.into_owned()),
-			Self::Literal(l) => Term::Literal(l.clone()),
-		}
-	}
-}
-
-impl<'a> From<&'a Term> for TermRef<'a> {
-	fn from(t: &'a Term) -> Self {
-		t.as_term_ref()
 	}
 }
 
@@ -352,10 +317,17 @@ impl<I, B> Id<I, B> {
 		}
 	}
 
-	pub fn into_term<L>(self) -> Term<I, B, L> {
+	/// Converts this id reference into the term `Term::Id(&id)`.
+	pub fn as_term<L>(&self) -> Term<&Self, &L> {
 		Term::Id(self)
 	}
 
+	/// Converts the id into the term `Term::Id(id)`.
+	pub fn into_term<L>(self) -> Term<Self, L> {
+		Term::Id(self)
+	}
+
+	/// Returns a borrowed string representation of the id.
 	pub fn as_str(&self) -> &str
 	where
 		I: AsRef<str>,
@@ -366,30 +338,45 @@ impl<I, B> Id<I, B> {
 			Self::Blank(i) => i.as_ref(),
 		}
 	}
+
+	/// Converts an `&Id<I, B>` into an `Id<&I, &B>`.
+	pub fn as_ref(&self) -> Id<&I, &B> {
+		match self {
+			Self::Iri(i) => Id::Iri(i),
+			Self::Blank(b) => Id::Blank(b),
+		}
+	}
 }
 
-impl Id {
-	pub fn as_id_ref(&self) -> IdRef {
+impl<'a, I, B> Id<&'a I, &'a B> {
+	/// Maps an `Id<&I, &B>` into an `Id<I, B>` by cloning the contents of the
+	/// id.
+	pub fn cloned(self) -> Id<I, B>
+	where
+		I: Clone,
+		B: Clone,
+	{
 		match self {
-			Self::Blank(id) => IdRef::Blank(id),
-			Self::Iri(iri) => IdRef::Iri(iri.as_iri()),
+			Self::Iri(i) => Id::Iri(i.clone()),
+			Self::Blank(b) => Id::Blank(b.clone()),
 		}
 	}
 
-	/// Alias for [`as_id_ref`](Self::as_id_ref).
-	pub fn as_subject_ref(&self) -> IdRef {
-		self.as_id_ref()
+	/// Maps an `Id<&I, &B>` into an `Id<I, B>` by copying the contents of the
+	/// id.
+	pub fn copied(self) -> Id<I, B>
+	where
+		I: Copy,
+		B: Copy,
+	{
+		match self {
+			Self::Iri(i) => Id::Iri(*i),
+			Self::Blank(b) => Id::Blank(*b),
+		}
 	}
+}
 
-	/// Alias for [`as_id_ref`](Self::as_id_ref).
-	pub fn as_graph_label_ref(&self) -> GraphLabelRef {
-		self.as_id_ref()
-	}
-
-	pub fn as_term_ref(&self) -> TermRef {
-		TermRef::Id(self.as_id_ref())
-	}
-
+impl Id {
 	pub fn inserted_into<V: VocabularyMut>(&self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
 		match self {
 			Self::Blank(b) => Id::Blank(vocabulary.insert_blank_id(b.as_blank_id_ref())),
@@ -497,79 +484,30 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> AsRefWithContext<str, V> 
 	}
 }
 
-pub type IdRef<'a> = Id<Iri<'a>, &'a BlankId>;
-
-impl<'a> IdRef<'a> {
-	pub fn into_owned(self) -> Id {
-		match self {
-			Self::Iri(iri) => Id::Iri(iri.to_owned()),
-			Self::Blank(b) => Id::Blank(b.to_owned()),
-		}
-	}
-}
-
-impl<'a> From<&'a Id> for IdRef<'a> {
-	fn from(t: &'a Id) -> Self {
-		t.as_subject_ref()
-	}
-}
-
-impl<I, B> AsTerm for Id<I, B> {
-	type Iri = I;
-	type BlankId = B;
-	type Literal = std::convert::Infallible;
-
-	fn as_term(&self) -> Term<&I, &B, &Self::Literal> {
-		match self {
-			Self::Iri(iri) => Term::Id(Id::Iri(iri)),
-			Self::Blank(id) => Term::Id(Id::Blank(id)),
-		}
-	}
-}
-
-impl<I, B> IntoTerm for Id<I, B> {
-	type Iri = I;
-	type BlankId = B;
-	type Literal = std::convert::Infallible;
-
-	fn into_term(self) -> Term<I, B, Self::Literal> {
-		match self {
-			Self::Iri(iri) => Term::Id(Id::Iri(iri)),
-			Self::Blank(id) => Term::Id(Id::Blank(id)),
-		}
-	}
-}
-
 /// RDF triple/quad subject.
 pub type Subject<I = IriBuf, B = BlankIdBuf> = Id<I, B>;
 
-/// RDF triple/quad subject reference.
-pub type SubjectRef<'a> = IdRef<'a>;
-
 /// RDF triple/quad object.
-pub type Object<I = IriBuf, B = BlankIdBuf, L = Literal> = Term<I, B, L>;
-
-/// RDF triple/quad object reference.
-pub type ObjectRef<'a> = TermRef<'a>;
+pub type Object<I = Id, L = Literal> = Term<I, L>;
 
 /// RDF quad graph Label.
 pub type GraphLabel<I = IriBuf, B = BlankIdBuf> = Id<I, B>;
 
-/// RDF quad graph label reference.
-pub type GraphLabelRef<'a> = IdRef<'a>;
-
-pub trait AsTerm {
-	type Iri;
-	type BlankId;
-	type Literal;
-
-	fn as_term(&self) -> Term<&Self::Iri, &Self::BlankId, &Self::Literal>;
+pub trait AsRdfTerm<I, B, L> {
+	fn as_rdf_term(&self) -> Term<Id<&I, &B>, &L>;
 }
 
-pub trait IntoTerm {
-	type Iri;
-	type BlankId;
-	type Literal;
+impl<I, B, L> AsRdfTerm<I, B, L> for Id<I, B> {
+	fn as_rdf_term(&self) -> Term<Id<&I, &B>, &L> {
+		Term::Id(self.as_ref())
+	}
+}
 
-	fn into_term(self) -> Term<Self::Iri, Self::BlankId, Self::Literal>;
+impl<I, B, L> AsRdfTerm<I, B, L> for Term<Id<I, B>, L> {
+	fn as_rdf_term(&self) -> Term<Id<&I, &B>, &L> {
+		match self {
+			Self::Id(id) => Term::Id(id.as_ref()),
+			Self::Literal(l) => Term::Literal(l),
+		}
+	}
 }

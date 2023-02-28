@@ -1,4 +1,4 @@
-use crate::BlankId;
+use crate::{BlankId, Id, Namespace};
 use iref::Iri;
 
 mod index;
@@ -15,12 +15,19 @@ pub use scoped::*;
 /// IRIs and blank node identifiers.
 /// This allows the use of custom lightweight types to store, copy and compare
 /// IRIs and blank IDs.
+///
+/// Any vocabulary implements the `Namespace` trait.
 pub trait Vocabulary: IriVocabulary + BlankIdVocabulary {}
 
 /// Mutable vocabulary.
 pub trait VocabularyMut: Vocabulary + IriVocabularyMut + BlankIdVocabularyMut {}
 
 impl<V: IriVocabulary + BlankIdVocabulary> Vocabulary for V {}
+
+/// Any vocabulary is also a namespace.
+impl<V: Vocabulary> Namespace for V {
+	type Id = Id<V::Iri, V::BlankId>;
+}
 
 impl<V: IriVocabularyMut + BlankIdVocabularyMut> VocabularyMut for V {}
 

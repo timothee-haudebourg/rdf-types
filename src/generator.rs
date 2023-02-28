@@ -1,12 +1,14 @@
-use crate::{vocabulary, BlankIdBuf, BlankIdVocabularyMut, Id, Vocabulary, VocabularyMut};
+use crate::{
+	vocabulary, BlankIdBuf, BlankIdVocabularyMut, Id, Namespace, Vocabulary, VocabularyMut,
+};
 
 #[cfg(feature = "meta")]
 use locspan::Meta;
 
 /// Subject identifier generator.
-pub trait Generator<V: Vocabulary> {
-	/// Generates the next fresh identifier in the given vocabulary.
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId>;
+pub trait Generator<N: Namespace> {
+	/// Generates the next fresh identifier in the given namespace.
+	fn next(&mut self, namespace: &mut N) -> N::Id;
 
 	#[cfg(feature = "meta")]
 	/// Generates identifiers annotated with the given metadata.
@@ -33,22 +35,22 @@ pub trait Generator<V: Vocabulary> {
 	}
 }
 
-impl<'a, V: Vocabulary, G: Generator<V>> Generator<V> for &'a mut G {
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		(*self).next(vocabulary)
+impl<'a, N: Namespace, G: Generator<N>> Generator<N> for &'a mut G {
+	fn next(&mut self, namespace: &mut N) -> N::Id {
+		(*self).next(namespace)
 	}
 }
 
 #[cfg(feature = "meta")]
 /// Subject identifier generator, with metadata.
-pub trait MetaGenerator<V: Vocabulary, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M>;
+pub trait MetaGenerator<N: Namespace, M> {
+	fn next(&mut self, namespace: &mut N) -> Meta<N::Id, M>;
 }
 
 #[cfg(feature = "meta")]
-impl<'a, V: Vocabulary, M, G: MetaGenerator<V, M>> MetaGenerator<V, M> for &'a mut G {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M> {
-		(*self).next(vocabulary)
+impl<'a, N: Namespace, M, G: MetaGenerator<N, M>> MetaGenerator<N, M> for &'a mut G {
+	fn next(&mut self, namespace: &mut N) -> Meta<N::Id, M> {
+		(*self).next(namespace)
 	}
 }
 
@@ -70,16 +72,16 @@ impl<G, M> WithMetadata<G, M> {
 }
 
 #[cfg(feature = "meta")]
-impl<V: Vocabulary, G: Generator<V>, M> Generator<V> for WithMetadata<G, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		self.generator.next(vocabulary)
+impl<N: Namespace, G: Generator<N>, M> Generator<N> for WithMetadata<G, M> {
+	fn next(&mut self, namespace: &mut N) -> N::Id {
+		self.generator.next(namespace)
 	}
 }
 
 #[cfg(feature = "meta")]
-impl<V: Vocabulary, G: Generator<V>, M: Clone> MetaGenerator<V, M> for WithMetadata<G, M> {
-	fn next(&mut self, vocabulary: &mut V) -> Meta<Id<V::Iri, V::BlankId>, M> {
-		Meta(self.generator.next(vocabulary), self.metadata.clone())
+impl<N: Namespace, G: Generator<N>, M: Clone> MetaGenerator<N, M> for WithMetadata<G, M> {
+	fn next(&mut self, namespace: &mut N) -> Meta<N::Id, M> {
+		Meta(self.generator.next(namespace), self.metadata.clone())
 	}
 }
 
