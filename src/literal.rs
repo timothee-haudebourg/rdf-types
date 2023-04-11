@@ -137,27 +137,31 @@ impl<S: RdfDisplay, I: RdfDisplay, L: fmt::Display> RdfDisplay for Literal<S, I,
 }
 
 #[cfg(feature = "contextual")]
-impl<S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> DisplayWithContext<V>
+impl<S: RdfDisplay, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>> DisplayWithContext<V>
 	for Literal<S, I, L>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{s}^^<{}>", vocabulary.iri(ty).unwrap()),
-			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
+			Self::String(s) => s.rdf_fmt(f),
+			Self::TypedString(s, ty) => {
+				write!(f, "{}^^<{}>", s.rdf_display(), vocabulary.iri(ty).unwrap())
+			}
+			Self::LangString(s, tag) => write!(f, "{}@{tag}", s.rdf_display()),
 		}
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<S: fmt::Display, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>>
+impl<S: RdfDisplay, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>>
 	crate::RdfDisplayWithContext<V> for Literal<S, I, L>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Self::String(s) => s.fmt(f),
-			Self::TypedString(s, ty) => write!(f, "{s}^^<{}>", vocabulary.iri(ty).unwrap()),
-			Self::LangString(s, tag) => write!(f, "{s}@{tag}"),
+			Self::String(s) => s.rdf_fmt(f),
+			Self::TypedString(s, ty) => {
+				write!(f, "{}^^<{}>", s.rdf_display(), vocabulary.iri(ty).unwrap())
+			}
+			Self::LangString(s, tag) => write!(f, "{}@{tag}", s.rdf_display()),
 		}
 	}
 }
