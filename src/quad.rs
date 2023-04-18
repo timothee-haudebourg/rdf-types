@@ -3,8 +3,9 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	GraphLabel, GraphLabelRef, Id, Literal, Object, ObjectRef, RdfDisplay, SubjectRef, Term,
-	Triple, VocabularyMut,
+	GraphLabel, GraphLabelRef, Id, IntoId, IntoIri, IntoTerm, IriVocabulary, Literal, Object,
+	ObjectRef, RdfDisplay, SubjectRef, Term, Triple, TryExportId, TryExportTerm, Vocabulary,
+	VocabularyMut,
 };
 
 #[cfg(feature = "contextual")]
@@ -270,6 +271,80 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	/// Maps the graph with the given function.
 	pub fn map_graph<U>(self, f: impl FnOnce(Option<G>) -> Option<U>) -> Quad<S, P, O, U> {
 		Quad(self.0, self.1, self.2, f(self.3))
+	}
+}
+
+/// Type that can turn a `Quad<S, P, O, G>` into a `Quad`.
+pub trait TryExportQuad<S, P, O, G> {
+	type Error;
+
+	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<Quad, Self::Error>;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum QuadExportFailed<S, P, O, G> {
+	#[error("invalid subject: {0}")]
+	Subject(S),
+
+	#[error("invalid predicate: {0}")]
+	Predicate(P),
+
+	#[error("invalid object: {0}")]
+	Object(O),
+
+	#[error("invalid graph label: {0}")]
+	Graph(G),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PredicateExportFailed<P, I> {
+	/// The predicate is not an IRI.
+	#[error("not an IRI: {0}")]
+	Invalid(I),
+
+	/// The predicate IRI is unknown.
+	#[error("unknown IRI for {0}")]
+	Unknown(P),
+}
+
+impl<S, P, O, G, V: Vocabulary> TryExportQuad<S, P, O, G> for V
+where
+	S: IntoId,
+	V: TryExportId<S::Iri, S::BlankId>,
+	P: IntoIri,
+	V: IriVocabulary<Iri = P::Iri>,
+	O: IntoTerm,
+	V: TryExportTerm<O::Id, O::Literal>,
+	G: IntoId,
+	V: TryExportId<G::Iri, G::BlankId>,
+{
+	type Error = QuadExportFailed<
+		<V as TryExportId<S::Iri, S::BlankId>>::Error,
+		PredicateExportFailed<P, P::Iri>,
+		<V as TryExportTerm<O::Id, O::Literal>>::Error,
+		<V as TryExportId<G::Iri, G::BlankId>>::Error,
+	>;
+
+	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<Quad, Self::Error> {
+		let s = self
+			.try_export_id(quad.0.into_id())
+			.map_err(QuadExportFailed::Subject)?;
+		let p = self
+			.owned_iri(
+				quad.1
+					.try_into_iri()
+					.map_err(|p| QuadExportFailed::Predicate(PredicateExportFailed::Unknown(p)))?,
+			)
+			.map_err(|e| QuadExportFailed::Predicate(PredicateExportFailed::Invalid(e)))?;
+		let o = self
+			.try_export_term(quad.2.into_term())
+			.map_err(QuadExportFailed::Object)?;
+		let g = quad
+			.3
+			.map(|g| self.try_export_id(g.into_id()))
+			.transpose()
+			.map_err(QuadExportFailed::Graph)?;
+		Ok(Quad(s, p, o, g))
 	}
 }
 

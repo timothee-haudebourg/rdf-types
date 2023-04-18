@@ -1,13 +1,15 @@
-use crate::{BlankIdBuf, Literal, RdfDisplay, VocabularyMut};
+use crate::{BlankIdBuf, IntoLiteral, Literal, RdfDisplay, TryExportLiteral, VocabularyMut};
 use iref::IriBuf;
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
 
 mod id;
+mod into;
 mod maybe_blank;
 mod maybe_iri;
 
 pub use id::*;
+pub use into::*;
 pub use maybe_blank::*;
 pub use maybe_iri::*;
 
@@ -205,6 +207,40 @@ impl<I, L> Term<I, L> {
 		match self {
 			Self::Id(id) => Term::Id(id),
 			Self::Literal(l) => Term::Literal(l),
+		}
+	}
+}
+
+/// Type that can turn a `Term<I, L>` into a `Term`.
+pub trait TryExportTerm<I, L> {
+	type Error;
+
+	/// Turns a `Term<I, L>` into a `Term`.
+	fn try_export_term(&self, term: Term<I, L>) -> Result<Term, Self::Error>;
+}
+
+impl<I, L, V> TryExportTerm<I, L> for V
+where
+	I: IntoId,
+	V: TryExportId<I::Iri, I::BlankId>,
+	L: IntoLiteral,
+	V: TryExportLiteral<L::String, L::Type, L::LanguageTag>,
+{
+	type Error = Term<
+		<V as TryExportId<I::Iri, I::BlankId>>::Error,
+		<V as TryExportLiteral<L::String, L::Type, L::LanguageTag>>::Error,
+	>;
+
+	fn try_export_term(&self, term: Term<I, L>) -> Result<Term, Self::Error> {
+		match term {
+			Term::Id(i) => self
+				.try_export_id(i.into_id())
+				.map_err(Term::Id)
+				.map(Term::Id),
+			Term::Literal(l) => self
+				.try_export_literal(l.into_literal())
+				.map_err(Term::Literal)
+				.map(Term::Literal),
 		}
 	}
 }

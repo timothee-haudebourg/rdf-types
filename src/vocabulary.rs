@@ -1,5 +1,5 @@
-use crate::{BlankId, Id, Namespace};
-use iref::Iri;
+use crate::{BlankId, BlankIdBuf, Id, Namespace};
+use iref::{Iri, IriBuf};
 
 mod index;
 mod none;
@@ -38,6 +38,11 @@ pub trait IriVocabulary {
 	/// Returns the IRI associated to the given IRI id.
 	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<Iri<'i>>;
 
+	/// Returns a copy of the IRI associated to the given IRI id.
+	fn owned_iri(&self, id: Self::Iri) -> Result<IriBuf, Self::Iri> {
+		self.iri(&id).map(Iri::to_owned).ok_or(id)
+	}
+
 	/// Returns the id of the given IRI, if any.
 	fn get(&self, iri: Iri) -> Option<Self::Iri>;
 }
@@ -57,6 +62,11 @@ pub trait BlankIdVocabulary {
 
 	/// Returns the blank node identifier associated to the given id.
 	fn blank_id<'b>(&'b self, id: &'b Self::BlankId) -> Option<&'b BlankId>;
+
+	/// Returns a copy of the blank node identifier associated to the given id.
+	fn owned_blank_id(&self, id: Self::BlankId) -> Result<BlankIdBuf, Self::BlankId> {
+		self.blank_id(&id).map(BlankId::to_owned).ok_or(id)
+	}
 
 	/// Returns the vocabulary id of the given blank node identifier, if any.
 	fn get_blank_id(&self, id: &BlankId) -> Option<Self::BlankId>;

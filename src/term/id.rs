@@ -4,7 +4,9 @@ use std::{cmp::Ordering, fmt, hash::Hash};
 #[cfg(feature = "meta")]
 use locspan_derive::*;
 
-use crate::{BlankId, BlankIdBuf, GraphLabelRef, RdfDisplay, SubjectRef, Term, VocabularyMut};
+use crate::{
+	BlankId, BlankIdBuf, GraphLabelRef, RdfDisplay, SubjectRef, Term, Vocabulary, VocabularyMut,
+};
 
 /// RDF node identifier.
 ///
@@ -104,6 +106,25 @@ impl<I, B> Id<I, B> {
 		match self {
 			Self::Iri(i) => Id::Iri(i),
 			Self::Blank(b) => Id::Blank(b),
+		}
+	}
+}
+
+/// Type that can turn an `Id<I, B>` into an `Id`.
+pub trait TryExportId<I, B> {
+	type Error;
+
+	/// Turns an `Id<I, B>` into an `Id`.
+	fn try_export_id(&self, id: Id<I, B>) -> Result<Id, Self::Error>;
+}
+
+impl<V: Vocabulary> TryExportId<V::Iri, V::BlankId> for V {
+	type Error = Id<V::Iri, V::BlankId>;
+
+	fn try_export_id(&self, id: Id<V::Iri, V::BlankId>) -> Result<Id, Self::Error> {
+		match id {
+			Id::Iri(i) => self.owned_iri(i).map(Id::Iri).map_err(Id::Iri),
+			Id::Blank(b) => self.owned_blank_id(b).map(Id::Blank).map_err(Id::Blank),
 		}
 	}
 }
@@ -277,4 +298,11 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::AsRefWithCont
 			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),
 		}
 	}
+}
+
+pub trait IntoId {
+	type Iri;
+	type BlankId;
+
+	fn into_id(self) -> Id<Self::Iri, Self::BlankId>;
 }

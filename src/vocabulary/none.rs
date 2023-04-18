@@ -29,6 +29,10 @@ impl IriVocabulary for NoVocabulary {
 		Some(id.as_iri())
 	}
 
+	fn owned_iri(&self, id: Self::Iri) -> Result<IriBuf, Self::Iri> {
+		Ok(id)
+	}
+
 	fn get(&self, iri: Iri) -> Option<IriBuf> {
 		Some(iri.into())
 	}
@@ -45,6 +49,10 @@ impl BlankIdVocabulary for NoVocabulary {
 
 	fn blank_id<'b>(&'b self, id: &'b BlankIdBuf) -> Option<&'b BlankId> {
 		Some(id.as_blank_id_ref())
+	}
+
+	fn owned_blank_id(&self, id: Self::BlankId) -> Result<BlankIdBuf, Self::BlankId> {
+		Ok(id)
 	}
 
 	fn get_blank_id(&self, id: &BlankId) -> Option<BlankIdBuf> {

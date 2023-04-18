@@ -1,4 +1,4 @@
-use crate::{IriVocabularyMut, RdfDisplay};
+use crate::{IriVocabulary, IriVocabularyMut, RdfDisplay};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
@@ -162,6 +162,50 @@ impl<S: RdfDisplay, I, L: fmt::Display, V: crate::IriVocabulary<Iri = I>>
 				write!(f, "{}^^<{}>", s.rdf_display(), vocabulary.iri(ty).unwrap())
 			}
 			Self::LangString(s, tag) => write!(f, "{}@{tag}", s.rdf_display()),
+		}
+	}
+}
+
+/// Type that can be converted into a [`Literal`].
+pub trait IntoLiteral {
+	/// String data type.
+	type String;
+
+	/// Literal type value type.
+	type Type;
+
+	/// Language tag type.
+	type LanguageTag;
+
+	/// Turns the value into a `Literal`.
+	fn into_literal(self) -> Literal<Self::String, Self::Type, Self::LanguageTag>;
+}
+
+/// Type that can turn a `Literal<S, T, L>` into a `Literal`.
+pub trait TryExportLiteral<S, T, L> {
+	type Error;
+
+	fn try_export_literal(&self, literal: Literal<S, T, L>) -> Result<Literal, Self::Error>;
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("unknown literal type {0}")]
+pub struct UnknownType<I>(pub I);
+
+impl<V: IriVocabulary> TryExportLiteral<String, V::Iri, LanguageTagBuf> for V {
+	type Error = UnknownType<V::Iri>;
+
+	fn try_export_literal(
+		&self,
+		literal: Literal<String, V::Iri, LanguageTagBuf>,
+	) -> Result<Literal, Self::Error> {
+		match literal {
+			Literal::String(s) => Ok(Literal::String(s)),
+			Literal::TypedString(s, t) => Ok(Literal::TypedString(
+				s,
+				self.owned_iri(t).map_err(UnknownType)?,
+			)),
+			Literal::LangString(s, t) => Ok(Literal::LangString(s, t)),
 		}
 	}
 }
