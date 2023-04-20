@@ -300,9 +300,19 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::AsRefWithCont
 	}
 }
 
+/// Type that can be converted into an `Id`.
 pub trait IntoId {
 	type Iri;
 	type BlankId;
 
 	fn into_id(self) -> Id<Self::Iri, Self::BlankId>;
+}
+
+impl<I, B> IntoId for Id<I, B> {
+	type Iri = I;
+	type BlankId = B;
+
+	fn into_id(self) -> Self {
+		self
+	}
 }
