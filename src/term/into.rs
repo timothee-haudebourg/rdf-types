@@ -11,3 +11,13 @@ pub trait IntoTerm {
 	/// Turns the value into a [`Term`].
 	fn into_term(self) -> Term<Self::Id, Self::Literal>;
 }
+
+impl<I, L> IntoTerm for Term<I, L> {
+	type Id = I;
+
+	type Literal = L;
+
+	fn into_term(self) -> Term<I, L> {
+		self
+	}
+}
