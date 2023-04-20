@@ -181,6 +181,18 @@ pub trait IntoLiteral {
 	fn into_literal(self) -> Literal<Self::String, Self::Type, Self::LanguageTag>;
 }
 
+impl<S, T, L> IntoLiteral for Literal<S, T, L> {
+	type String = S;
+
+	type Type = T;
+
+	type LanguageTag = L;
+
+	fn into_literal(self) -> Self {
+		self
+	}
+}
+
 /// Type that can turn a `Literal<S, T, L>` into a `Literal`.
 pub trait TryExportLiteral<S, T, L> {
 	type Error;
