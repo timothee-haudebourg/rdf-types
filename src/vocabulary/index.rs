@@ -19,6 +19,12 @@ impl From<usize> for Index {
 	}
 }
 
+impl From<Index> for usize {
+	fn from(value: Index) -> Self {
+		value.0
+	}
+}
+
 impl<'a> TryFrom<Iri<'a>> for Index {
 	type Error = ();
 
