@@ -20,6 +20,7 @@ use locspan_derive::*;
 
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
 	feature = "meta",
 	derive(

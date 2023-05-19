@@ -29,6 +29,7 @@ use locspan_derive::*;
 /// meaning that the hash of `Term::Id(id)` the same as `id` and the hash of
 /// `Term::Literal(l)` is the same as `l`.
 #[derive(Clone, Copy, Eq, Ord, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
 	feature = "meta",
 	derive(StrippedPartialEq, StrippedEq, StrippedPartialOrd, StrippedOrd)

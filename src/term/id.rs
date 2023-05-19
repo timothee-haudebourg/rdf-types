@@ -18,6 +18,7 @@ use crate::{
 /// *transparent*, meaning that the hash of `Term::Blank(id)` the same as `id`
 /// and the hash of `Subject::Iri(iri)` is the same as `iri`.
 #[derive(Clone, Copy, Eq, Ord, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
 	feature = "meta",
 	derive(StrippedPartialEq, StrippedEq, StrippedPartialOrd, StrippedOrd)

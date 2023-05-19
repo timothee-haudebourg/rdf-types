@@ -9,6 +9,7 @@ use contextual::DisplayWithContext;
 
 /// RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Literal<S = String, I = IriBuf, L = LanguageTagBuf> {
 	/// Untyped string literal.
 	String(S),

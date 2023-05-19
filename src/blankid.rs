@@ -133,6 +133,7 @@ impl PartialEq<str> for BlankId {
 /// [160s] PN_CHARS         ::= PN_CHARS_U | '-' | [0-9] | #x00B7 | [#x0300-#x036F] | [#x203F-#x2040]
 /// ```
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize), serde(transparent))]
 pub struct BlankIdBuf(String);
 
 impl BlankIdBuf {
@@ -350,4 +351,47 @@ fn is_pn_char_u(c: char) -> bool {
 fn is_pn_char(c: char) -> bool {
 	is_pn_char_u(c)
 		|| matches!(c, '-' | '0'..='9' | '\u{00b7}' | '\u{0300}'..='\u{036f}' | '\u{203f}'..='\u{2040}')
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for BlankIdBuf {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		struct Visitor;
+
+		impl<'de> serde::de::Visitor<'de> for Visitor {
+			type Value = BlankIdBuf;
+
+			fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+				write!(formatter, "blank node identifier")
+			}
+
+			fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+			where
+				E: serde::de::Error,
+			{
+				BlankIdBuf::new(v).map_err(|InvalidBlankId(unexpected)| {
+					E::invalid_value(serde::de::Unexpected::Str(&unexpected), &self)
+				})
+			}
+
+			fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+			where
+				E: serde::de::Error,
+			{
+				self.visit_string(v.to_owned())
+			}
+
+			fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+			where
+				E: serde::de::Error,
+			{
+				self.visit_string(v.to_owned())
+			}
+		}
+
+		deserializer.deserialize_string(Visitor)
+	}
 }
