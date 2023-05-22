@@ -1,4 +1,4 @@
-use crate::{BlankIdBuf, IntoLiteral, Literal, RdfDisplay, TryExportLiteral, VocabularyMut};
+use crate::{BlankIdBuf, Literal, RdfDisplay, InsertIntoVocabulary, InsertedIntoVocabulary, TryExportFromVocabulary};
 use iref::IriBuf;
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
@@ -212,34 +212,19 @@ impl<I, L> Term<I, L> {
 	}
 }
 
-/// Type that can turn a `Term<I, L>` into a `Term`.
-pub trait TryExportTerm<I, L> {
-	type Error;
+impl<V, I: TryExportFromVocabulary<V>, L: TryExportFromVocabulary<V>> TryExportFromVocabulary<V> for Term<I, L> {
+	type Output = Term<I::Output, L::Output>;
 
-	/// Turns a `Term<I, L>` into a `Term`.
-	fn try_export_term(&self, term: Term<I, L>) -> Result<Term, Self::Error>;
-}
+	type Error = Term<I::Error, L::Error>;
 
-impl<I, L, V> TryExportTerm<I, L> for V
-where
-	I: IntoId,
-	V: TryExportId<I::Iri, I::BlankId>,
-	L: IntoLiteral,
-	V: TryExportLiteral<L::String, L::Type, L::LanguageTag>,
-{
-	type Error = Term<
-		<V as TryExportId<I::Iri, I::BlankId>>::Error,
-		<V as TryExportLiteral<L::String, L::Type, L::LanguageTag>>::Error,
-	>;
-
-	fn try_export_term(&self, term: Term<I, L>) -> Result<Term, Self::Error> {
-		match term {
-			Term::Id(i) => self
-				.try_export_id(i.into_id())
+	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
+		match self {
+			Self::Id(i) => i
+				.try_export_from_vocabulary(vocabulary)
 				.map_err(Term::Id)
 				.map(Term::Id),
-			Term::Literal(l) => self
-				.try_export_literal(l.into_literal())
+			Self::Literal(l) => l
+				.try_export_from_vocabulary(vocabulary)
 				.map_err(Term::Literal)
 				.map(Term::Literal),
 		}
@@ -286,30 +271,24 @@ impl<L> Term<Id, L> {
 	}
 }
 
-impl<S, L> Term<Id, Literal<S, IriBuf, L>> {
-	#[allow(clippy::type_complexity)]
-	pub fn inserted_into<V: VocabularyMut>(
-		&self,
-		vocabulary: &mut V,
-	) -> Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>
-	where
-		S: Clone,
-		L: Clone,
-	{
+impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Term<I, L> {
+	type Inserted = Term<I::Inserted, L::Inserted>;
+
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
 		match self {
-			Self::Id(id) => Term::Id(id.inserted_into(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.inserted_into(vocabulary)),
+			Self::Id(id) => Term::Id(id.insert_into_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(l.insert_into_vocabulary(vocabulary)),
 		}
 	}
+}
 
-	#[allow(clippy::type_complexity)]
-	pub fn insert_into<V: VocabularyMut>(
-		self,
-		vocabulary: &mut V,
-	) -> Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>> {
+impl<V, I: InsertedIntoVocabulary<V>, L: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Term<I, L> {
+	type Inserted = Term<I::Inserted, L::Inserted>;
+
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		match self {
-			Self::Id(id) => Term::Id(id.insert_into(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.insert_into(vocabulary)),
+			Self::Id(id) => Term::Id(id.inserted_into_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(l.inserted_into_vocabulary(vocabulary)),
 		}
 	}
 }

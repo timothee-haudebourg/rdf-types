@@ -28,6 +28,10 @@ pub use triple::*;
 pub use vocabulary::{
 	BlankIdVocabulary, BlankIdVocabularyMut, IndexVocabulary, IriVocabulary, IriVocabularyMut,
 	NoVocabulary, Vocabulary, VocabularyMut,
+	LiteralVocabulary, LiteralVocabularyMut,
+	LanguageTagVocabulary, LanguageTagVocabularyMut,
+	InsertIntoVocabulary, InsertedIntoVocabulary,
+	TryExportFromVocabulary
 };
 
 #[cfg(feature = "meta")]

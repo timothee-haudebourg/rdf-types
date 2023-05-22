@@ -3,9 +3,9 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	GraphLabel, GraphLabelRef, Id, IntoId, IntoIri, IntoTerm, IriVocabulary, Literal, Object,
-	ObjectRef, RdfDisplay, SubjectRef, Term, Triple, TryExportId, TryExportTerm, Vocabulary,
-	VocabularyMut,
+	GraphLabel, GraphLabelRef, Id, Literal, Object,
+	ObjectRef, RdfDisplay, SubjectRef, Term, Triple,
+	InsertIntoVocabulary, InsertedIntoVocabulary, TryExportFromVocabulary,
 };
 
 #[cfg(feature = "contextual")]
@@ -76,93 +76,28 @@ impl<'a, L> QuadRef<'a, L> {
 	}
 }
 
-impl<S, L> Quad<Id, IriBuf, Object<Id, Literal<S, IriBuf, L>>, GraphLabel> {
-	#[allow(clippy::type_complexity)]
-	pub fn inserted_into<V: VocabularyMut>(
-		&self,
-		vocabulary: &mut V,
-	) -> Quad<
-		Id<V::Iri, V::BlankId>,
-		V::Iri,
-		Object<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		GraphLabel<V::Iri, V::BlankId>,
-	>
-	where
-		S: Clone,
-		L: Clone,
-	{
+impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>, G: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Quad<S, P, O, G> {
+	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
+	
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
 		Quad(
-			self.0.inserted_into(vocabulary),
-			vocabulary.insert(self.1.as_iri()),
-			self.2.inserted_into(vocabulary),
-			self.3.as_ref().map(|g| g.inserted_into(vocabulary)),
-		)
-	}
-
-	#[allow(clippy::type_complexity)]
-	pub fn insert_into<V: VocabularyMut>(
-		self,
-		vocabulary: &mut V,
-	) -> Quad<
-		Id<V::Iri, V::BlankId>,
-		V::Iri,
-		Object<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		GraphLabel<V::Iri, V::BlankId>,
-	> {
-		Quad(
-			self.0.insert_into(vocabulary),
-			vocabulary.insert(self.1.as_iri()),
-			self.2.insert_into(vocabulary),
-			self.3.map(|g| g.insert_into(vocabulary)),
+			self.0.insert_into_vocabulary(vocabulary),
+			self.1.insert_into_vocabulary(vocabulary),
+			self.2.insert_into_vocabulary(vocabulary),
+			self.3.insert_into_vocabulary(vocabulary)
 		)
 	}
 }
 
-impl<S, L>
-	Quad<
-		Term<Id, Literal<S, IriBuf, L>>,
-		Term<Id, Literal<S, IriBuf, L>>,
-		Term<Id, Literal<S, IriBuf, L>>,
-		Term<Id, Literal<S, IriBuf, L>>,
-	>
-{
-	#[allow(clippy::type_complexity)]
-	pub fn inserted_into<V: VocabularyMut>(
-		&self,
-		vocabulary: &mut V,
-	) -> Quad<
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-	>
-	where
-		S: Clone,
-		L: Clone,
-	{
+impl<V, S: InsertedIntoVocabulary<V>, P: InsertedIntoVocabulary<V>, O: InsertedIntoVocabulary<V>, G: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Quad<S, P, O, G> {
+	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
+	
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		Quad(
-			self.0.inserted_into(vocabulary),
-			self.1.inserted_into(vocabulary),
-			self.2.inserted_into(vocabulary),
-			self.3.as_ref().map(|g| g.inserted_into(vocabulary)),
-		)
-	}
-
-	#[allow(clippy::type_complexity)]
-	pub fn insert_into<V: VocabularyMut>(
-		self,
-		vocabulary: &mut V,
-	) -> Quad<
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-	> {
-		Quad(
-			self.0.insert_into(vocabulary),
-			self.1.insert_into(vocabulary),
-			self.2.insert_into(vocabulary),
-			self.3.map(|g| g.insert_into(vocabulary)),
+			self.0.inserted_into_vocabulary(vocabulary),
+			self.1.inserted_into_vocabulary(vocabulary),
+			self.2.inserted_into_vocabulary(vocabulary),
+			self.3.inserted_into_vocabulary(vocabulary)
 		)
 	}
 }
@@ -297,55 +232,17 @@ pub enum QuadExportFailed<S, P, O, G> {
 	Graph(G),
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum PredicateExportFailed<P, I> {
-	/// The predicate is not an IRI.
-	#[error("not an IRI: {0}")]
-	Invalid(I),
+impl<V, S: TryExportFromVocabulary<V>, P: TryExportFromVocabulary<V>, O: TryExportFromVocabulary<V>, G: TryExportFromVocabulary<V>> TryExportFromVocabulary<V> for Quad<S, P, O, G> {
+	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+	type Error = QuadExportFailed<S::Error, P::Error, O::Error, G::Error>;
 
-	/// The predicate IRI is unknown.
-	#[error("unknown IRI for {0}")]
-	Unknown(P),
-}
-
-impl<S, P, O, G, V: Vocabulary> TryExportQuad<S, P, O, G> for V
-where
-	S: IntoId,
-	V: TryExportId<S::Iri, S::BlankId>,
-	P: IntoIri,
-	V: IriVocabulary<Iri = P::Iri>,
-	O: IntoTerm,
-	V: TryExportTerm<O::Id, O::Literal>,
-	G: IntoId,
-	V: TryExportId<G::Iri, G::BlankId>,
-{
-	type Error = QuadExportFailed<
-		<V as TryExportId<S::Iri, S::BlankId>>::Error,
-		PredicateExportFailed<P, P::Iri>,
-		<V as TryExportTerm<O::Id, O::Literal>>::Error,
-		<V as TryExportId<G::Iri, G::BlankId>>::Error,
-	>;
-
-	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<Quad, Self::Error> {
-		let s = self
-			.try_export_id(quad.0.into_id())
-			.map_err(QuadExportFailed::Subject)?;
-		let p = self
-			.owned_iri(
-				quad.1
-					.try_into_iri()
-					.map_err(|p| QuadExportFailed::Predicate(PredicateExportFailed::Unknown(p)))?,
-			)
-			.map_err(|e| QuadExportFailed::Predicate(PredicateExportFailed::Invalid(e)))?;
-		let o = self
-			.try_export_term(quad.2.into_term())
-			.map_err(QuadExportFailed::Object)?;
-		let g = quad
-			.3
-			.map(|g| self.try_export_id(g.into_id()))
-			.transpose()
-			.map_err(QuadExportFailed::Graph)?;
-		Ok(Quad(s, p, o, g))
+	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
+		Ok(Quad(
+			self.0.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Subject)?,
+			self.1.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Predicate)?,
+			self.2.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Object)?,
+			self.3.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Graph)?
+		))
 	}
 }
 

@@ -2,7 +2,7 @@ use std::{cmp::Ordering, fmt};
 
 use iref::{Iri, IriBuf};
 
-use crate::{Id, Literal, Object, ObjectRef, Quad, RdfDisplay, SubjectRef, Term, VocabularyMut};
+use crate::{Id, Literal, Object, ObjectRef, Quad, RdfDisplay, SubjectRef, Term, InsertedIntoVocabulary, InsertIntoVocabulary};
 
 #[cfg(feature = "contextual")]
 use contextual::{DisplayWithContext, WithContext};
@@ -168,77 +168,26 @@ impl<'a, L> TripleRef<'a, L> {
 	}
 }
 
-impl<S, L> Triple<Id, IriBuf, Object<Id, Literal<S, IriBuf, L>>> {
-	#[allow(clippy::type_complexity)]
-	pub fn inserted_into<V: VocabularyMut>(
-		&self,
-		vocabulary: &mut V,
-	) -> Triple<Id<V::Iri, V::BlankId>, V::Iri, Object<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>>
-	where
-		S: Clone,
-		L: Clone,
-	{
+impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Triple<S, P, O> {
+	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
+	
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
 		Triple(
-			self.0.inserted_into(vocabulary),
-			vocabulary.insert(self.1.as_iri()),
-			self.2.inserted_into(vocabulary),
-		)
-	}
-
-	#[allow(clippy::type_complexity)]
-	pub fn insert_into<V: VocabularyMut>(
-		self,
-		vocabulary: &mut V,
-	) -> Triple<Id<V::Iri, V::BlankId>, V::Iri, Object<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>>
-	{
-		Triple(
-			self.0.insert_into(vocabulary),
-			vocabulary.insert(self.1.as_iri()),
-			self.2.insert_into(vocabulary),
+			self.0.insert_into_vocabulary(vocabulary),
+			self.1.insert_into_vocabulary(vocabulary),
+			self.2.insert_into_vocabulary(vocabulary)
 		)
 	}
 }
 
-impl<S, L>
-	Triple<
-		Term<Id, Literal<S, IriBuf, L>>,
-		Term<Id, Literal<S, IriBuf, L>>,
-		Term<Id, Literal<S, IriBuf, L>>,
-	>
-{
-	#[allow(clippy::type_complexity)]
-	pub fn inserted_into<V: VocabularyMut>(
-		&self,
-		vocabulary: &mut V,
-	) -> Triple<
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-	>
-	where
-		S: Clone,
-		L: Clone,
-	{
+impl<V, S: InsertedIntoVocabulary<V>, P: InsertedIntoVocabulary<V>, O: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Triple<S, P, O> {
+	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
+	
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		Triple(
-			self.0.inserted_into(vocabulary),
-			self.1.inserted_into(vocabulary),
-			self.2.inserted_into(vocabulary),
-		)
-	}
-
-	#[allow(clippy::type_complexity)]
-	pub fn insert_into<V: VocabularyMut>(
-		self,
-		vocabulary: &mut V,
-	) -> Triple<
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-		Term<Id<V::Iri, V::BlankId>, Literal<S, V::Iri, L>>,
-	> {
-		Triple(
-			self.0.insert_into(vocabulary),
-			self.1.insert_into(vocabulary),
-			self.2.insert_into(vocabulary),
+			self.0.inserted_into_vocabulary(vocabulary),
+			self.1.inserted_into_vocabulary(vocabulary),
+			self.2.inserted_into_vocabulary(vocabulary)
 		)
 	}
 }
