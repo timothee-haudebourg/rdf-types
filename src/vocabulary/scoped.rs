@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
 use iref::Iri;
+use langtag::{LanguageTag, LanguageTagBuf};
 
 use crate::{
 	BlankId, BlankIdBuf, BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut,
-	Vocabulary,
+	LanguageTagVocabulary, LanguageTagVocabularyMut, Literal, LiteralVocabulary,
+	LiteralVocabularyMut,
 };
 
 /// Vocabulary wrapper that helps avoid blank id collisions.
@@ -16,17 +18,17 @@ use crate::{
 ///
 /// # Example
 ///
-/// Take the situation where we have to graphs locally defining the
+/// Take the situation where we have two graphs locally defining the
 /// blank node `_:0`. We want to insert both identifiers using
 /// [`BlankIdVocabularyMut::insert_blank_id`], however doing so would provoke a
-/// collision this both blank identifiers are lexically equals, even if
+/// collision since both blank identifiers are lexically equals, even if
 /// representing different nodes. This wrapper can be used to rename the blank
 /// nodes upon insertion in the vocabulary to avoid collision by adding a
 /// "scope" prefix.
 ///
 /// ```
 /// use rdf_types::{BlankIdBuf, BlankIdVocabulary, BlankIdVocabularyMut};
-/// use rdf_types::vocabulary::{Index, IndexVocabulary, Scoped};
+/// use rdf_types::vocabulary::{IndexVocabulary, Scoped};
 ///
 /// let mut vocab: IndexVocabulary = IndexVocabulary::new();
 ///
@@ -71,7 +73,7 @@ impl<'a, V: BlankIdVocabulary, S> Scoped<'a, V, S> {
 	}
 }
 
-impl<'a, V: Vocabulary, S> IriVocabulary for Scoped<'a, V, S> {
+impl<'a, V: BlankIdVocabulary + IriVocabulary, S> IriVocabulary for Scoped<'a, V, S> {
 	type Iri = V::Iri;
 
 	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<Iri<'i>> {
@@ -83,7 +85,7 @@ impl<'a, V: Vocabulary, S> IriVocabulary for Scoped<'a, V, S> {
 	}
 }
 
-impl<'a, V: IriVocabularyMut + BlankIdVocabulary, S> IriVocabularyMut for Scoped<'a, V, S> {
+impl<'a, V: BlankIdVocabulary + IriVocabularyMut, S> IriVocabularyMut for Scoped<'a, V, S> {
 	fn insert(&mut self, iri: Iri) -> Self::Iri {
 		self.inner.insert(iri)
 	}
@@ -119,5 +121,74 @@ where
 				i
 			}
 		}
+	}
+}
+
+impl<'a, V: BlankIdVocabulary + LiteralVocabulary, S> LiteralVocabulary for Scoped<'a, V, S> {
+	type Literal = V::Literal;
+
+	type Type = V::Type;
+
+	type Value = V::Value;
+
+	fn literal<'l>(
+		&'l self,
+		id: &'l Self::Literal,
+	) -> Option<&'l Literal<Self::Type, Self::Value>> {
+		self.inner.literal(id)
+	}
+
+	fn owned_literal(
+		&self,
+		id: Self::Literal,
+	) -> Result<Literal<Self::Type, Self::Value>, Self::Literal> {
+		self.inner.owned_literal(id)
+	}
+
+	fn get_literal(&self, literal: &Literal<Self::Type, Self::Value>) -> Option<Self::Literal> {
+		self.inner.get_literal(literal)
+	}
+}
+
+impl<'a, V: BlankIdVocabulary + LiteralVocabularyMut, S> LiteralVocabularyMut for Scoped<'a, V, S> {
+	fn insert_literal(&mut self, literal: &Literal<Self::Type, Self::Value>) -> Self::Literal {
+		self.inner.insert_literal(literal)
+	}
+
+	fn insert_owned_literal(&mut self, literal: Literal<Self::Type, Self::Value>) -> Self::Literal {
+		self.inner.insert_owned_literal(literal)
+	}
+}
+
+impl<'a, V: BlankIdVocabulary + LanguageTagVocabulary, S> LanguageTagVocabulary
+	for Scoped<'a, V, S>
+{
+	type LanguageTag = V::LanguageTag;
+
+	fn language_tag<'l>(&'l self, id: &'l Self::LanguageTag) -> Option<LanguageTag<'l>> {
+		self.inner.language_tag(id)
+	}
+
+	fn owned_language_tag(
+		&self,
+		id: Self::LanguageTag,
+	) -> Result<LanguageTagBuf, Self::LanguageTag> {
+		self.inner.owned_language_tag(id)
+	}
+
+	fn get_language_tag(&self, language_tag: LanguageTag) -> Option<Self::LanguageTag> {
+		self.inner.get_language_tag(language_tag)
+	}
+}
+
+impl<'a, V: BlankIdVocabulary + LanguageTagVocabularyMut, S> LanguageTagVocabularyMut
+	for Scoped<'a, V, S>
+{
+	fn insert_language_tag(&mut self, language_tag: LanguageTag) -> Self::LanguageTag {
+		self.inner.insert_language_tag(language_tag)
+	}
+
+	fn insert_owned_language_tag(&mut self, language_tag: LanguageTagBuf) -> Self::LanguageTag {
+		self.inner.insert_owned_language_tag(language_tag)
 	}
 }

@@ -5,7 +5,8 @@ use std::{cmp::Ordering, fmt, hash::Hash};
 use locspan_derive::*;
 
 use crate::{
-	BlankId, BlankIdBuf, GraphLabelRef, RdfDisplay, SubjectRef, Term, Vocabulary, VocabularyMut,
+	BlankId, BlankIdBuf, GraphLabelRef, InsertIntoVocabulary, InsertedIntoVocabulary, RdfDisplay,
+	SubjectRef, Term, Vocabulary, VocabularyMut,
 };
 
 /// RDF node identifier.
@@ -107,6 +108,32 @@ impl<I, B> Id<I, B> {
 		match self {
 			Self::Iri(i) => Id::Iri(i),
 			Self::Blank(b) => Id::Blank(b),
+		}
+	}
+}
+
+impl<V, I: InsertIntoVocabulary<V>, B: InsertIntoVocabulary<V>> InsertIntoVocabulary<V>
+	for Id<I, B>
+{
+	type Inserted = Id<I::Inserted, B::Inserted>;
+
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+		match self {
+			Self::Iri(i) => Id::Iri(i.insert_into_vocabulary(vocabulary)),
+			Self::Blank(b) => Id::Blank(b.insert_into_vocabulary(vocabulary)),
+		}
+	}
+}
+
+impl<V, I: InsertedIntoVocabulary<V>, B: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V>
+	for Id<I, B>
+{
+	type Inserted = Id<I::Inserted, B::Inserted>;
+
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+		match self {
+			Self::Iri(i) => Id::Iri(i.inserted_into_vocabulary(vocabulary)),
+			Self::Blank(b) => Id::Blank(b.inserted_into_vocabulary(vocabulary)),
 		}
 	}
 }

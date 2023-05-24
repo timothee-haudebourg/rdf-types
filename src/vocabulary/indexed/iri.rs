@@ -2,24 +2,61 @@ use iref::Iri;
 use std::convert::TryFrom;
 use std::hash::Hash;
 
-/// Partly indexed IRI identifier type.
-pub trait IndexedIri: From<usize> + for<'a> TryFrom<Iri<'a>> {
-	fn index(&self) -> IriIndex<Iri<'_>>;
+/// Iri index.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub struct IriIndex(usize);
+
+impl From<usize> for IriIndex {
+	fn from(i: usize) -> Self {
+		Self(i)
+	}
 }
 
-impl<I> IndexedIri for IriIndex<I>
+impl From<IriIndex> for usize {
+	fn from(value: IriIndex) -> Self {
+		value.0
+	}
+}
+
+impl IndexedIri for IriIndex {
+	fn index(&self) -> IriOrIndex<Iri<'_>> {
+		IriOrIndex::Index(self.0)
+	}
+}
+
+impl<'a> TryFrom<Iri<'a>> for IriIndex {
+	type Error = ();
+
+	fn try_from(_value: Iri<'a>) -> Result<Self, Self::Error> {
+		Err(())
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<V: crate::IriVocabulary<Iri = Self>> crate::RdfDisplayWithContext<V> for IriIndex {
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
+	}
+}
+
+/// Partly indexed IRI identifier type.
+pub trait IndexedIri: From<usize> + for<'a> TryFrom<Iri<'a>> {
+	fn index(&self) -> IriOrIndex<Iri<'_>>;
+}
+
+impl<I> IndexedIri for IriOrIndex<I>
 where
 	I: iref::AsIri + for<'a> TryFrom<Iri<'a>>,
 {
-	fn index(&self) -> IriIndex<Iri<'_>> {
+	fn index(&self) -> IriOrIndex<Iri<'_>> {
 		match self {
-			Self::Iri(i) => IriIndex::Iri(i.as_iri()),
-			Self::Index(i) => IriIndex::Index(*i),
+			Self::Iri(i) => IriOrIndex::Iri(i.as_iri()),
+			Self::Index(i) => IriOrIndex::Index(*i),
 		}
 	}
 }
 
-/// IRI index.
+/// IRI or index.
 ///
 /// This can be used as an IRI identifier that mixes IRIs that are statically
 /// known (of type `I`) and IRIs added at run time with a dynamic index.
@@ -27,7 +64,7 @@ where
 /// This type can directly be used as an IRI identifier with the
 /// `IndexVocabulary` type.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub enum IriIndex<I> {
+pub enum IriOrIndex<I> {
 	/// Index of the IRI in the vocabulary.
 	Index(usize),
 
@@ -35,13 +72,13 @@ pub enum IriIndex<I> {
 	Iri(I),
 }
 
-impl<I> From<usize> for IriIndex<I> {
+impl<I> From<usize> for IriOrIndex<I> {
 	fn from(i: usize) -> Self {
 		Self::Index(i)
 	}
 }
 
-impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriIndex<I> {
+impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriOrIndex<I> {
 	type Error = I::Error;
 
 	fn try_from(value: Iri<'a>) -> Result<Self, Self::Error> {
@@ -50,14 +87,18 @@ impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriIndex<I> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: crate::IriVocabulary<Iri = IriIndex<I>>> contextual::DisplayWithContext<V> for IriIndex<I> {
+impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> contextual::DisplayWithContext<V>
+	for IriOrIndex<I>
+{
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: crate::IriVocabulary<Iri = IriIndex<I>>> crate::RdfDisplayWithContext<V> for IriIndex<I> {
+impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> crate::RdfDisplayWithContext<V>
+	for IriOrIndex<I>
+{
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		write!(f, "<{}>", &vocabulary.iri(self).unwrap())
 	}

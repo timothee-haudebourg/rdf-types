@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Id, Namespace, Literal};
+use crate::{BlankId, BlankIdBuf, Id, Literal, Namespace};
 use iref::{Iri, IriBuf};
 
 mod indexed;
@@ -18,19 +18,22 @@ pub use scoped::*;
 /// IRIs and blank IDs.
 ///
 /// Any vocabulary implements the `Namespace` trait.
-pub trait Vocabulary: IriVocabulary + BlankIdVocabulary {}
+pub trait Vocabulary: IriVocabulary + BlankIdVocabulary + LiteralVocabulary {}
 
 /// Mutable vocabulary.
-pub trait VocabularyMut: Vocabulary + IriVocabularyMut + BlankIdVocabularyMut {}
+pub trait VocabularyMut:
+	Vocabulary + IriVocabularyMut + BlankIdVocabularyMut + LiteralVocabularyMut
+{
+}
 
-impl<V: IriVocabulary + BlankIdVocabulary> Vocabulary for V {}
+impl<V: IriVocabulary + BlankIdVocabulary + LiteralVocabulary> Vocabulary for V {}
 
 /// Any vocabulary is also a namespace.
 impl<V: Vocabulary> Namespace for V {
 	type Id = Id<V::Iri, V::BlankId>;
 }
 
-impl<V: IriVocabularyMut + BlankIdVocabularyMut> VocabularyMut for V {}
+impl<V: IriVocabularyMut + BlankIdVocabularyMut + LiteralVocabularyMut> VocabularyMut for V {}
 
 /// IRI vocabulary.
 pub trait IriVocabulary {
@@ -96,18 +99,22 @@ pub trait LiteralVocabulary {
 	type Literal;
 
 	/// Literal type type.
-	/// 
+	///
 	/// Usually [`literal::Type<IriBuf, LanguageTagBuf>`](crate::literal::Type).
 	type Type: Clone;
 
 	/// Literal value type.
-	/// 
+	///
 	/// Usually [`String`].
 	type Value: Clone;
 
-	fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<&'l Literal<Self::Type, Self::Value>>;
+	fn literal<'l>(&'l self, id: &'l Self::Literal)
+		-> Option<&'l Literal<Self::Type, Self::Value>>;
 
-	fn owned_literal(&self, id: Self::Literal) -> Result<Literal<Self::Type, Self::Value>, Self::Literal> {
+	fn owned_literal(
+		&self,
+		id: Self::Literal,
+	) -> Result<Literal<Self::Type, Self::Value>, Self::Literal> {
 		self.literal(&id).map(Literal::clone).ok_or(id)
 	}
 
@@ -131,7 +138,10 @@ pub trait LanguageTagVocabulary {
 
 	fn language_tag<'l>(&'l self, id: &'l Self::LanguageTag) -> Option<LanguageTag<'l>>;
 
-	fn owned_language_tag(&self, id: Self::LanguageTag) -> Result<LanguageTagBuf, Self::LanguageTag> {
+	fn owned_language_tag(
+		&self,
+		id: Self::LanguageTag,
+	) -> Result<LanguageTagBuf, Self::LanguageTag> {
 		self.language_tag(&id).map(|t| t.cloned()).ok_or(id)
 	}
 
@@ -152,6 +162,16 @@ pub trait InsertIntoVocabulary<V> {
 	type Inserted;
 
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted;
+}
+
+impl<V, T: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Vec<T> {
+	type Inserted = Vec<T::Inserted>;
+
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+		self.into_iter()
+			.map(|t| t.insert_into_vocabulary(vocabulary))
+			.collect()
+	}
 }
 
 impl<V, T: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Option<T> {
@@ -216,11 +236,22 @@ pub trait InsertedIntoVocabulary<V> {
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted;
 }
 
+impl<V, T: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Vec<T> {
+	type Inserted = Vec<T::Inserted>;
+
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+		self.iter()
+			.map(|t| t.inserted_into_vocabulary(vocabulary))
+			.collect()
+	}
+}
+
 impl<V, T: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Option<T> {
 	type Inserted = Option<T::Inserted>;
 
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
-		self.as_ref().map(|t| t.inserted_into_vocabulary(vocabulary))
+		self.as_ref()
+			.map(|t| t.inserted_into_vocabulary(vocabulary))
 	}
 }
 
@@ -286,6 +317,7 @@ impl<V, T: TryExportFromVocabulary<V>> TryExportFromVocabulary<V> for Option<T> 
 	type Error = T::Error;
 
 	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
-		self.map(|t| t.try_export_from_vocabulary(vocabulary)).transpose()
+		self.map(|t| t.try_export_from_vocabulary(vocabulary))
+			.transpose()
 	}
 }

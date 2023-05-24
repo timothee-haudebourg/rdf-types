@@ -1,23 +1,20 @@
-use crate::{GraphLabel, Id, Quad, Subject, Triple};
+use crate::{
+	literal, GraphLabel, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Quad, Subject, Triple,
+};
 use iref::IriBuf;
-use langtag::LanguageTagBuf;
 use locspan::{Meta, Strip};
 
 /// gRDF term with literal with metadata.
-pub type Term<M, I = Id, T = LiteralType<M>, S = String> =
-	crate::Term<I, Literal<M, T, S>>;
+pub type Term<M, I = Id, T = literal::Type, S = String> = crate::Term<I, Literal<M, T, S>>;
 
 /// RDF object with literal with metadata.
-pub type Object<M, I = Id, T = LiteralType<M>, S = String> =
-	crate::Object<I, Literal<M, T, S>>;
+pub type Object<M, I = Id, T = literal::Type, S = String> = crate::Object<I, Literal<M, T, S>>;
 
 /// gRDF term with metadata.
-pub type MetaTerm<M, I = Id, T = LiteralType<M>, S = String> =
-	Meta<Term<M, I, T, S>, M>;
+pub type MetaTerm<M, I = Id, T = literal::Type, S = String> = Meta<Term<M, I, T, S>, M>;
 
 /// RDF object with metadata.
-pub type MetaObject<M, I = Id, T = LiteralType<M>, S = String> =
-	Meta<Object<M, I, T, S>, M>;
+pub type MetaObject<M, I = Id, T = literal::Type, S = String> = Meta<Object<M, I, T, S>, M>;
 
 /// Quad with metadata.
 pub type MetaQuad<S, P, O, G, M> = Meta<Quad<Meta<S, M>, Meta<P, M>, Meta<O, M>, Meta<G, M>>, M>;
@@ -29,17 +26,30 @@ pub type MetaRdfQuad<M> =
 /// gRDF quad with metadata.
 pub type MetaGrdfQuad<M> = Meta<Quad<MetaTerm<M>, MetaTerm<M>, MetaTerm<M>, MetaTerm<M>>, M>;
 
-/// RDF Literal type with metadata.
-pub type LiteralType<M, I = IriBuf, L = LanguageTagBuf> = crate::literal::Type<Meta<I, M>, Meta<L, M>>;
-
 /// RDF Literal with metadata.
-pub type Literal<M, T = LiteralType<M>, S = String> = crate::Literal<Meta<T, M>, Meta<S, M>>;
+pub type Literal<M, T = literal::Type, S = String> = crate::Literal<Meta<T, M>, Meta<S, M>>;
 
 impl<I, B> Strip for Id<I, B> {
 	type Stripped = Self;
 
 	fn strip(self) -> Self {
 		self
+	}
+}
+
+impl<V, T: InsertIntoVocabulary<V>, M> InsertIntoVocabulary<V> for Meta<T, M> {
+	type Inserted = Meta<T::Inserted, M>;
+
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+		Meta(self.0.insert_into_vocabulary(vocabulary), self.1)
+	}
+}
+
+impl<V, T: InsertedIntoVocabulary<V>, M: Clone> InsertedIntoVocabulary<V> for Meta<T, M> {
+	type Inserted = Meta<T::Inserted, M>;
+
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+		Meta(self.0.inserted_into_vocabulary(vocabulary), self.1.clone())
 	}
 }
 
@@ -60,7 +70,7 @@ impl<I, B> Strip for Id<I, B> {
 // )]
 // #[locspan(ignore(M))]
 // pub struct Literal<M, T = LiteralType<M, IriBuf, LanguageTagBuf>, S = String> {
-	
+
 // }
 
 // impl<M, S, T, L> Literal<M, T, S> {
@@ -113,13 +123,14 @@ impl<I, B> Strip for Id<I, B> {
 // 	}
 // }
 
-// impl<M, S, T, L> Strip for Literal<M, T, S> {
-// 	type Stripped = super::Literal<S, T, L>;
+impl<M, T, S> Strip for Literal<M, T, S> {
+	type Stripped = crate::Literal<T, S>;
 
-// 	fn strip(self) -> Self::Stripped {
-// 		self.strip()
-// 	}
-// }
+	fn strip(self) -> Self::Stripped {
+		let (Meta(value, _), Meta(type_, _)) = self.into_parts();
+		crate::Literal::new(value, type_)
+	}
+}
 
 // impl<M, S: fmt::Display, T: fmt::Display, L: fmt::Display> fmt::Display for Literal<M, T, S> {
 // 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

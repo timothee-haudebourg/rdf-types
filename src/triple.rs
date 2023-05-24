@@ -2,7 +2,10 @@ use std::{cmp::Ordering, fmt};
 
 use iref::{Iri, IriBuf};
 
-use crate::{Id, Literal, Object, ObjectRef, Quad, RdfDisplay, SubjectRef, Term, InsertedIntoVocabulary, InsertIntoVocabulary};
+use crate::{
+	Id, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, Object, ObjectRef, Quad, RdfDisplay,
+	SubjectRef,
+};
 
 #[cfg(feature = "contextual")]
 use contextual::{DisplayWithContext, WithContext};
@@ -29,9 +32,6 @@ use locspan_derive::*;
 )]
 pub struct Triple<S = Id, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
-/// gRDF triple.
-pub type GrdfTriple = Triple<Term, Term, Term>;
-
 /// RDF triple reference.
 pub type TripleRef<'a, L = Literal> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a, L>>;
 
@@ -54,12 +54,6 @@ impl<S1: PartialOrd<S2>, P1: PartialOrd<P2>, O1: PartialOrd<O2>, S2, P2, O2>
 			},
 			cmp => cmp,
 		}
-	}
-}
-
-impl Triple {
-	pub fn into_grdf(self) -> GrdfTriple {
-		Triple(self.0.into_term(), Term::Id(Id::Iri(self.1)), self.2)
 	}
 }
 
@@ -168,26 +162,34 @@ impl<'a, L> TripleRef<'a, L> {
 	}
 }
 
-impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Triple<S, P, O> {
+impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>>
+	InsertIntoVocabulary<V> for Triple<S, P, O>
+{
 	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
-	
+
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
 		Triple(
 			self.0.insert_into_vocabulary(vocabulary),
 			self.1.insert_into_vocabulary(vocabulary),
-			self.2.insert_into_vocabulary(vocabulary)
+			self.2.insert_into_vocabulary(vocabulary),
 		)
 	}
 }
 
-impl<V, S: InsertedIntoVocabulary<V>, P: InsertedIntoVocabulary<V>, O: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Triple<S, P, O> {
+impl<
+		V,
+		S: InsertedIntoVocabulary<V>,
+		P: InsertedIntoVocabulary<V>,
+		O: InsertedIntoVocabulary<V>,
+	> InsertedIntoVocabulary<V> for Triple<S, P, O>
+{
 	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
-	
+
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		Triple(
 			self.0.inserted_into_vocabulary(vocabulary),
 			self.1.inserted_into_vocabulary(vocabulary),
-			self.2.inserted_into_vocabulary(vocabulary)
+			self.2.inserted_into_vocabulary(vocabulary),
 		)
 	}
 }

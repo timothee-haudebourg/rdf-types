@@ -1,4 +1,7 @@
-use crate::{IriVocabulary, RdfDisplay, InsertIntoVocabulary, InsertedIntoVocabulary, LanguageTagVocabulary, LiteralVocabularyMut};
+use crate::{
+	InsertIntoVocabulary, InsertedIntoVocabulary, IriVocabulary, LanguageTagVocabulary,
+	LiteralVocabularyMut, RdfDisplay,
+};
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
@@ -9,40 +12,37 @@ use contextual::DisplayWithContext;
 
 #[cfg(feature = "meta")]
 use locspan_derive::{
-	StrippedPartialEq,
-	StrippedEq,
-	StrippedPartialOrd,
-	StrippedOrd,
-	StrippedHash,
+	StrippedEq, StrippedHash, StrippedOrd, StrippedPartialEq, StrippedPartialOrd,
 };
+
+mod map;
+
+pub use map::*;
 
 /// RDF Literal.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "meta", derive(
-	StrippedPartialEq,
-	StrippedEq,
-	StrippedPartialOrd,
-	StrippedOrd,
-	StrippedHash,
-))]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash,
+	)
+)]
 pub struct Literal<T = Type<IriBuf, LanguageTagBuf>, S = String> {
 	/// Literal value.
 	value: S,
 
 	/// Literal type.
-	type_: T
+	type_: T,
 }
 
 impl<T, S> Literal<T, S> {
-	pub fn new(
-		value: S,
-		type_: T
-	) -> Self {
-		Self {
-			value,
-			type_
-		}
+	pub fn new(value: S, type_: T) -> Self {
+		Self { value, type_ }
 	}
 
 	pub fn type_(&self) -> &T {
@@ -73,33 +73,52 @@ impl<T, S> Literal<T, S> {
 		(self.value, self.type_)
 	}
 
-	pub fn as_str(&self) -> &str where S: AsRef<str> {
+	pub fn as_str(&self) -> &str
+	where
+		S: AsRef<str>,
+	{
 		self.value.as_ref()
 	}
 
-	pub fn as_str_mut(&mut self) -> &mut str where S: AsMut<str> {
+	pub fn as_str_mut(&mut self) -> &mut str
+	where
+		S: AsMut<str>,
+	{
 		self.value.as_mut()
 	}
 
-	pub fn as_bytes(&self) -> &[u8] where S: AsRef<[u8]> {
+	pub fn as_bytes(&self) -> &[u8]
+	where
+		S: AsRef<[u8]>,
+	{
 		self.value.as_ref()
 	}
 
-	pub fn as_bytes_mut(&mut self) -> &mut [u8] where S: AsMut<[u8]> {
+	pub fn as_bytes_mut(&mut self) -> &mut [u8]
+	where
+		S: AsMut<[u8]>,
+	{
 		self.value.as_mut()
 	}
 
-	pub fn insert_type_into_vocabulary<V>(self, vocabulary: &mut V) -> Literal<T::Inserted, S> where T: InsertIntoVocabulary<V> {
+	pub fn insert_type_into_vocabulary<V>(self, vocabulary: &mut V) -> Literal<T::Inserted, S>
+	where
+		T: InsertIntoVocabulary<V>,
+	{
 		Literal {
 			value: self.value,
-			type_: self.type_.insert_into_vocabulary(vocabulary)
+			type_: self.type_.insert_into_vocabulary(vocabulary),
 		}
 	}
-	
-	pub fn inserted_type_into_vocabulary<V>(&self, vocabulary: &mut V) -> Literal<T::Inserted, S> where T: InsertedIntoVocabulary<V>, S: Clone {
+
+	pub fn inserted_type_into_vocabulary<V>(&self, vocabulary: &mut V) -> Literal<T::Inserted, S>
+	where
+		T: InsertedIntoVocabulary<V>,
+		S: Clone,
+	{
 		Literal {
 			value: self.value.clone(),
-			type_: self.type_.inserted_into_vocabulary(vocabulary)
+			type_: self.type_.inserted_into_vocabulary(vocabulary),
 		}
 	}
 }
@@ -114,19 +133,19 @@ impl<I, L, S> Literal<Type<I, L>, S> {
 	}
 }
 
-impl<'a, V: LiteralVocabularyMut> InsertIntoVocabulary<V> for &'a Literal<V::Type, V::Value> {
+impl<V: LiteralVocabularyMut> InsertIntoVocabulary<V> for Literal<V::Type, V::Value> {
 	type Inserted = V::Literal;
 
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
-		vocabulary.insert_literal(self)
+		vocabulary.insert_literal(&self)
 	}
 }
 
-impl<'a, V: LiteralVocabularyMut> InsertedIntoVocabulary<V> for &'a Literal<V::Type, V::Value> {
+impl<V: LiteralVocabularyMut> InsertedIntoVocabulary<V> for Literal<V::Type, V::Value> {
 	type Inserted = V::Literal;
 
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
-		vocabulary.insert_literal(*self)
+		vocabulary.insert_literal(self)
 	}
 }
 
@@ -154,36 +173,40 @@ impl<T, S: AsMut<str>> AsMut<str> for Literal<T, S> {
 	}
 }
 
-impl<T: RdfDisplay, S: RdfDisplay> fmt::Display for Literal<T, S> {
+impl<T: RdfDisplay + RdfDisplayTypeSeparator, S: RdfDisplay> fmt::Display for Literal<T, S> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
+		self.type_.rdf_fmt_type_separator(f)?;
 		self.type_.rdf_fmt(f)
 	}
 }
 
-impl<T: RdfDisplay, S: RdfDisplay> RdfDisplay for Literal<T, S> {
+impl<T: RdfDisplay + RdfDisplayTypeSeparator, S: RdfDisplay> RdfDisplay for Literal<T, S> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
+		self.type_.rdf_fmt_type_separator(f)?;
 		self.type_.rdf_fmt(f)
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<T: DisplayWithContext<V>, S: RdfDisplay, V> DisplayWithContext<V>
+impl<T: DisplayWithContext<V> + RdfDisplayTypeSeparator, S: RdfDisplay, V> DisplayWithContext<V>
 	for Literal<T, S>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
+		self.type_.rdf_fmt_type_separator(f)?;
 		self.type_.fmt_with(vocabulary, f)
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<T: crate::RdfDisplayWithContext<V>, S: RdfDisplay, V>
+impl<T: crate::RdfDisplayWithContext<V> + RdfDisplayTypeSeparator, S: RdfDisplay, V>
 	crate::RdfDisplayWithContext<V> for Literal<T, S>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
+		self.type_.rdf_fmt_type_separator(f)?;
 		self.type_.rdf_fmt_with(vocabulary, f)
 	}
 }
@@ -191,19 +214,22 @@ impl<T: crate::RdfDisplayWithContext<V>, S: RdfDisplay, V>
 /// RDF Literal type.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "meta", derive(
-	StrippedPartialEq,
-	StrippedEq,
-	StrippedPartialOrd,
-	StrippedOrd,
-	StrippedHash,
-))]
+#[cfg_attr(
+	feature = "meta",
+	derive(
+		StrippedPartialEq,
+		StrippedEq,
+		StrippedPartialOrd,
+		StrippedOrd,
+		StrippedHash,
+	)
+)]
 pub enum Type<I = IriBuf, L = LanguageTagBuf> {
 	/// Any type.
 	Any(I),
 
 	/// Language string.
-	LangString(L)
+	LangString(L),
 }
 
 impl<I, L> Type<I, L> {
@@ -219,11 +245,49 @@ impl<I, L> Type<I, L> {
 	}
 }
 
+impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabulary<V>
+	for Type<I, L>
+{
+	type Inserted = Type<I::Inserted, L::Inserted>;
+
+	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+		match self {
+			Self::Any(i) => Type::Any(i.insert_into_vocabulary(vocabulary)),
+			Self::LangString(l) => Type::LangString(l.insert_into_vocabulary(vocabulary)),
+		}
+	}
+}
+
+pub trait RdfDisplayTypeSeparator {
+	fn rdf_fmt_type_separator(&self, f: &mut fmt::Formatter) -> fmt::Result;
+}
+
+impl<T, L> RdfDisplayTypeSeparator for Type<T, L> {
+	fn rdf_fmt_type_separator(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Any(_) => write!(f, "^^"),
+			Self::LangString(_) => write!(f, "@"),
+		}
+	}
+}
+
 impl<T: RdfDisplay, L: RdfDisplay> RdfDisplay for Type<T, L> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Self::Any(ty) => write!(f, "^^{}", ty.rdf_display()),
-			Self::LangString(tag) => write!(f, "@{}", tag.rdf_display()),
+			Self::Any(ty) => ty.rdf_fmt(f),
+			Self::LangString(tag) => tag.rdf_fmt(f),
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<T: crate::RdfDisplayWithContext<V>, L: crate::RdfDisplayWithContext<V>, V>
+	crate::RdfDisplayWithContext<V> for Type<T, L>
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Any(ty) => ty.rdf_fmt_with(vocabulary, f),
+			Self::LangString(tag) => tag.rdf_fmt_with(vocabulary, f),
 		}
 	}
 }
@@ -264,11 +328,11 @@ pub struct UnknownType<I>(pub I);
 impl<T: TryExportLiteralType<V>, S: Into<String>, V> TryExportLiteral<V> for Literal<T, S> {
 	type Error = T::Error;
 
-	fn try_export_literal(
-		self,
-		vocabulary: &V
-	) -> Result<Literal, Self::Error> {
-		Ok(Literal { value: self.value.into(), type_: self.type_.try_export_literal_type(vocabulary)? })
+	fn try_export_literal(self, vocabulary: &V) -> Result<Literal, Self::Error> {
+		Ok(Literal {
+			value: self.value.into(),
+			type_: self.type_.try_export_literal_type(vocabulary)?,
+		})
 	}
 }
 
@@ -278,18 +342,26 @@ pub trait TryExportLiteralType<V> {
 	fn try_export_literal_type(self, vocabulary: &V) -> Result<Type, Self::Error>;
 }
 
-impl<V: IriVocabulary + LanguageTagVocabulary> TryExportLiteralType<V> for Type<V::Iri, V::LanguageTag> {
+impl<V: IriVocabulary + LanguageTagVocabulary> TryExportLiteralType<V>
+	for Type<V::Iri, V::LanguageTag>
+{
 	type Error = ExportError<V::Iri, V::LanguageTag>;
 
 	fn try_export_literal_type(self, vocabulary: &V) -> Result<Type, Self::Error> {
 		match self {
-			Self::Any(ty) => Ok(Type::Any(vocabulary.owned_iri(ty).map_err(ExportError::Iri)?)),
-			Self::LangString(tag) => Ok(Type::LangString(vocabulary.owned_language_tag(tag).map_err(ExportError::LangTag)?))
+			Self::Any(ty) => Ok(Type::Any(
+				vocabulary.owned_iri(ty).map_err(ExportError::Iri)?,
+			)),
+			Self::LangString(tag) => Ok(Type::LangString(
+				vocabulary
+					.owned_language_tag(tag)
+					.map_err(ExportError::LangTag)?,
+			)),
 		}
 	}
 }
 
 pub enum ExportError<I, L> {
 	Iri(I),
-	LangTag(L)
+	LangTag(L),
 }

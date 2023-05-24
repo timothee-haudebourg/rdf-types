@@ -9,7 +9,8 @@
 mod blankid;
 mod display;
 pub mod generator;
-mod literal;
+mod grdf;
+pub mod literal;
 mod quad;
 mod term;
 mod triple;
@@ -21,17 +22,19 @@ pub mod meta;
 pub use blankid::*;
 pub use display::*;
 pub use generator::Generator;
-pub use literal::*;
+pub use grdf::*;
+pub use literal::{
+	IntoLiteral, Literal, MapLiteral, RdfDisplayTypeSeparator, TryExportLiteral,
+	TryExportLiteralType,
+};
 pub use quad::*;
 pub use term::*;
 pub use triple::*;
 pub use vocabulary::{
-	BlankIdVocabulary, BlankIdVocabularyMut, IndexVocabulary, IriVocabulary, IriVocabularyMut,
-	NoVocabulary, Vocabulary, VocabularyMut,
-	LiteralVocabulary, LiteralVocabularyMut,
-	LanguageTagVocabulary, LanguageTagVocabularyMut,
-	InsertIntoVocabulary, InsertedIntoVocabulary,
-	TryExportFromVocabulary
+	BlankIdVocabulary, BlankIdVocabularyMut, IndexVocabulary, InsertIntoVocabulary,
+	InsertedIntoVocabulary, IriVocabulary, IriVocabularyMut, LanguageTagVocabulary,
+	LanguageTagVocabularyMut, LiteralVocabulary, LiteralVocabularyMut, NoVocabulary,
+	TryExportFromVocabulary, Vocabulary, VocabularyMut,
 };
 
 #[cfg(feature = "meta")]

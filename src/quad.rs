@@ -3,9 +3,8 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	GraphLabel, GraphLabelRef, Id, Literal, Object,
-	ObjectRef, RdfDisplay, SubjectRef, Term, Triple,
-	InsertIntoVocabulary, InsertedIntoVocabulary, TryExportFromVocabulary,
+	GraphLabel, GraphLabelRef, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, Object,
+	ObjectRef, RdfDisplay, SubjectRef, Triple, TryExportFromVocabulary,
 };
 
 #[cfg(feature = "contextual")]
@@ -33,23 +32,9 @@ use locspan_derive::*;
 )]
 pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
 
-/// gRDF quad.
-pub type GrdfQuad = Quad<Term, Term, Term, Term>;
-
 /// Standard RDF quad reference.
 pub type QuadRef<'a, L = Literal> =
 	Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a, L>, GraphLabelRef<'a>>;
-
-impl Quad {
-	pub fn into_grdf(self) -> GrdfQuad {
-		Quad(
-			self.0.into_term(),
-			Term::Id(Id::Iri(self.1)),
-			self.2,
-			self.3.map(GraphLabel::into_term),
-		)
-	}
-}
 
 impl<L> Quad<Id, IriBuf, Object<Id, L>, GraphLabel> {
 	pub fn as_quad_ref(&self) -> QuadRef<L> {
@@ -76,28 +61,42 @@ impl<'a, L> QuadRef<'a, L> {
 	}
 }
 
-impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>, G: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Quad<S, P, O, G> {
+impl<
+		V,
+		S: InsertIntoVocabulary<V>,
+		P: InsertIntoVocabulary<V>,
+		O: InsertIntoVocabulary<V>,
+		G: InsertIntoVocabulary<V>,
+	> InsertIntoVocabulary<V> for Quad<S, P, O, G>
+{
 	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
-	
+
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
 		Quad(
 			self.0.insert_into_vocabulary(vocabulary),
 			self.1.insert_into_vocabulary(vocabulary),
 			self.2.insert_into_vocabulary(vocabulary),
-			self.3.insert_into_vocabulary(vocabulary)
+			self.3.insert_into_vocabulary(vocabulary),
 		)
 	}
 }
 
-impl<V, S: InsertedIntoVocabulary<V>, P: InsertedIntoVocabulary<V>, O: InsertedIntoVocabulary<V>, G: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Quad<S, P, O, G> {
+impl<
+		V,
+		S: InsertedIntoVocabulary<V>,
+		P: InsertedIntoVocabulary<V>,
+		O: InsertedIntoVocabulary<V>,
+		G: InsertedIntoVocabulary<V>,
+	> InsertedIntoVocabulary<V> for Quad<S, P, O, G>
+{
 	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
-	
+
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		Quad(
 			self.0.inserted_into_vocabulary(vocabulary),
 			self.1.inserted_into_vocabulary(vocabulary),
 			self.2.inserted_into_vocabulary(vocabulary),
-			self.3.inserted_into_vocabulary(vocabulary)
+			self.3.inserted_into_vocabulary(vocabulary),
 		)
 	}
 }
@@ -232,16 +231,31 @@ pub enum QuadExportFailed<S, P, O, G> {
 	Graph(G),
 }
 
-impl<V, S: TryExportFromVocabulary<V>, P: TryExportFromVocabulary<V>, O: TryExportFromVocabulary<V>, G: TryExportFromVocabulary<V>> TryExportFromVocabulary<V> for Quad<S, P, O, G> {
+impl<
+		V,
+		S: TryExportFromVocabulary<V>,
+		P: TryExportFromVocabulary<V>,
+		O: TryExportFromVocabulary<V>,
+		G: TryExportFromVocabulary<V>,
+	> TryExportFromVocabulary<V> for Quad<S, P, O, G>
+{
 	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
 	type Error = QuadExportFailed<S::Error, P::Error, O::Error, G::Error>;
 
 	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
 		Ok(Quad(
-			self.0.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Subject)?,
-			self.1.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Predicate)?,
-			self.2.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Object)?,
-			self.3.try_export_from_vocabulary(vocabulary).map_err(QuadExportFailed::Graph)?
+			self.0
+				.try_export_from_vocabulary(vocabulary)
+				.map_err(QuadExportFailed::Subject)?,
+			self.1
+				.try_export_from_vocabulary(vocabulary)
+				.map_err(QuadExportFailed::Predicate)?,
+			self.2
+				.try_export_from_vocabulary(vocabulary)
+				.map_err(QuadExportFailed::Object)?,
+			self.3
+				.try_export_from_vocabulary(vocabulary)
+				.map_err(QuadExportFailed::Graph)?,
 		))
 	}
 }

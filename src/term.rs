@@ -1,4 +1,7 @@
-use crate::{BlankIdBuf, Literal, RdfDisplay, InsertIntoVocabulary, InsertedIntoVocabulary, TryExportFromVocabulary};
+use crate::{
+	BlankIdBuf, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, RdfDisplay,
+	TryExportFromVocabulary,
+};
 use iref::IriBuf;
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
@@ -212,7 +215,9 @@ impl<I, L> Term<I, L> {
 	}
 }
 
-impl<V, I: TryExportFromVocabulary<V>, L: TryExportFromVocabulary<V>> TryExportFromVocabulary<V> for Term<I, L> {
+impl<V, I: TryExportFromVocabulary<V>, L: TryExportFromVocabulary<V>> TryExportFromVocabulary<V>
+	for Term<I, L>
+{
 	type Output = Term<I::Output, L::Output>;
 
 	type Error = Term<I::Error, L::Error>;
@@ -271,7 +276,9 @@ impl<L> Term<Id, L> {
 	}
 }
 
-impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Term<I, L> {
+impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabulary<V>
+	for Term<I, L>
+{
 	type Inserted = Term<I::Inserted, L::Inserted>;
 
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
@@ -282,7 +289,9 @@ impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabu
 	}
 }
 
-impl<V, I: InsertedIntoVocabulary<V>, L: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Term<I, L> {
+impl<V, I: InsertedIntoVocabulary<V>, L: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V>
+	for Term<I, L>
+{
 	type Inserted = Term<I::Inserted, L::Inserted>;
 
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
