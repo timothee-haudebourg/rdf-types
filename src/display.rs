@@ -1,5 +1,7 @@
 use std::fmt;
 
+use langtag::{LanguageTag, LanguageTagBuf};
+
 pub trait RdfDisplay {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 
@@ -64,6 +66,20 @@ impl RdfDisplay for iref::IriRefBuf {
 	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.as_iri_ref().rdf_fmt(f)
+	}
+}
+
+impl<'a> RdfDisplay for LanguageTag<'a> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		self.as_str().fmt(f)
+	}
+}
+
+impl RdfDisplay for LanguageTagBuf {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		use fmt::Display;
+		self.as_str().fmt(f)
 	}
 }
 
