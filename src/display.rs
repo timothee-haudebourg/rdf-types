@@ -55,10 +55,24 @@ impl<'a> RdfDisplay for iref::Iri<'a> {
 	}
 }
 
+#[cfg(feature = "contextual")]
+impl<'a, C: ?Sized> RdfDisplayWithContext<C> for iref::Iri<'a> {
+	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
+		self.rdf_fmt(f)
+	}
+}
+
 impl RdfDisplay for iref::IriBuf {
 	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.as_iri_ref().rdf_fmt(f)
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<C: ?Sized> RdfDisplayWithContext<C> for iref::IriBuf {
+	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
+		self.rdf_fmt(f)
 	}
 }
 
@@ -69,6 +83,13 @@ impl RdfDisplay for iref::IriRefBuf {
 	}
 }
 
+#[cfg(feature = "contextual")]
+impl<C: ?Sized> RdfDisplayWithContext<C> for iref::IriRefBuf {
+	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
+		self.rdf_fmt(f)
+	}
+}
+
 impl<'a> RdfDisplay for LanguageTag<'a> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -76,10 +97,24 @@ impl<'a> RdfDisplay for LanguageTag<'a> {
 	}
 }
 
+#[cfg(feature = "contextual")]
+impl<'a, C: ?Sized> RdfDisplayWithContext<C> for LanguageTag<'a> {
+	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
+		self.rdf_fmt(f)
+	}
+}
+
 impl RdfDisplay for LanguageTagBuf {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		self.as_str().fmt(f)
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<C: ?Sized> RdfDisplayWithContext<C> for LanguageTagBuf {
+	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
+		self.rdf_fmt(f)
 	}
 }
 
