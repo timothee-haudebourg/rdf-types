@@ -10,6 +10,7 @@ mod blankid;
 mod display;
 pub mod generator;
 mod grdf;
+pub mod interpretation;
 pub mod literal;
 mod quad;
 mod term;
@@ -23,6 +24,14 @@ pub use blankid::*;
 pub use display::*;
 pub use generator::Generator;
 pub use grdf::*;
+pub use interpretation::{
+	BlankIdInterpretation, BlankIdInterpretationMut, IdInterpretation, IdInterpretationMut,
+	Interpret, Interpretation, InterpretationMut, IriInterpretation, IriInterpretationMut,
+	LexicalIdInterpretation, LexicalIdInterpretationMut, LexicalTermInterpretation,
+	LexicalTermInterpretationMut, LiteralInterpretation, LiteralInterpretationMut,
+	ReverseIdInterpretation, ReverseTermInterpretation, ReverseTermInterpretationMut,
+	TermInterpretation, TermInterpretationMut,
+};
 pub use literal::{
 	IntoLiteral, Literal, MapLiteral, RdfDisplayTypeSeparator, TryExportLiteral,
 	TryExportLiteralType,

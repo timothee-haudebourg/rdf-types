@@ -329,17 +329,31 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::AsRefWithCont
 }
 
 /// Type that can be converted into an `Id`.
-pub trait IntoId {
+pub trait AsId {
 	type Iri;
 	type BlankId;
 
+	fn as_id(&self) -> Id<&Self::Iri, &Self::BlankId>;
+}
+
+impl<I, B> AsId for Id<I, B> {
+	type Iri = I;
+	type BlankId = B;
+
+	fn as_id(&self) -> Id<&I, &B> {
+		match self {
+			Self::Iri(i) => Id::Iri(i),
+			Self::Blank(b) => Id::Blank(b),
+		}
+	}
+}
+
+/// Type that can be converted into an `Id`.
+pub trait IntoId: AsId {
 	fn into_id(self) -> Id<Self::Iri, Self::BlankId>;
 }
 
 impl<I, B> IntoId for Id<I, B> {
-	type Iri = I;
-	type BlankId = B;
-
 	fn into_id(self) -> Self {
 		self
 	}

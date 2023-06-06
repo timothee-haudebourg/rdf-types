@@ -292,23 +292,37 @@ impl<T: crate::RdfDisplayWithContext<V>, L: crate::RdfDisplayWithContext<V>, V>
 	}
 }
 
-/// Type that can be converted into a [`Literal`].
-pub trait IntoLiteral {
+pub trait AsLiteral {
 	/// Literal value type.
 	type Value;
 
 	/// Literal type value type.
 	type Type;
 
+	/// Turns the reference into a `Literal` referencing its components.
+	fn as_literal(&self) -> Literal<&Self::Type, &Self::Value>;
+}
+
+impl<T, S> AsLiteral for Literal<T, S> {
+	type Value = S;
+
+	type Type = T;
+
+	fn as_literal(&self) -> Literal<&T, &S> {
+		Literal {
+			type_: &self.type_,
+			value: &self.value,
+		}
+	}
+}
+
+/// Type that can be converted into a [`Literal`].
+pub trait IntoLiteral: AsLiteral {
 	/// Turns the value into a `Literal`.
 	fn into_literal(self) -> Literal<Self::Type, Self::Value>;
 }
 
 impl<T, S> IntoLiteral for Literal<T, S> {
-	type Value = S;
-
-	type Type = T;
-
 	fn into_literal(self) -> Self {
 		self
 	}
