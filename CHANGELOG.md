@@ -5,12 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.7] - 2023-04-20
+## [0.15.0] - 2023-06-06
+
+### Added
+
+- [cde1bba] Add `literal::Type` type.
+- [cde1bba] Add `InsertIntoVocabulary` trait.
+- [cde1bba] Add `InsertedIntoVocabulary` trait.
+- [cde1bba] Add `LiteralVocabulary` trait.
+- [cde1bba] Add `LanguageTagVocabulary` trait.
+- [390d3f5] Add interpretation traits.
+
+### Changed
+
+- [cde1bba] Change `Literal` type.
+
+## [0.14.9] - 2023-05-19
+
+### Added
+
+- [814da24] Add `serde` support.
+
+## [0.14.8] - 2023-05-17
 
 ### Added
 
 - [716f385] Impl `IntoLiteral` for `Literal<S, T, L>`.
 - [19ebd6e] Impl `IntoTerm` for `Term<I, L>`.
+- [a8a7237] Impl `From<Index>` for `usize`.
 
 ## [0.14.6] - 2023-04-20
 
