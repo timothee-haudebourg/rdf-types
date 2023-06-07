@@ -18,22 +18,36 @@ pub use scoped::*;
 /// IRIs and blank IDs.
 ///
 /// Any vocabulary implements the `Namespace` trait.
-pub trait Vocabulary: IriVocabulary + BlankIdVocabulary + LiteralVocabulary {}
-
-/// Mutable vocabulary.
-pub trait VocabularyMut:
-	Vocabulary + IriVocabularyMut + BlankIdVocabularyMut + LiteralVocabularyMut
+pub trait Vocabulary:
+	IriVocabulary + BlankIdVocabulary + LiteralVocabulary + LanguageTagVocabulary
 {
 }
 
-impl<V: IriVocabulary + BlankIdVocabulary + LiteralVocabulary> Vocabulary for V {}
+/// Mutable vocabulary.
+pub trait VocabularyMut:
+	Vocabulary
+	+ IriVocabularyMut
+	+ BlankIdVocabularyMut
+	+ LiteralVocabularyMut
+	+ LanguageTagVocabularyMut
+{
+}
+
+impl<V: IriVocabulary + BlankIdVocabulary + LiteralVocabulary + LanguageTagVocabulary> Vocabulary
+	for V
+{
+}
 
 /// Any vocabulary is also a namespace.
 impl<V: Vocabulary> Namespace for V {
 	type Id = Id<V::Iri, V::BlankId>;
 }
 
-impl<V: IriVocabularyMut + BlankIdVocabularyMut + LiteralVocabularyMut> VocabularyMut for V {}
+impl<
+		V: IriVocabularyMut + BlankIdVocabularyMut + LiteralVocabularyMut + LanguageTagVocabularyMut,
+	> VocabularyMut for V
+{
+}
 
 /// IRI vocabulary.
 pub trait IriVocabulary {
