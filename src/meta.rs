@@ -1,5 +1,6 @@
 use crate::{
-	literal, GraphLabel, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Quad, Subject, Triple,
+	literal, GraphLabel, Id, InsertIntoVocabulary, InsertedIntoVocabulary, MapLiteral, Quad,
+	Subject, Triple,
 };
 use iref::IriBuf;
 use locspan::{Meta, Strip};
@@ -50,6 +51,14 @@ impl<V, T: InsertedIntoVocabulary<V>, M: Clone> InsertedIntoVocabulary<V> for Me
 
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
 		Meta(self.0.inserted_into_vocabulary(vocabulary), self.1.clone())
+	}
+}
+
+impl<T: MapLiteral<L, M>, L, M, K> MapLiteral<L, M> for Meta<T, K> {
+	type Output = Meta<T::Output, K>;
+
+	fn map_literal(self, f: impl FnMut(L) -> M) -> Self::Output {
+		Meta(self.0.map_literal(f), self.1)
 	}
 }
 
