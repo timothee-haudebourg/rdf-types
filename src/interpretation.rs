@@ -4,18 +4,41 @@ use langtag::LanguageTagBuf;
 use crate::{
 	literal, BlankId, BlankIdBuf, BlankIdVocabulary, BlankIdVocabularyMut, Generator, Id,
 	IriVocabulary, IriVocabularyMut, LanguageTagVocabularyMut, Literal, LiteralVocabulary,
-	LiteralVocabularyMut, Namespace, Term,
+	LiteralVocabularyMut, Namespace, Quad, Term,
 };
 
 mod indexed;
+mod none;
 
 pub use indexed::*;
+
+pub type UninterpretedIdRef<'a, I> =
+	Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>;
+
+pub type UninterpretedTermRef<'a, I> =
+	Term<UninterpretedIdRef<'a, I>, &'a <I as ReverseLiteralInterpretation>::Literal>;
+
+pub type UninterpretedQuadRef<'a, I> = Quad<
+	UninterpretedIdRef<'a, I>,
+	&'a <I as ReverseIriInterpretation>::Iri,
+	UninterpretedTermRef<'a, I>,
+	UninterpretedIdRef<'a, I>,
+>;
+
+pub type UninterpretedGrdfQuadRef<'a, I> = Quad<
+	UninterpretedTermRef<'a, I>,
+	UninterpretedTermRef<'a, I>,
+	UninterpretedTermRef<'a, I>,
+	UninterpretedTermRef<'a, I>,
+>;
 
 /// RDF resource interpretation.
 pub trait Interpretation {
 	/// Resource identifier type.
 	type Resource;
+}
 
+pub trait TraversableInterpretation: Interpretation {
 	/// Interpreted resource iterator.
 	type Resources<'a>: 'a + Iterator<Item = Self::Resource>
 	where
@@ -26,7 +49,7 @@ pub trait Interpretation {
 }
 
 /// IRI Interpretation.
-pub trait IriInterpretation<I>: Interpretation {
+pub trait IriInterpretation<I: ?Sized>: Interpretation {
 	/// Returns the interpretation of the given IRI, if any.
 	fn iri_interpretation(&self, iri: &I) -> Option<Self::Resource>;
 
@@ -34,15 +57,31 @@ pub trait IriInterpretation<I>: Interpretation {
 		&self,
 		vocabulary: &impl IriVocabulary<Iri = I>,
 		iri: Iri,
-	) -> Option<Self::Resource> {
+	) -> Option<Self::Resource>
+	where
+		I: Sized,
+	{
 		vocabulary
 			.get(iri)
 			.and_then(|iri| self.iri_interpretation(&iri))
 	}
 }
 
+pub trait ReverseIriInterpretation: Interpretation {
+	type Iri;
+	type Iris<'a>: Clone + Iterator<Item = &'a Self::Iri>
+	where
+		Self: 'a;
+
+	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a>;
+}
+
+pub trait ReverseIriInterpretationMut: ReverseIriInterpretation {
+	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool;
+}
+
 /// Blank node identifier interpretation.
-pub trait BlankIdInterpretation<B>: Interpretation {
+pub trait BlankIdInterpretation<B: ?Sized>: Interpretation {
 	/// Returns the interpretation of the given blank node identifier, if any.
 	fn blank_id_interpretation(&self, blank_id: &B) -> Option<Self::Resource>;
 
@@ -50,20 +89,36 @@ pub trait BlankIdInterpretation<B>: Interpretation {
 		&self,
 		vocabulary: &impl BlankIdVocabulary<BlankId = B>,
 		blank_id: &BlankId,
-	) -> Option<Self::Resource> {
+	) -> Option<Self::Resource>
+	where
+		B: Sized,
+	{
 		vocabulary
 			.get_blank_id(blank_id)
 			.and_then(|blank_id| self.blank_id_interpretation(&blank_id))
 	}
 }
 
-/// Node identifier interpretation.
-pub trait IdInterpretation<I>: Interpretation {
-	/// Returns the interpretation of the given node identifier, if any.
-	fn id_interpretation(&self, id: &I) -> Option<Self::Resource>;
+pub trait ReverseBlankIdInterpretation: Interpretation {
+	type BlankId;
+	type BlankIds<'a>: Clone + Iterator<Item = &'a Self::BlankId>
+	where
+		Self: 'a;
+
+	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a>;
 }
 
-impl<I, B, T: IriInterpretation<I> + BlankIdInterpretation<B>> IdInterpretation<Id<I, B>> for T {
+pub trait ReverseBlankIdInterpretationMut: ReverseBlankIdInterpretation {
+	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool;
+}
+
+/// Node identifier interpretation.
+pub trait IdInterpretation<I, B>: Interpretation {
+	/// Returns the interpretation of the given node identifier, if any.
+	fn id_interpretation(&self, id: &Id<I, B>) -> Option<Self::Resource>;
+}
+
+impl<I, B, T: IriInterpretation<I> + BlankIdInterpretation<B>> IdInterpretation<I, B> for T {
 	fn id_interpretation(&self, id: &Id<I, B>) -> Option<Self::Resource> {
 		match id {
 			Id::Iri(i) => self.iri_interpretation(i),
@@ -114,11 +169,11 @@ pub trait LiteralInterpretation<L>: Interpretation {
 }
 
 /// RDF Term interpretation.
-pub trait TermInterpretation<I = Id<IriBuf, BlankIdBuf>, L = Literal>:
-	IdInterpretation<I> + LiteralInterpretation<L>
+pub trait TermInterpretation<I, B, L = Literal>:
+	IdInterpretation<I, B> + LiteralInterpretation<L>
 {
 	/// Returns the interpretation of the given term, if any.
-	fn term_interpretation(&self, term: &Term<I, L>) -> Option<Self::Resource> {
+	fn term_interpretation(&self, term: &Term<Id<I, B>, L>) -> Option<Self::Resource> {
 		match term {
 			Term::Id(id) => self.id_interpretation(id),
 			Term::Literal(l) => self.literal_interpretation(l),
@@ -201,12 +256,12 @@ pub trait BlankIdInterpretationMut<B = BlankIdBuf>: Interpretation {
 }
 
 /// Node identifier interpretation.
-pub trait IdInterpretationMut<I>: Interpretation {
+pub trait IdInterpretationMut<I, B>: IriInterpretationMut<I> + BlankIdInterpretationMut<B> {
 	/// Interprets the given identifier.
-	fn interpret_id(&mut self, id: I) -> Self::Resource;
+	fn interpret_id(&mut self, id: Id<I, B>) -> Self::Resource;
 }
 
-impl<I, B, T: IriInterpretationMut<I> + BlankIdInterpretationMut<B>> IdInterpretationMut<Id<I, B>>
+impl<I, B, T: IriInterpretationMut<I> + BlankIdInterpretationMut<B>> IdInterpretationMut<I, B>
 	for T
 {
 	fn interpret_id(&mut self, id: Id<I, B>) -> T::Resource {
@@ -299,10 +354,10 @@ pub trait LiteralInterpretationMut<L = Literal>: Interpretation {
 	}
 }
 
-pub trait TermInterpretationMut<I = Id<IriBuf, BlankIdBuf>, L = Literal>:
-	IdInterpretationMut<I> + LiteralInterpretationMut<L>
+pub trait TermInterpretationMut<I, B, L = Literal>:
+	IdInterpretationMut<I, B> + LiteralInterpretationMut<L>
 {
-	fn interpret_term(&mut self, term: Term<I, L>) -> Self::Resource {
+	fn interpret_term(&mut self, term: Term<Id<I, B>, L>) -> Self::Resource {
 		match term {
 			Term::Id(id) => self.interpret_id(id),
 			Term::Literal(l) => self.interpret_literal(l),
@@ -393,26 +448,8 @@ impl<
 /// Reverse node identifier interpretation.
 ///
 /// Used to retrieve the node identifiers of a given resource.
-pub trait ReverseIdInterpretation: Interpretation {
-	type Iri;
-	type BlankId;
-
-	type Iris<'a>: Iterator<Item = &'a Self::Iri>
-	where
-		Self: 'a,
-		Self::Iri: 'a;
-	type BlankIds<'a>: Iterator<Item = &'a Self::BlankId>
-	where
-		Self: 'a,
-		Self::BlankId: 'a;
-
-	/// Returns an iterator over the IRIs of the given resource.
-	fn iris_of(&self, id: &Self::Resource) -> Self::Iris<'_>;
-
-	/// Returns an iterator over the blank node identifiers of the given resource.
-	fn blank_ids_of(&self, id: &Self::Resource) -> Self::BlankIds<'_>;
-
-	fn ids_of(&self, id: &Self::Resource) -> IdsOf<Self> {
+pub trait ReverseIdInterpretation: ReverseIriInterpretation + ReverseBlankIdInterpretation {
+	fn ids_of<'a>(&'a self, id: &'a Self::Resource) -> IdsOf<'a, Self> {
 		IdsOf {
 			iris: self.iris_of(id),
 			blanks: self.blank_ids_of(id),
@@ -420,9 +457,30 @@ pub trait ReverseIdInterpretation: Interpretation {
 	}
 }
 
+impl<I: ?Sized + ReverseIriInterpretation + ReverseBlankIdInterpretation> ReverseIdInterpretation
+	for I
+{
+}
+
 pub struct IdsOf<'a, I: 'a + ?Sized + ReverseIdInterpretation> {
 	iris: I::Iris<'a>,
 	blanks: I::BlankIds<'a>,
+}
+
+impl<'a, I: 'a + ?Sized + ReverseIdInterpretation> Clone for IdsOf<'a, I> {
+	fn clone(&self) -> Self {
+		Self {
+			iris: self.iris.clone(),
+			blanks: self.blanks.clone(),
+		}
+	}
+}
+
+impl<'a, I: 'a + ?Sized + ReverseIdInterpretation> Copy for IdsOf<'a, I>
+where
+	I::Iris<'a>: Copy,
+	I::BlankIds<'a>: Copy,
+{
 }
 
 impl<'a, I: 'a + ?Sized + ReverseIdInterpretation> Iterator for IdsOf<'a, I> {
@@ -436,59 +494,367 @@ impl<'a, I: 'a + ?Sized + ReverseIdInterpretation> Iterator for IdsOf<'a, I> {
 	}
 }
 
-pub trait ReverseTermInterpretation: Interpretation {
-	type IdRef<'a>
-	where
-		Self: 'a;
-	type LiteralRef<'a>
+pub trait ReverseIdInterpretationMut:
+	ReverseIriInterpretationMut + ReverseBlankIdInterpretationMut
+{
+	fn assign_id(&mut self, r: Self::Resource, id: Id<Self::Iri, Self::BlankId>) -> bool {
+		match id {
+			Id::Iri(i) => self.assign_iri(r, i),
+			Id::Blank(b) => self.assign_blank_id(r, b),
+		}
+	}
+}
+
+impl<I: ?Sized + ReverseIriInterpretationMut + ReverseBlankIdInterpretationMut>
+	ReverseIdInterpretationMut for I
+{
+}
+
+pub trait ReverseLiteralInterpretation: Interpretation {
+	type Literal;
+
+	type Literals<'a>: Clone + Iterator<Item = &'a Self::Literal>
 	where
 		Self: 'a;
 
-	type Ids<'a>: Iterator<Item = Self::IdRef<'a>>
-	where
-		Self: 'a;
-	type Literals<'a>: Iterator<Item = Self::LiteralRef<'a>>
-	where
-		Self: 'a;
+	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a>;
+}
 
-	fn ids_of(&self, id: &Self::Resource) -> Self::Ids<'_>;
+pub type TermOf<'a, I> = Term<Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>, &'a <I as ReverseLiteralInterpretation>::Literal>;
 
-	fn literals_of(&self, id: &Self::Resource) -> Self::Literals<'_>;
-
-	fn terms_of(&self, id: &Self::Resource) -> TermsOf<Self> {
+pub trait ReverseTermInterpretation:
+	ReverseIdInterpretation + ReverseLiteralInterpretation
+{
+	fn terms_of<'a>(&'a self, id: &'a Self::Resource) -> TermsOf<'a, Self> {
 		TermsOf {
 			ids: self.ids_of(id),
 			literals: self.literals_of(id),
 		}
 	}
 
-	fn term_of(&self, id: &Self::Resource) -> Option<Term<Self::IdRef<'_>, Self::LiteralRef<'_>>> {
+	fn term_of<'a>(
+		&'a self,
+		id: &'a Self::Resource,
+	) -> Option<TermOf<'a, Self>> {
 		self.terms_of(id).next()
 	}
 
 	fn has_term(&self, id: &Self::Resource) -> bool {
 		self.term_of(id).is_some()
 	}
+
+	fn quads_of<'a>(
+		&'a self,
+		quad: Quad<&'a Self::Resource, &'a Self::Resource, &'a Self::Resource, &'a Self::Resource>,
+	) -> QuadsOf<'a, Self> {
+		QuadsOf {
+			s: self.ids_of(quad.0),
+			p: self.iris_of(quad.1),
+			o: self.terms_of(quad.2),
+			g: quad.3.map(|g| self.ids_of(g)),
+			pogs: None,
+		}
+	}
+
+	fn grdf_quads_of<'a>(
+		&'a self,
+		quad: Quad<&'a Self::Resource, &'a Self::Resource, &'a Self::Resource, &'a Self::Resource>,
+	) -> GrdfQuadsOf<'a, Self> {
+		GrdfQuadsOf {
+			s: self.terms_of(quad.0),
+			p: self.terms_of(quad.1),
+			o: self.terms_of(quad.2),
+			g: quad.3.map(|g| self.terms_of(g)),
+			pogs: None,
+		}
+	}
+}
+
+pub struct QuadsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: IdsOf<'a, I>,
+	p: I::Iris<'a>,
+	o: TermsOf<'a, I>,
+	g: Option<IdsOf<'a, I>>,
+	pogs: Option<PogsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for QuadsOf<'a, I> {
+	type Item = Quad<
+		Id<&'a I::Iri, &'a I::BlankId>,
+		&'a I::Iri,
+		Term<Id<&'a I::Iri, &'a I::BlankId>, &'a I::Literal>,
+		Id<&'a I::Iri, &'a I::BlankId>,
+	>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.pogs.as_mut() {
+				Some(pogs) => match pogs.next() {
+					Some(quad) => break Some(quad),
+					None => self.pogs = None,
+				},
+				None => match self.s.next() {
+					Some(s) => {
+						self.pogs = Some(PogsOf {
+							s,
+							p: self.p.clone(),
+							o: self.o.clone(),
+							g: self.g.clone(),
+							ogs: None,
+						})
+					}
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct PogsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: Id<&'a I::Iri, &'a I::BlankId>,
+	p: I::Iris<'a>,
+	o: TermsOf<'a, I>,
+	g: Option<IdsOf<'a, I>>,
+	ogs: Option<OgsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for PogsOf<'a, I> {
+	type Item = Quad<
+		Id<&'a I::Iri, &'a I::BlankId>,
+		&'a I::Iri,
+		Term<Id<&'a I::Iri, &'a I::BlankId>, &'a I::Literal>,
+		Id<&'a I::Iri, &'a I::BlankId>,
+	>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.ogs.as_mut() {
+				Some(ogs) => match ogs.next() {
+					Some(quad) => break Some(quad),
+					None => self.ogs = None,
+				},
+				None => match self.p.next() {
+					Some(p) => {
+						self.ogs = Some(OgsOf {
+							s: self.s,
+							p,
+							o: self.o.clone(),
+							g: self.g.clone(),
+							gs: None,
+						})
+					}
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct OgsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: Id<&'a I::Iri, &'a I::BlankId>,
+	p: &'a I::Iri,
+	o: TermsOf<'a, I>,
+	g: Option<IdsOf<'a, I>>,
+	gs: Option<GsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for OgsOf<'a, I> {
+	type Item = Quad<
+		Id<&'a I::Iri, &'a I::BlankId>,
+		&'a I::Iri,
+		Term<Id<&'a I::Iri, &'a I::BlankId>, &'a I::Literal>,
+		Id<&'a I::Iri, &'a I::BlankId>,
+	>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.gs.as_mut() {
+				Some(gs) => match gs.next() {
+					Some(quad) => break Some(quad),
+					None => self.gs = None,
+				},
+				None => match self.o.next() {
+					Some(o) => match self.g.clone() {
+						Some(g) => {
+							self.gs = Some(GsOf {
+								s: self.s,
+								p: self.p,
+								o,
+								g,
+							})
+						}
+						None => break Some(Quad(self.s, self.p, o, None)),
+					},
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct GsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: Id<&'a I::Iri, &'a I::BlankId>,
+	p: &'a I::Iri,
+	o: Term<Id<&'a I::Iri, &'a I::BlankId>, &'a I::Literal>,
+	g: IdsOf<'a, I>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for GsOf<'a, I> {
+	type Item = Quad<
+		Id<&'a I::Iri, &'a I::BlankId>,
+		&'a I::Iri,
+		Term<Id<&'a I::Iri, &'a I::BlankId>, &'a I::Literal>,
+		Id<&'a I::Iri, &'a I::BlankId>,
+	>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.g.next().map(|g| Quad(self.s, self.p, self.o, Some(g)))
+	}
+}
+
+pub struct GrdfQuadsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: TermsOf<'a, I>,
+	p: TermsOf<'a, I>,
+	o: TermsOf<'a, I>,
+	g: Option<TermsOf<'a, I>>,
+	pogs: Option<GrdfPogsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for GrdfQuadsOf<'a, I> {
+	type Item = UninterpretedGrdfQuadRef<'a, I>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.pogs.as_mut() {
+				Some(pogs) => match pogs.next() {
+					Some(quad) => break Some(quad),
+					None => self.pogs = None,
+				},
+				None => match self.s.next() {
+					Some(s) => {
+						self.pogs = Some(GrdfPogsOf {
+							s,
+							p: self.p.clone(),
+							o: self.o.clone(),
+							g: self.g.clone(),
+							ogs: None,
+						})
+					}
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct GrdfPogsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: UninterpretedTermRef<'a, I>,
+	p: TermsOf<'a, I>,
+	o: TermsOf<'a, I>,
+	g: Option<TermsOf<'a, I>>,
+	ogs: Option<GrdfOgsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for GrdfPogsOf<'a, I> {
+	type Item = UninterpretedGrdfQuadRef<'a, I>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.ogs.as_mut() {
+				Some(ogs) => match ogs.next() {
+					Some(quad) => break Some(quad),
+					None => self.ogs = None,
+				},
+				None => match self.p.next() {
+					Some(p) => {
+						self.ogs = Some(GrdfOgsOf {
+							s: self.s,
+							p,
+							o: self.o.clone(),
+							g: self.g.clone(),
+							gs: None,
+						})
+					}
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct GrdfOgsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: UninterpretedTermRef<'a, I>,
+	p: UninterpretedTermRef<'a, I>,
+	o: TermsOf<'a, I>,
+	g: Option<TermsOf<'a, I>>,
+	gs: Option<GrdfGsOf<'a, I>>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for GrdfOgsOf<'a, I> {
+	type Item = UninterpretedGrdfQuadRef<'a, I>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		loop {
+			match self.gs.as_mut() {
+				Some(gs) => match gs.next() {
+					Some(quad) => break Some(quad),
+					None => self.gs = None,
+				},
+				None => match self.o.next() {
+					Some(o) => match self.g.clone() {
+						Some(g) => {
+							self.gs = Some(GrdfGsOf {
+								s: self.s,
+								p: self.p,
+								o,
+								g,
+							})
+						}
+						None => break Some(Quad(self.s, self.p, o, None)),
+					},
+					None => break None,
+				},
+			}
+		}
+	}
+}
+
+struct GrdfGsOf<'a, I: ?Sized + ReverseTermInterpretation> {
+	s: UninterpretedTermRef<'a, I>,
+	p: UninterpretedTermRef<'a, I>,
+	o: UninterpretedTermRef<'a, I>,
+	g: TermsOf<'a, I>,
+}
+
+impl<'a, I: ?Sized + ReverseTermInterpretation> Iterator for GrdfGsOf<'a, I> {
+	type Item = UninterpretedGrdfQuadRef<'a, I>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.g.next().map(|g| Quad(self.s, self.p, self.o, Some(g)))
+	}
+}
+
+impl<I: ?Sized + ReverseIdInterpretation + ReverseLiteralInterpretation> ReverseTermInterpretation
+	for I
+{
+}
+
+pub trait ReverseLiteralInterpretationMut: ReverseLiteralInterpretation {
+	/// Assigns the given literal to the given resource.
+	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool;
 }
 
 /// Mutable reverse term identifier interpretation.
 ///
 /// Used to associate terms to resources.
-pub trait ReverseTermInterpretationMut: ReverseTermInterpretation {
-	type Id;
-	type Literal;
-
-	/// Assigns the given id to the given resource.
-	fn assign_id(&mut self, resource: Self::Resource, id: Self::Id) -> bool;
-
-	/// Assigns the given literal to the given resource.
-	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool;
-
+pub trait ReverseTermInterpretationMut:
+	ReverseIdInterpretationMut + ReverseLiteralInterpretationMut
+{
 	/// Assigns the given term to the given resource.
 	fn assign_term(
 		&mut self,
 		resource: Self::Resource,
-		term: Term<Self::Id, Self::Literal>,
+		term: Term<Id<Self::Iri, Self::BlankId>, Self::Literal>,
 	) -> bool {
 		match term {
 			Term::Id(id) => self.assign_id(resource, id),
@@ -499,8 +865,13 @@ pub trait ReverseTermInterpretationMut: ReverseTermInterpretation {
 	/// Assigns a term to all the interpreted resources.
 	fn assign_terms(
 		&mut self,
-		mut f: impl FnMut(&Self, &Self::Resource) -> Option<Term<Self::Id, Self::Literal>>,
-	) {
+		mut f: impl FnMut(
+			&Self,
+			&Self::Resource,
+		) -> Option<Term<Id<Self::Iri, Self::BlankId>, Self::Literal>>,
+	) where
+		Self: TraversableInterpretation,
+	{
 		let mut terms = Vec::new();
 		for r in self.resources() {
 			if let Some(term) = f(self, &r) {
@@ -515,25 +886,47 @@ pub trait ReverseTermInterpretationMut: ReverseTermInterpretation {
 
 	/// Generates and assign a node identifier for all the resources that don't
 	/// have any term, using the given generator.
-	fn generate_ids<N: Namespace<Id = Self::Id>>(
+	fn generate_ids<N: Namespace<Id = Id<Self::Iri, Self::BlankId>>>(
 		&mut self,
 		namespace: &mut N,
 		generator: &mut impl Generator<N>,
 	) where
-		Self: ReverseTermInterpretationMut,
+		Self: TraversableInterpretation + ReverseTermInterpretationMut,
 	{
 		self.assign_terms(|i, r| (!i.has_term(r)).then(|| Term::Id(generator.next(namespace))))
 	}
 }
 
+impl<I: ReverseIdInterpretationMut + ReverseLiteralInterpretationMut> ReverseTermInterpretationMut
+	for I
+{
+}
+
 /// Iterator over the terms of an interpreted resource.
 pub struct TermsOf<'a, I: 'a + ?Sized + ReverseTermInterpretation> {
-	ids: I::Ids<'a>,
+	ids: IdsOf<'a, I>,
 	literals: I::Literals<'a>,
 }
 
+impl<'a, I: 'a + ?Sized + ReverseTermInterpretation> Clone for TermsOf<'a, I> {
+	fn clone(&self) -> Self {
+		Self {
+			ids: self.ids.clone(),
+			literals: self.literals.clone(),
+		}
+	}
+}
+
+impl<'a, I: 'a + ?Sized + ReverseTermInterpretation> Copy for TermsOf<'a, I>
+where
+	I::Iris<'a>: Copy,
+	I::BlankIds<'a>: Copy,
+	I::Literals<'a>: Copy,
+{
+}
+
 impl<'a, I: 'a + ?Sized + ReverseTermInterpretation> Iterator for TermsOf<'a, I> {
-	type Item = Term<I::IdRef<'a>, I::LiteralRef<'a>>;
+	type Item = UninterpretedTermRef<'a, I>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.ids
@@ -552,7 +945,15 @@ pub trait Interpret<I: Interpretation> {
 	fn interpret(self, interpretation: &mut I) -> Self::Interpreted;
 }
 
-impl<I, B, T: IdInterpretationMut<Self>> Interpret<T> for Id<I, B> {
+impl<I: Interpretation, T: Interpret<I>> Interpret<I> for Option<T> {
+	type Interpreted = Option<T::Interpreted>;
+
+	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
+		self.map(|t| t.interpret(interpretation))
+	}
+}
+
+impl<I, B, T: IdInterpretationMut<I, B>> Interpret<T> for Id<I, B> {
 	type Interpreted = T::Resource;
 
 	fn interpret(self, interpretation: &mut T) -> Self::Interpreted {

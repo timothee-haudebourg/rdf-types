@@ -29,8 +29,8 @@ pub use interpretation::{
 	Interpret, Interpretation, InterpretationMut, IriInterpretation, IriInterpretationMut,
 	LexicalIdInterpretation, LexicalIdInterpretationMut, LexicalTermInterpretation,
 	LexicalTermInterpretationMut, LiteralInterpretation, LiteralInterpretationMut,
-	ReverseIdInterpretation, ReverseTermInterpretation, ReverseTermInterpretationMut,
-	TermInterpretation, TermInterpretationMut,
+	ReverseIdInterpretation, ReverseLiteralInterpretation, ReverseTermInterpretation,
+	ReverseTermInterpretationMut, TermInterpretation, TermInterpretationMut,
 };
 pub use literal::{
 	IntoLiteral, Literal, MapLiteral, RdfDisplayTypeSeparator, TryExportLiteral,
@@ -40,10 +40,11 @@ pub use quad::*;
 pub use term::*;
 pub use triple::*;
 pub use vocabulary::{
-	BlankIdVocabulary, BlankIdVocabularyMut, IndexVocabulary, InsertIntoVocabulary,
-	InsertedIntoVocabulary, IriVocabulary, IriVocabularyMut, LanguageTagVocabulary,
-	LanguageTagVocabularyMut, LiteralVocabulary, LiteralVocabularyMut, NoVocabulary,
-	TryExportFromVocabulary, Vocabulary, VocabularyMut,
+	BlankIdVocabulary, BlankIdVocabularyMut, ExportFromVocabulary, ExportRefFromVocabulary,
+	ExportedFromVocabulary, IndexVocabulary, InsertIntoVocabulary, InsertedIntoVocabulary,
+	IriVocabulary, IriVocabularyMut, LanguageTagVocabulary, LanguageTagVocabularyMut,
+	LiteralVocabulary, LiteralVocabularyMut, NoVocabulary, TryExportFromVocabulary, Vocabulary,
+	VocabularyMut,
 };
 
 #[cfg(feature = "meta")]

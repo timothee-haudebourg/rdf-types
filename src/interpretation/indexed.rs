@@ -3,12 +3,15 @@ use std::collections::{HashMap, HashSet};
 use crate::vocabulary::{BlankIdIndex, IriIndex, LiteralIndex};
 
 use crate::{
-	BlankIdInterpretation, BlankIdInterpretationMut, Id, Interpretation, IriInterpretation,
-	IriInterpretationMut, LiteralInterpretation, LiteralInterpretationMut, ReverseIdInterpretation,
-	ReverseTermInterpretation, ReverseTermInterpretationMut,
+	BlankIdInterpretation, BlankIdInterpretationMut, Interpretation, InterpretationMut,
+	IriInterpretation, IriInterpretationMut, LiteralInterpretation, LiteralInterpretationMut,
 };
 
-use super::IdsOf;
+use super::{
+	ReverseBlankIdInterpretation, ReverseBlankIdInterpretationMut, ReverseIriInterpretation,
+	ReverseIriInterpretationMut, ReverseLiteralInterpretation, ReverseLiteralInterpretationMut,
+	TraversableInterpretation,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ResourceIndex(usize);
@@ -84,7 +87,9 @@ impl Indexed {
 
 impl Interpretation for Indexed {
 	type Resource = ResourceIndex;
+}
 
+impl TraversableInterpretation for Indexed {
 	type Resources<'a> = ResourceIndexIter;
 
 	fn resources(&self) -> Self::Resources<'_> {
@@ -92,6 +97,12 @@ impl Interpretation for Indexed {
 			i: 0,
 			len: self.resources.len(),
 		}
+	}
+}
+
+impl InterpretationMut for Indexed {
+	fn new_resource(&mut self) -> Self::Resource {
+		self.resources.insert().0
 	}
 }
 
@@ -162,15 +173,11 @@ impl LiteralInterpretationMut<LiteralIndex> for Indexed {
 	}
 }
 
-impl ReverseIdInterpretation for Indexed {
+impl ReverseIriInterpretation for Indexed {
 	type Iri = IriIndex;
-	type BlankId = BlankIdIndex;
 
 	type Iris<'a> =
 		std::iter::Flatten<std::option::IntoIter<std::collections::hash_set::Iter<'a, IriIndex>>>;
-	type BlankIds<'a> = std::iter::Flatten<
-		std::option::IntoIter<std::collections::hash_set::Iter<'a, BlankIdIndex>>,
-	>;
 
 	fn iris_of(&self, id: &Self::Resource) -> Self::Iris<'_> {
 		self.resources
@@ -179,6 +186,14 @@ impl ReverseIdInterpretation for Indexed {
 			.into_iter()
 			.flatten()
 	}
+}
+
+impl ReverseBlankIdInterpretation for Indexed {
+	type BlankId = BlankIdIndex;
+
+	type BlankIds<'a> = std::iter::Flatten<
+		std::option::IntoIter<std::collections::hash_set::Iter<'a, BlankIdIndex>>,
+	>;
 
 	fn blank_ids_of(&self, id: &Self::Resource) -> Self::BlankIds<'_> {
 		self.resources
@@ -189,18 +204,12 @@ impl ReverseIdInterpretation for Indexed {
 	}
 }
 
-impl ReverseTermInterpretation for Indexed {
-	type IdRef<'a> = Id<&'a IriIndex, &'a BlankIdIndex> where Self: 'a;
-	type LiteralRef<'a> = &'a LiteralIndex where Self: 'a;
+impl ReverseLiteralInterpretation for Indexed {
+	type Literal = LiteralIndex;
 
-	type Ids<'a> = IdsOf<'a, Self>;
 	type Literals<'a> = std::iter::Flatten<
 		std::option::IntoIter<std::collections::hash_set::Iter<'a, LiteralIndex>>,
 	>;
-
-	fn ids_of(&self, id: &Self::Resource) -> Self::Ids<'_> {
-		ReverseIdInterpretation::ids_of(self, id)
-	}
 
 	fn literals_of(&self, id: &Self::Resource) -> Self::Literals<'_> {
 		self.resources
@@ -211,18 +220,21 @@ impl ReverseTermInterpretation for Indexed {
 	}
 }
 
-impl ReverseTermInterpretationMut for Indexed {
-	type Id = Id<IriIndex, BlankIdIndex>;
-	type Literal = LiteralIndex;
-
-	fn assign_id(&mut self, resource: Self::Resource, id: Self::Id) -> bool {
+impl ReverseIriInterpretationMut for Indexed {
+	fn assign_iri(&mut self, resource: Self::Resource, iri: Self::Iri) -> bool {
 		let r = self.resources.get_mut(resource).unwrap();
-		match id {
-			Id::Iri(iri) => r.iris.insert(iri),
-			Id::Blank(b) => r.blank_ids.insert(b),
-		}
+		r.iris.insert(iri)
 	}
+}
 
+impl ReverseBlankIdInterpretationMut for Indexed {
+	fn assign_blank_id(&mut self, resource: Self::Resource, blank_id: Self::BlankId) -> bool {
+		let r = self.resources.get_mut(resource).unwrap();
+		r.blank_ids.insert(blank_id)
+	}
+}
+
+impl ReverseLiteralInterpretationMut for Indexed {
 	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool {
 		self.resources
 			.get_mut(resource)

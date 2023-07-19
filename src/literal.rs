@@ -1,6 +1,7 @@
+use crate::vocabulary::{ExportFromVocabulary, ExportedFromVocabulary};
 use crate::{
 	InsertIntoVocabulary, InsertedIntoVocabulary, IriVocabulary, LanguageTagVocabulary,
-	LiteralVocabularyMut, RdfDisplay,
+	LiteralVocabulary, LiteralVocabularyMut, RdfDisplay,
 };
 use iref::IriBuf;
 use langtag::LanguageTagBuf;
@@ -149,6 +150,33 @@ impl<V: LiteralVocabularyMut> InsertedIntoVocabulary<V> for Literal<V::Type, V::
 	}
 }
 
+impl<V: LiteralVocabulary> ExportFromVocabulary<V> for Literal<V::Type, V::Value>
+where
+	V::Type: ExportFromVocabulary<V>,
+{
+	type Output = Literal<<V::Type as ExportFromVocabulary<V>>::Output, V::Value>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		let (value, type_) = self.into_parts();
+		Literal::new(value, type_.export_from_vocabulary(vocabulary))
+	}
+}
+
+impl<V: LiteralVocabulary> ExportedFromVocabulary<V> for Literal<V::Type, V::Value>
+where
+	V::Type: ExportedFromVocabulary<V>,
+	V::Value: Clone,
+{
+	type Output = Literal<<V::Type as ExportedFromVocabulary<V>>::Output, V::Value>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		Literal::new(
+			self.value.clone(),
+			self.type_.exported_from_vocabulary(vocabulary),
+		)
+	}
+}
+
 impl<T, S: AsRef<str>> Borrow<str> for Literal<T, S> {
 	fn borrow(&self) -> &str {
 		self.as_str()
@@ -254,6 +282,32 @@ impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabu
 		match self {
 			Self::Any(i) => Type::Any(i.insert_into_vocabulary(vocabulary)),
 			Self::LangString(l) => Type::LangString(l.insert_into_vocabulary(vocabulary)),
+		}
+	}
+}
+
+impl<V: IriVocabulary + LanguageTagVocabulary> ExportFromVocabulary<V>
+	for Type<V::Iri, V::LanguageTag>
+{
+	type Output = Type;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Any(t) => Type::Any(vocabulary.owned_iri(t).ok().unwrap()),
+			Self::LangString(t) => Type::LangString(vocabulary.owned_language_tag(t).ok().unwrap()),
+		}
+	}
+}
+
+impl<V: IriVocabulary + LanguageTagVocabulary> ExportedFromVocabulary<V>
+	for Type<V::Iri, V::LanguageTag>
+{
+	type Output = Type;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Any(t) => Type::Any(vocabulary.iri(t).unwrap().to_owned()),
+			Self::LangString(t) => Type::LangString(vocabulary.language_tag(t).unwrap().cloned()),
 		}
 	}
 }

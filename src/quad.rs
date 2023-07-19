@@ -3,8 +3,9 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	GraphLabel, GraphLabelRef, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, Object,
-	ObjectRef, RdfDisplay, SubjectRef, Triple, TryExportFromVocabulary,
+	ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary, GraphLabel,
+	GraphLabelRef, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Interpret, Interpretation,
+	Literal, Object, ObjectRef, RdfDisplay, SubjectRef, Triple, TryExportFromVocabulary,
 };
 
 #[cfg(feature = "contextual")]
@@ -31,6 +32,12 @@ use locspan_derive::*;
 	)
 )]
 pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
+
+impl<S, P, O, G> Quad<S, P, O, G> {
+	pub fn borrow_components(&self) -> Quad<&S, &P, &O, &G> {
+		Quad(&self.0, &self.1, &self.2, self.3.as_ref())
+	}
+}
 
 /// Standard RDF quad reference.
 pub type QuadRef<'a, L = Literal> =
@@ -206,6 +213,81 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	/// Maps the graph with the given function.
 	pub fn map_graph<U>(self, f: impl FnOnce(Option<G>) -> Option<U>) -> Quad<S, P, O, U> {
 		Quad(self.0, self.1, self.2, f(self.3))
+	}
+}
+
+impl<S: Interpret<I>, P: Interpret<I>, O: Interpret<I>, G: Interpret<I>, I: Interpretation>
+	Interpret<I> for Quad<S, P, O, G>
+{
+	type Interpreted = Quad<S::Interpreted, P::Interpreted, O::Interpreted, G::Interpreted>;
+
+	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
+		Quad(
+			self.0.interpret(interpretation),
+			self.1.interpret(interpretation),
+			self.2.interpret(interpretation),
+			self.3.interpret(interpretation),
+		)
+	}
+}
+
+impl<
+		V,
+		S: ExportFromVocabulary<V>,
+		P: ExportFromVocabulary<V>,
+		O: ExportFromVocabulary<V>,
+		G: ExportFromVocabulary<V>,
+	> ExportFromVocabulary<V> for Quad<S, P, O, G>
+{
+	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		Quad(
+			self.0.export_from_vocabulary(vocabulary),
+			self.1.export_from_vocabulary(vocabulary),
+			self.2.export_from_vocabulary(vocabulary),
+			self.3.export_from_vocabulary(vocabulary),
+		)
+	}
+}
+
+impl<
+		V,
+		S: ExportedFromVocabulary<V>,
+		P: ExportedFromVocabulary<V>,
+		O: ExportedFromVocabulary<V>,
+		G: ExportedFromVocabulary<V>,
+	> ExportedFromVocabulary<V> for Quad<S, P, O, G>
+{
+	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		Quad(
+			self.0.exported_from_vocabulary(vocabulary),
+			self.1.exported_from_vocabulary(vocabulary),
+			self.2.exported_from_vocabulary(vocabulary),
+			self.3.exported_from_vocabulary(vocabulary),
+		)
+	}
+}
+
+impl<
+		V,
+		S: ExportRefFromVocabulary<V>,
+		P: ExportRefFromVocabulary<V>,
+		O: ExportRefFromVocabulary<V>,
+		G: ExportRefFromVocabulary<V>,
+	> ExportRefFromVocabulary<V> for Quad<S, P, O, G>
+{
+	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+
+	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		Quad(
+			self.0.export_ref_from_vocabulary(vocabulary),
+			self.1.export_ref_from_vocabulary(vocabulary),
+			self.2.export_ref_from_vocabulary(vocabulary),
+			self.3.export_ref_from_vocabulary(vocabulary),
+		)
 	}
 }
 

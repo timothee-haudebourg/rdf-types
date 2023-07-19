@@ -5,8 +5,9 @@ use std::{cmp::Ordering, fmt, hash::Hash};
 use locspan_derive::*;
 
 use crate::{
-	BlankId, BlankIdBuf, GraphLabelRef, InsertIntoVocabulary, InsertedIntoVocabulary, RdfDisplay,
-	SubjectRef, Term, Vocabulary, VocabularyMut,
+	vocabulary::{ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary},
+	BlankId, BlankIdBuf, BlankIdVocabulary, GraphLabelRef, InsertIntoVocabulary,
+	InsertedIntoVocabulary, IriVocabulary, RdfDisplay, SubjectRef, Term, Vocabulary, VocabularyMut,
 };
 
 /// RDF node identifier.
@@ -134,6 +135,41 @@ impl<V, I: InsertedIntoVocabulary<V>, B: InsertedIntoVocabulary<V>> InsertedInto
 		match self {
 			Self::Iri(i) => Id::Iri(i.inserted_into_vocabulary(vocabulary)),
 			Self::Blank(b) => Id::Blank(b.inserted_into_vocabulary(vocabulary)),
+		}
+	}
+}
+
+impl<V: IriVocabulary + BlankIdVocabulary> ExportedFromVocabulary<V> for Id<V::Iri, V::BlankId> {
+	type Output = Id<IriBuf, BlankIdBuf>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
+			Self::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
+		}
+	}
+}
+
+impl<V: IriVocabulary + BlankIdVocabulary> ExportFromVocabulary<V> for Id<V::Iri, V::BlankId> {
+	type Output = Id<IriBuf, BlankIdBuf>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Iri(i) => Id::Iri(vocabulary.owned_iri(i).ok().unwrap()),
+			Self::Blank(b) => Id::Blank(vocabulary.owned_blank_id(b).ok().unwrap()),
+		}
+	}
+}
+
+impl<'a, V: IriVocabulary + BlankIdVocabulary> ExportRefFromVocabulary<V>
+	for Id<&'a V::Iri, &'a V::BlankId>
+{
+	type Output = Id<IriBuf, BlankIdBuf>;
+
+	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
+			Self::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
 		}
 	}
 }

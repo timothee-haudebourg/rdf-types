@@ -317,6 +317,70 @@ impl<V: LanguageTagVocabularyMut> InsertedIntoVocabulary<V> for LanguageTagBuf {
 	}
 }
 
+/// Exports the RDF component values (IRIs, blank node identifiers, etc.)
+/// embedded into the vocabulary `V`.
+///
+/// For `V::Iri` the output will be `IriBuf`, for `V::BlankId` it will be
+/// `BlankIdBuf`, etc.
+pub trait ExportFromVocabulary<V> {
+	type Output;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output;
+}
+
+impl<T: ExportFromVocabulary<V>, V> ExportFromVocabulary<V> for Option<T> {
+	type Output = Option<T::Output>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		self.map(|t| t.export_from_vocabulary(vocabulary))
+	}
+}
+
+/// Exports the RDF component values (IRIs, blank node identifiers, etc.)
+/// embedded into the vocabulary `V`.
+///
+/// This trait is similar to `ExportFromVocabulary` but will clone the component
+/// values. For `V::Iri` the output will be `IriBuf`, for `V::BlankId` it will be
+/// `BlankIdBuf`, etc.
+pub trait ExportedFromVocabulary<V> {
+	type Output;
+
+	/// Exports a value embedded into the vocabulary `V`.
+	///
+	/// For `V::Iri` the output will be `IriBuf`, for `V::BlankId` it will be
+	/// `BlankIdBuf`, etc.
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output;
+}
+
+impl<T: ExportedFromVocabulary<V>, V> ExportedFromVocabulary<V> for Option<T> {
+	type Output = Option<T::Output>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		self.as_ref()
+			.map(|t| t.exported_from_vocabulary(vocabulary))
+	}
+}
+
+/// Exports the RDF component references (IRIs, blank node identifiers, etc.)
+/// embedded into the vocabulary `V`.
+///
+/// This trait is similar to `ExportFromVocabulary` but works on references.
+/// For `&V::Iri` the output will be `IriBuf`, for `&V::BlankId` it will be
+/// `BlankIdBuf`, etc.
+pub trait ExportRefFromVocabulary<V> {
+	type Output;
+
+	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output;
+}
+
+impl<T: ExportRefFromVocabulary<V>, V> ExportRefFromVocabulary<V> for Option<T> {
+	type Output = Option<T::Output>;
+
+	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		self.map(|t| t.export_ref_from_vocabulary(vocabulary))
+	}
+}
+
 pub trait TryExportFromVocabulary<V> {
 	type Output;
 

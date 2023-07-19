@@ -1,6 +1,7 @@
+use crate::vocabulary::{ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary};
 use crate::{
-	BlankIdBuf, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, RdfDisplay,
-	TryExportFromVocabulary,
+	BlankIdBuf, InsertIntoVocabulary, InsertedIntoVocabulary, Interpret, Literal,
+	LiteralInterpretationMut, LiteralVocabulary, RdfDisplay, TryExportFromVocabulary,
 };
 use iref::IriBuf;
 use std::fmt;
@@ -211,6 +212,76 @@ impl<I, L> Term<I, L> {
 		match self {
 			Self::Id(id) => Term::Id(id),
 			Self::Literal(l) => Term::Literal(l),
+		}
+	}
+}
+
+impl<I: LiteralInterpretationMut<L>, T: Interpret<I, Interpreted = I::Resource>, L> Interpret<I>
+	for Term<T, L>
+{
+	type Interpreted = I::Resource;
+
+	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
+		match self {
+			Self::Id(id) => id.interpret(interpretation),
+			Self::Literal(l) => interpretation.interpret_literal(l),
+		}
+	}
+}
+
+impl<V: LiteralVocabulary, I: ExportedFromVocabulary<V>> ExportedFromVocabulary<V>
+	for Term<I, V::Literal>
+where
+	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
+{
+	type Output =
+		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Id(i) => Term::Id(i.exported_from_vocabulary(vocabulary)),
+			Self::Literal(l) => {
+				let l = vocabulary.literal(l).unwrap();
+				Term::Literal(l.exported_from_vocabulary(vocabulary))
+			}
+		}
+	}
+}
+
+impl<V: LiteralVocabulary, I: ExportFromVocabulary<V>> ExportFromVocabulary<V>
+	for Term<I, V::Literal>
+where
+	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
+{
+	type Output =
+		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Id(i) => Term::Id(i.export_from_vocabulary(vocabulary)),
+			Self::Literal(l) => {
+				let l = vocabulary.literal(&l).unwrap();
+				Term::Literal(l.exported_from_vocabulary(vocabulary))
+			}
+		}
+	}
+}
+
+impl<'a, V: LiteralVocabulary, I: ExportRefFromVocabulary<V>> ExportRefFromVocabulary<V>
+	for Term<I, &'a V::Literal>
+where
+	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
+{
+	type Output =
+		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
+
+	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		match self {
+			Self::Id(i) => Term::Id(i.export_ref_from_vocabulary(vocabulary)),
+			Self::Literal(l) => {
+				let l = vocabulary.literal(l).unwrap();
+				Term::Literal(l.exported_from_vocabulary(vocabulary))
+			}
 		}
 	}
 }
