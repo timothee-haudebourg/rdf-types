@@ -260,24 +260,15 @@ impl Uuid {
 ))]
 impl<V: crate::Vocabulary + crate::IriVocabularyMut> Generator<V> for Uuid {
 	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		unsafe {
-			let mut buffer = Vec::with_capacity(uuid::adapter::Urn::LENGTH);
-			let ptr = buffer.as_mut_ptr();
-			let capacity = buffer.capacity();
-			std::mem::forget(buffer);
-			let uuid = self.next_uuid();
-			let len = uuid
-				.to_urn()
-				.encode_lower(std::slice::from_raw_parts_mut(
-					ptr,
-					uuid::adapter::Urn::LENGTH,
-				))
-				.len();
-			let buffer = Vec::from_raw_parts(ptr, len, capacity);
-			let p = iref::parsing::ParsedIriRef::new(&buffer).unwrap();
-			let iri = iref::IriBuf::from_raw_parts(buffer, p);
-			Id::Iri(vocabulary.insert(iri.as_iri()))
-		}
+		let mut buffer: Vec<u8> = Vec::new();
+		buffer.resize(uuid::adapter::Urn::LENGTH, 0);
+		let uuid = self.next_uuid();
+		let len = uuid.to_urn().encode_lower(buffer.as_mut()).len();
+		buffer.truncate(len);
+
+		Id::Iri(vocabulary.insert_owned(unsafe {
+			iref::IriBuf::new_unchecked(String::from_utf8_unchecked(buffer))
+		}))
 	}
 }
 
@@ -299,7 +290,7 @@ mod tests {
 		);
 		for _ in 0..100 {
 			let reference: Id = uuid_gen.next(&mut ());
-			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
+			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}
 
@@ -309,7 +300,7 @@ mod tests {
 		let mut uuid_gen = Uuid::V4;
 		for _ in 0..100 {
 			let reference: Id = uuid_gen.next(&mut ());
-			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
+			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}
 
@@ -322,7 +313,7 @@ mod tests {
 		);
 		for _ in 0..100 {
 			let reference: Id = uuid_gen.next(&mut ());
-			assert!(iref::IriBuf::new(reference.as_str()).is_ok())
+			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}
 }

@@ -19,15 +19,15 @@ impl From<IriIndex> for usize {
 }
 
 impl IndexedIri for IriIndex {
-	fn index(&self) -> IriOrIndex<Iri<'_>> {
+	fn index(&self) -> IriOrIndex<&Iri> {
 		IriOrIndex::Index(self.0)
 	}
 }
 
-impl<'a> TryFrom<Iri<'a>> for IriIndex {
+impl<'a> TryFrom<&'a Iri> for IriIndex {
 	type Error = ();
 
-	fn try_from(_value: Iri<'a>) -> Result<Self, Self::Error> {
+	fn try_from(_value: &'a Iri) -> Result<Self, Self::Error> {
 		Err(())
 	}
 }
@@ -40,17 +40,17 @@ impl<V: crate::IriVocabulary<Iri = Self>> crate::RdfDisplayWithContext<V> for Ir
 }
 
 /// Partly indexed IRI identifier type.
-pub trait IndexedIri: From<usize> + for<'a> TryFrom<Iri<'a>> {
-	fn index(&self) -> IriOrIndex<Iri<'_>>;
+pub trait IndexedIri: From<usize> + for<'a> TryFrom<&'a Iri> {
+	fn index(&self) -> IriOrIndex<&Iri>;
 }
 
 impl<I> IndexedIri for IriOrIndex<I>
 where
-	I: iref::AsIri + for<'a> TryFrom<Iri<'a>>,
+	I: AsRef<Iri> + for<'a> TryFrom<&'a Iri>,
 {
-	fn index(&self) -> IriOrIndex<Iri<'_>> {
+	fn index(&self) -> IriOrIndex<&Iri> {
 		match self {
-			Self::Iri(i) => IriOrIndex::Iri(i.as_iri()),
+			Self::Iri(i) => IriOrIndex::Iri(i.as_ref()),
 			Self::Index(i) => IriOrIndex::Index(*i),
 		}
 	}
@@ -78,10 +78,10 @@ impl<I> From<usize> for IriOrIndex<I> {
 	}
 }
 
-impl<'a, I: TryFrom<Iri<'a>>> TryFrom<Iri<'a>> for IriOrIndex<I> {
+impl<'a, I: TryFrom<&'a Iri>> TryFrom<&'a Iri> for IriOrIndex<I> {
 	type Error = I::Error;
 
-	fn try_from(value: Iri<'a>) -> Result<Self, Self::Error> {
+	fn try_from(value: &'a Iri) -> Result<Self, Self::Error> {
 		Ok(Self::Iri(I::try_from(value)?))
 	}
 }

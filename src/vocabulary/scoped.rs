@@ -76,17 +76,17 @@ impl<'a, V: BlankIdVocabulary, S> Scoped<'a, V, S> {
 impl<'a, V: BlankIdVocabulary + IriVocabulary, S> IriVocabulary for Scoped<'a, V, S> {
 	type Iri = V::Iri;
 
-	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<Iri<'i>> {
+	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<&'i Iri> {
 		self.inner.iri(id)
 	}
 
-	fn get(&self, iri: Iri) -> Option<Self::Iri> {
+	fn get(&self, iri: &Iri) -> Option<Self::Iri> {
 		self.inner.get(iri)
 	}
 }
 
 impl<'a, V: BlankIdVocabulary + IriVocabularyMut, S> IriVocabularyMut for Scoped<'a, V, S> {
-	fn insert(&mut self, iri: Iri) -> Self::Iri {
+	fn insert(&mut self, iri: &Iri) -> Self::Iri {
 		self.inner.insert(iri)
 	}
 }

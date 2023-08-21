@@ -57,14 +57,14 @@ impl<I, B> IndexVocabulary<I, B> {
 impl<I: IndexedIri, B, L, T, TY, TV> IriVocabulary for IndexVocabulary<I, B, L, T, TY, TV> {
 	type Iri = I;
 
-	fn iri<'i>(&'i self, id: &'i I) -> Option<Iri<'i>> {
+	fn iri<'i>(&'i self, id: &'i I) -> Option<&'i Iri> {
 		match id.index() {
 			IriOrIndex::Iri(iri) => Some(iri),
 			IriOrIndex::Index(i) => self.iri.get_index(i).map(IriBuf::as_iri),
 		}
 	}
 
-	fn get(&self, iri: Iri) -> Option<I> {
+	fn get(&self, iri: &Iri) -> Option<I> {
 		match I::try_from(iri) {
 			Ok(id) => Some(id),
 			Err(_) => self.iri.get_index_of(&iri.to_owned()).map(I::from),
@@ -73,7 +73,7 @@ impl<I: IndexedIri, B, L, T, TY, TV> IriVocabulary for IndexVocabulary<I, B, L, 
 }
 
 impl<I: IndexedIri, B, L, T, TY, TV> IriVocabularyMut for IndexVocabulary<I, B, L, T, TY, TV> {
-	fn insert(&mut self, iri: Iri) -> I {
+	fn insert(&mut self, iri: &Iri) -> I {
 		match I::try_from(iri) {
 			Ok(id) => id,
 			Err(_) => self.iri.insert_full(iri.to_owned()).0.into(),

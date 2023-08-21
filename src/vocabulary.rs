@@ -54,7 +54,7 @@ pub trait IriVocabulary {
 	type Iri;
 
 	/// Returns the IRI associated to the given IRI id.
-	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<Iri<'i>>;
+	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<&'i Iri>;
 
 	/// Returns a copy of the IRI associated to the given IRI id.
 	fn owned_iri(&self, id: Self::Iri) -> Result<IriBuf, Self::Iri> {
@@ -62,7 +62,7 @@ pub trait IriVocabulary {
 	}
 
 	/// Returns the id of the given IRI, if any.
-	fn get(&self, iri: Iri) -> Option<Self::Iri>;
+	fn get(&self, iri: &Iri) -> Option<Self::Iri>;
 }
 
 /// Mutable IRI vocabulary.
@@ -71,7 +71,7 @@ pub trait IriVocabularyMut: IriVocabulary {
 	///
 	/// If the IRI was already present in the vocabulary, no new id is created
 	/// and the current one is returned.
-	fn insert(&mut self, iri: Iri) -> Self::Iri;
+	fn insert(&mut self, iri: &Iri) -> Self::Iri;
 
 	fn insert_owned(&mut self, iri: IriBuf) -> Self::Iri {
 		self.insert(iri.as_iri())
@@ -196,7 +196,7 @@ impl<V, T: InsertIntoVocabulary<V>> InsertIntoVocabulary<V> for Option<T> {
 	}
 }
 
-impl<'a, V: IriVocabularyMut> InsertIntoVocabulary<V> for Iri<'a> {
+impl<'a, V: IriVocabularyMut> InsertIntoVocabulary<V> for &'a Iri {
 	type Inserted = V::Iri;
 
 	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
@@ -269,11 +269,11 @@ impl<V, T: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V> for Option<T> {
 	}
 }
 
-impl<'a, V: IriVocabularyMut> InsertedIntoVocabulary<V> for Iri<'a> {
+impl<'a, V: IriVocabularyMut> InsertedIntoVocabulary<V> for &'a Iri {
 	type Inserted = V::Iri;
 
 	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
-		vocabulary.insert(*self)
+		vocabulary.insert(self)
 	}
 }
 

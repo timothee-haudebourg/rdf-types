@@ -56,7 +56,7 @@ pub trait IriInterpretation<I: ?Sized>: Interpretation {
 	fn lexical_iri_interpretation(
 		&self,
 		vocabulary: &impl IriVocabulary<Iri = I>,
-		iri: Iri,
+		iri: &Iri,
 	) -> Option<Self::Resource>
 	where
 		I: Sized,
@@ -131,7 +131,7 @@ pub trait LexicalIdInterpretation<V>: Interpretation {
 	fn lexical_id_interpretation(
 		&self,
 		vocabulary: &V,
-		id: Id<Iri, &BlankId>,
+		id: Id<&Iri, &BlankId>,
 	) -> Option<Self::Resource>;
 }
 
@@ -143,7 +143,7 @@ impl<
 	fn lexical_id_interpretation(
 		&self,
 		vocabulary: &V,
-		id: Id<Iri, &BlankId>,
+		id: Id<&Iri, &BlankId>,
 	) -> Option<Self::Resource> {
 		match id {
 			Id::Iri(i) => self.lexical_iri_interpretation(vocabulary, i),
@@ -186,7 +186,7 @@ pub trait LexicalTermInterpretation<V: LiteralVocabulary>: Interpretation {
 	fn lexical_term_interpretation(
 		&self,
 		vocabulary: &V,
-		term: Term<Id<Iri, &BlankId>, &Literal<V::Type, V::Value>>,
+		term: Term<Id<&Iri, &BlankId>, &Literal<V::Type, V::Value>>,
 	) -> Option<Self::Resource>;
 }
 
@@ -196,7 +196,7 @@ impl<V: LiteralVocabulary, I: LexicalIdInterpretation<V> + LiteralInterpretation
 	fn lexical_term_interpretation(
 		&self,
 		vocabulary: &V,
-		term: Term<Id<Iri, &BlankId>, &Literal<V::Type, V::Value>>,
+		term: Term<Id<&Iri, &BlankId>, &Literal<V::Type, V::Value>>,
 	) -> Option<Self::Resource> {
 		match term {
 			Term::Id(id) => self.lexical_id_interpretation(vocabulary, id),
@@ -219,7 +219,7 @@ pub trait IriInterpretationMut<I = IriBuf>: Interpretation {
 	fn interpret_lexical_iri(
 		&mut self,
 		vocabulary: &mut impl IriVocabularyMut<Iri = I>,
-		iri: Iri,
+		iri: &Iri,
 	) -> Self::Resource {
 		self.interpret_iri(vocabulary.insert(iri))
 	}
@@ -273,8 +273,11 @@ impl<I, B, T: IriInterpretationMut<I> + BlankIdInterpretationMut<B>> IdInterpret
 }
 
 pub trait LexicalIdInterpretationMut<V>: Interpretation {
-	fn interpret_lexical_id(&mut self, vocabulary: &mut V, id: Id<Iri, &BlankId>)
-		-> Self::Resource;
+	fn interpret_lexical_id(
+		&mut self,
+		vocabulary: &mut V,
+		id: Id<&Iri, &BlankId>,
+	) -> Self::Resource;
 
 	fn interpret_owned_lexical_id(
 		&mut self,
@@ -291,7 +294,7 @@ impl<
 	fn interpret_lexical_id(
 		&mut self,
 		vocabulary: &mut V,
-		id: Id<Iri, &BlankId>,
+		id: Id<&Iri, &BlankId>,
 	) -> Self::Resource {
 		match id {
 			Id::Iri(i) => self.interpret_lexical_iri(vocabulary, i),
@@ -370,7 +373,7 @@ pub trait LexicalTermInterpretationMut<V: LiteralVocabulary>: Interpretation {
 	fn interpret_lexical_term(
 		&mut self,
 		vocabulary: &mut V,
-		term: Term<Id<Iri, &BlankId>, &Literal<V::Type, V::Value>>,
+		term: Term<Id<&Iri, &BlankId>, &Literal<V::Type, V::Value>>,
 	) -> Self::Resource;
 
 	#[allow(clippy::type_complexity)]
@@ -404,7 +407,7 @@ impl<
 		&mut self,
 		vocabulary: &mut V,
 		term: Term<
-			Id<Iri, &BlankId>,
+			Id<&Iri, &BlankId>,
 			&Literal<<V as LiteralVocabulary>::Type, <V as LiteralVocabulary>::Value>,
 		>,
 	) -> Self::Resource {
@@ -520,7 +523,10 @@ pub trait ReverseLiteralInterpretation: Interpretation {
 	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a>;
 }
 
-pub type TermOf<'a, I> = Term<Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>, &'a <I as ReverseLiteralInterpretation>::Literal>;
+pub type TermOf<'a, I> = Term<
+	Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>,
+	&'a <I as ReverseLiteralInterpretation>::Literal,
+>;
 
 pub trait ReverseTermInterpretation:
 	ReverseIdInterpretation + ReverseLiteralInterpretation
@@ -532,10 +538,7 @@ pub trait ReverseTermInterpretation:
 		}
 	}
 
-	fn term_of<'a>(
-		&'a self,
-		id: &'a Self::Resource,
-	) -> Option<TermOf<'a, Self>> {
+	fn term_of<'a>(&'a self, id: &'a Self::Resource) -> Option<TermOf<'a, Self>> {
 		self.terms_of(id).next()
 	}
 

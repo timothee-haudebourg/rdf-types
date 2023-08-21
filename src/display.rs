@@ -30,7 +30,7 @@ impl RdfDisplay for String {
 	}
 }
 
-impl<'a> RdfDisplay for iref::IriRef<'a> {
+impl RdfDisplay for iref::IriRef {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "<")?;
 
@@ -48,7 +48,7 @@ impl<'a> RdfDisplay for iref::IriRef<'a> {
 	}
 }
 
-impl<'a> RdfDisplay for iref::Iri<'a> {
+impl RdfDisplay for iref::Iri {
 	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.as_iri_ref().rdf_fmt(f)
@@ -56,7 +56,7 @@ impl<'a> RdfDisplay for iref::Iri<'a> {
 }
 
 #[cfg(feature = "contextual")]
-impl<'a, C: ?Sized> RdfDisplayWithContext<C> for iref::Iri<'a> {
+impl<C: ?Sized> RdfDisplayWithContext<C> for iref::Iri {
 	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
 		self.rdf_fmt(f)
 	}

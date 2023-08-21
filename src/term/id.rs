@@ -35,7 +35,7 @@ pub enum Id<I = IriBuf, B = BlankIdBuf> {
 }
 
 /// Standard RDF node identifier reference.
-pub type IdRef<'a> = Id<Iri<'a>, &'a BlankId>;
+pub type IdRef<'a> = Id<&'a Iri, &'a BlankId>;
 
 impl<I, B> Id<I, B> {
 	pub fn is_blank(&self) -> bool {
@@ -359,7 +359,7 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::AsRefWithCont
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
 			Self::Blank(b) => vocabulary.blank_id(b).unwrap().as_str(),
-			Self::Iri(i) => vocabulary.iri(i).unwrap().into_str(),
+			Self::Iri(i) => vocabulary.iri(i).unwrap().as_str(),
 		}
 	}
 }

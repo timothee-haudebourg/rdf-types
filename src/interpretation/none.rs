@@ -24,9 +24,9 @@ impl IriInterpretationMut<IriBuf> for () {
 	}
 }
 
-impl<'a> IriInterpretation<Iri<'a>> for () {
-	fn iri_interpretation(&self, iri: &Iri<'a>) -> Option<Self::Resource> {
-		Some(Term::Id(Id::Iri(iri.into())))
+impl IriInterpretation<Iri> for () {
+	fn iri_interpretation(&self, iri: &Iri) -> Option<Self::Resource> {
+		Some(Term::Id(Id::Iri(iri.to_owned())))
 	}
 }
 

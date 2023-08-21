@@ -41,7 +41,7 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 
 /// Standard RDF quad reference.
 pub type QuadRef<'a, L = Literal> =
-	Quad<SubjectRef<'a>, Iri<'a>, ObjectRef<'a, L>, GraphLabelRef<'a>>;
+	Quad<SubjectRef<'a>, &'a Iri, ObjectRef<'a, L>, GraphLabelRef<'a>>;
 
 impl<L> Quad<Id, IriBuf, Object<Id, L>, GraphLabel> {
 	pub fn as_quad_ref(&self) -> QuadRef<L> {

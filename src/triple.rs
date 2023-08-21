@@ -33,7 +33,7 @@ use locspan_derive::*;
 pub struct Triple<S = Id, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 /// RDF triple reference.
-pub type TripleRef<'a, L = Literal> = Triple<SubjectRef<'a>, Iri<'a>, ObjectRef<'a, L>>;
+pub type TripleRef<'a, L = Literal> = Triple<SubjectRef<'a>, &'a Iri, ObjectRef<'a, L>>;
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>

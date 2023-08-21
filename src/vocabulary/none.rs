@@ -29,7 +29,7 @@ pub fn no_vocabulary_mut() -> &'static mut NoVocabulary {
 impl IriVocabulary for NoVocabulary {
 	type Iri = IriBuf;
 
-	fn iri<'i>(&'i self, id: &'i IriBuf) -> Option<Iri<'i>> {
+	fn iri<'i>(&'i self, id: &'i IriBuf) -> Option<&'i Iri> {
 		Some(id.as_iri())
 	}
 
@@ -37,14 +37,14 @@ impl IriVocabulary for NoVocabulary {
 		Ok(id)
 	}
 
-	fn get(&self, iri: Iri) -> Option<IriBuf> {
-		Some(iri.into())
+	fn get(&self, iri: &Iri) -> Option<IriBuf> {
+		Some(iri.to_owned())
 	}
 }
 
 impl IriVocabularyMut for NoVocabulary {
-	fn insert(&mut self, iri: Iri) -> IriBuf {
-		iri.into()
+	fn insert(&mut self, iri: &Iri) -> IriBuf {
+		iri.to_owned()
 	}
 
 	fn insert_owned(&mut self, iri: IriBuf) -> Self::Iri {
