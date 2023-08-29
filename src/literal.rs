@@ -21,7 +21,7 @@ mod map;
 pub use map::*;
 
 /// RDF Literal.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
 	feature = "meta",
@@ -240,7 +240,7 @@ impl<T: crate::RdfDisplayWithContext<V> + RdfDisplayTypeSeparator, S: RdfDisplay
 }
 
 /// RDF Literal type.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
 	feature = "meta",
