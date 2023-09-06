@@ -36,7 +36,7 @@ impl<'a, T, S> TryFrom<&'a Literal<T, S>> for LiteralIndex {
 #[cfg(feature = "contextual")]
 impl<V: crate::LiteralVocabulary<Literal = Self>> crate::RdfDisplayWithContext<V> for LiteralIndex
 where
-	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeSeparator,
+	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeWithContext<V>,
 	V::Value: crate::RdfDisplay,
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -81,7 +81,7 @@ impl<'a, T, S, L: TryFrom<&'a Literal<T, S>>> TryFrom<&'a Literal<T, S>> for Lit
 impl<I, V: crate::LiteralVocabulary<Literal = LiteralOrIndex<I>>> contextual::DisplayWithContext<V>
 	for LiteralOrIndex<I>
 where
-	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeSeparator,
+	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeWithContext<V>,
 	V::Value: crate::RdfDisplay,
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -93,7 +93,7 @@ where
 impl<I, V: crate::LiteralVocabulary<Literal = LiteralOrIndex<I>>> crate::RdfDisplayWithContext<V>
 	for LiteralOrIndex<I>
 where
-	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeSeparator,
+	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeWithContext<V>,
 	V::Value: crate::RdfDisplay,
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {

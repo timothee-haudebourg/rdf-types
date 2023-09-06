@@ -1,9 +1,9 @@
 use crate::vocabulary::{ExportFromVocabulary, ExportedFromVocabulary};
 use crate::{
 	InsertIntoVocabulary, InsertedIntoVocabulary, IriVocabulary, LanguageTagVocabulary,
-	LiteralVocabulary, LiteralVocabularyMut, RdfDisplay,
+	LiteralVocabulary, LiteralVocabularyMut, RdfDisplay, XSD_STRING,
 };
-use iref::IriBuf;
+use iref::{Iri, IriBuf};
 use langtag::LanguageTagBuf;
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
@@ -201,41 +201,57 @@ impl<T, S: AsMut<str>> AsMut<str> for Literal<T, S> {
 	}
 }
 
-impl<T: RdfDisplay + RdfDisplayTypeSeparator, S: RdfDisplay> fmt::Display for Literal<T, S> {
+impl<T: RdfDisplay + RdfDisplayType, S: RdfDisplay> fmt::Display for Literal<T, S> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
-		self.type_.rdf_fmt_type_separator(f)?;
-		self.type_.rdf_fmt(f)
+		if self.type_.omit() {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_type_separator(f)?;
+			self.type_.rdf_fmt(f)
+		}
 	}
 }
 
-impl<T: RdfDisplay + RdfDisplayTypeSeparator, S: RdfDisplay> RdfDisplay for Literal<T, S> {
+impl<T: RdfDisplay + RdfDisplayType, S: RdfDisplay> RdfDisplay for Literal<T, S> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
-		self.type_.rdf_fmt_type_separator(f)?;
-		self.type_.rdf_fmt(f)
+		if self.type_.omit() {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_type_separator(f)?;
+			self.type_.rdf_fmt(f)
+		}
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<T: DisplayWithContext<V> + RdfDisplayTypeSeparator, S: RdfDisplay, V> DisplayWithContext<V>
-	for Literal<T, S>
+impl<T: crate::RdfDisplayWithContext<V> + RdfDisplayTypeWithContext<V>, S: RdfDisplay, V>
+	DisplayWithContext<V> for Literal<T, S>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
-		self.type_.rdf_fmt_type_separator(f)?;
-		self.type_.fmt_with(vocabulary, f)
+		if self.type_.omit_with(vocabulary) {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_type_separator_with(vocabulary, f)?;
+			self.type_.rdf_fmt_with(vocabulary, f)
+		}
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<T: crate::RdfDisplayWithContext<V> + RdfDisplayTypeSeparator, S: RdfDisplay, V>
+impl<T: crate::RdfDisplayWithContext<V> + RdfDisplayTypeWithContext<V>, S: RdfDisplay, V>
 	crate::RdfDisplayWithContext<V> for Literal<T, S>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
-		self.type_.rdf_fmt_type_separator(f)?;
-		self.type_.rdf_fmt_with(vocabulary, f)
+		if self.type_.omit_with(vocabulary) {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_type_separator_with(vocabulary, f)?;
+			self.type_.rdf_fmt_with(vocabulary, f)
+		}
 	}
 }
 
@@ -312,17 +328,58 @@ impl<V: IriVocabulary + LanguageTagVocabulary> ExportedFromVocabulary<V>
 	}
 }
 
-pub trait RdfDisplayTypeSeparator {
+pub trait RdfTypeIri {
+	fn is_xsd_string(&self) -> bool;
+}
+
+impl RdfTypeIri for IriBuf {
+	fn is_xsd_string(&self) -> bool {
+		self == XSD_STRING
+	}
+}
+
+impl RdfTypeIri for Iri {
+	fn is_xsd_string(&self) -> bool {
+		self == XSD_STRING
+	}
+}
+
+impl<'a, T: RdfTypeIri> RdfTypeIri for &'a T {
+	fn is_xsd_string(&self) -> bool {
+		T::is_xsd_string(self)
+	}
+}
+
+pub trait RdfTypeIriWithContext<C> {
+	fn is_xsd_string_with(&self, context: &C) -> bool;
+}
+
+pub trait RdfDisplayType {
+	fn omit(&self) -> bool;
+
 	fn rdf_fmt_type_separator(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
 
-impl<T, L> RdfDisplayTypeSeparator for Type<T, L> {
+impl<T: RdfTypeIri, L> RdfDisplayType for Type<T, L> {
+	fn omit(&self) -> bool {
+		match self {
+			Self::Any(t) => t.is_xsd_string(),
+			Self::LangString(_) => false,
+		}
+	}
+
 	fn rdf_fmt_type_separator(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Any(_) => write!(f, "^^"),
 			Self::LangString(_) => write!(f, "@"),
 		}
 	}
+}
+
+pub trait RdfDisplayTypeWithContext<C> {
+	fn omit_with(&self, context: &C) -> bool;
+
+	fn rdf_fmt_type_separator_with(&self, context: &C, f: &mut fmt::Formatter) -> fmt::Result;
 }
 
 impl<T: RdfDisplay, L: RdfDisplay> RdfDisplay for Type<T, L> {

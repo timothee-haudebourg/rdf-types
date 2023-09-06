@@ -21,6 +21,7 @@ uuid-generator-v5 = ["uuid", "uuid/v5"]
 
 [dependencies]
 iref = "3.0"
+static-iref = "3.0"
 langtag = "0.3.4"
 indexmap = "1.9.3"
 thiserror = "1.0.40"

@@ -2,6 +2,8 @@ use iref::Iri;
 use std::convert::TryFrom;
 use std::hash::Hash;
 
+use crate::XSD_STRING;
+
 /// Iri index.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub struct IriIndex(usize);
@@ -29,6 +31,12 @@ impl<'a> TryFrom<&'a Iri> for IriIndex {
 
 	fn try_from(_value: &'a Iri) -> Result<Self, Self::Error> {
 		Err(())
+	}
+}
+
+impl<V: crate::IriVocabulary<Iri = Self>> crate::literal::RdfTypeIriWithContext<V> for IriIndex {
+	fn is_xsd_string_with(&self, vocabulary: &V) -> bool {
+		vocabulary.iri(self).unwrap() == XSD_STRING
 	}
 }
 

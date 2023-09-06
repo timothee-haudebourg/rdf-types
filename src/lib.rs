@@ -32,8 +32,9 @@ pub use interpretation::{
 	ReverseIdInterpretation, ReverseLiteralInterpretation, ReverseTermInterpretation,
 	ReverseTermInterpretationMut, TermInterpretation, TermInterpretationMut,
 };
+use iref::Iri;
 pub use literal::{
-	IntoLiteral, Literal, MapLiteral, RdfDisplayTypeSeparator, TryExportLiteral,
+	IntoLiteral, Literal, MapLiteral, RdfDisplayType, RdfDisplayTypeWithContext, TryExportLiteral,
 	TryExportLiteralType,
 };
 pub use quad::*;
@@ -46,6 +47,8 @@ pub use vocabulary::{
 	LiteralVocabulary, LiteralVocabularyMut, NoVocabulary, TryExportFromVocabulary, Vocabulary,
 	VocabularyMut,
 };
+
+pub const XSD_STRING: &Iri = static_iref::iri!("http://www.w3.org/2001/XMLSchema#string");
 
 #[cfg(feature = "meta")]
 pub use generator::MetaGenerator;
