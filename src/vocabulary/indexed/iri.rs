@@ -101,6 +101,14 @@ impl<'a, I: TryFrom<&'a Iri>> TryFrom<&'a Iri> for IriOrIndex<I> {
 	}
 }
 
+impl<I, V: crate::IriVocabulary<Iri = Self>> crate::literal::RdfTypeIriWithContext<V>
+	for IriOrIndex<I>
+{
+	fn is_xsd_string_with(&self, vocabulary: &V) -> bool {
+		vocabulary.iri(self).unwrap() == XSD_STRING
+	}
+}
+
 #[cfg(feature = "contextual")]
 impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> contextual::DisplayWithContext<V>
 	for IriOrIndex<I>

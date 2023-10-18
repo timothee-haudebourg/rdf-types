@@ -354,6 +354,24 @@ pub trait RdfTypeIriWithContext<C> {
 	fn is_xsd_string_with(&self, context: &C) -> bool;
 }
 
+impl<C> RdfTypeIriWithContext<C> for IriBuf {
+	fn is_xsd_string_with(&self, _context: &C) -> bool {
+		self == XSD_STRING
+	}
+}
+
+impl<C> RdfTypeIriWithContext<C> for Iri {
+	fn is_xsd_string_with(&self, _context: &C) -> bool {
+		self == XSD_STRING
+	}
+}
+
+impl<'a, C, T: RdfTypeIriWithContext<C>> RdfTypeIriWithContext<C> for &'a T {
+	fn is_xsd_string_with(&self, context: &C) -> bool {
+		T::is_xsd_string_with(self, context)
+	}
+}
+
 pub trait RdfDisplayType {
 	fn omit(&self) -> bool;
 
@@ -387,6 +405,23 @@ impl<T: RdfDisplay, L: RdfDisplay> RdfDisplay for Type<T, L> {
 		match self {
 			Self::Any(ty) => ty.rdf_fmt(f),
 			Self::LangString(tag) => tag.rdf_fmt(f),
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<V, T: RdfTypeIriWithContext<V>, L> RdfDisplayTypeWithContext<V> for Type<T, L> {
+	fn omit_with(&self, context: &V) -> bool {
+		match self {
+			Self::Any(t) => t.is_xsd_string_with(context),
+			Self::LangString(_) => false,
+		}
+	}
+
+	fn rdf_fmt_type_separator_with(&self, _context: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Any(_) => write!(f, "^^"),
+			Self::LangString(_) => write!(f, "@"),
 		}
 	}
 }
