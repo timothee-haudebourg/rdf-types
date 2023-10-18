@@ -41,6 +41,13 @@ impl<V: crate::IriVocabulary<Iri = Self>> crate::literal::RdfTypeIriWithContext<
 }
 
 #[cfg(feature = "contextual")]
+impl<V: crate::IriVocabulary<Iri = Self>> contextual::DisplayWithContext<V> for IriIndex {
+	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
+	}
+}
+
+#[cfg(feature = "contextual")]
 impl<V: crate::IriVocabulary<Iri = Self>> crate::RdfDisplayWithContext<V> for IriIndex {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)

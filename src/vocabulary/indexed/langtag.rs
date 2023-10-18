@@ -34,6 +34,15 @@ impl<'a> TryFrom<LanguageTag<'a>> for LanguageTagIndex {
 }
 
 #[cfg(feature = "contextual")]
+impl<V: crate::LanguageTagVocabulary<LanguageTag = Self>> contextual::DisplayWithContext<V>
+	for LanguageTagIndex
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		std::fmt::Display::fmt(&vocabulary.language_tag(self).unwrap(), f)
+	}
+}
+
+#[cfg(feature = "contextual")]
 impl<V: crate::LanguageTagVocabulary<LanguageTag = Self>> crate::RdfDisplayWithContext<V>
 	for LanguageTagIndex
 {

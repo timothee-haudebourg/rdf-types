@@ -34,6 +34,21 @@ impl<'a, T, S> TryFrom<&'a Literal<T, S>> for LiteralIndex {
 }
 
 #[cfg(feature = "contextual")]
+impl<V: crate::LiteralVocabulary<Literal = Self>> contextual::DisplayWithContext<V> for LiteralIndex
+where
+	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeWithContext<V>,
+	V::Value: crate::RdfDisplay,
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		use crate::RdfDisplayWithContext;
+		vocabulary
+			.literal(self)
+			.unwrap()
+			.rdf_fmt_with(vocabulary, f)
+	}
+}
+
+#[cfg(feature = "contextual")]
 impl<V: crate::LiteralVocabulary<Literal = Self>> crate::RdfDisplayWithContext<V> for LiteralIndex
 where
 	V::Type: crate::RdfDisplayWithContext<V> + crate::RdfDisplayTypeWithContext<V>,
