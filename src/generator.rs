@@ -265,8 +265,7 @@ impl Uuid {
 ))]
 impl<V: crate::Vocabulary + crate::IriVocabularyMut> Generator<V> for Uuid {
 	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		let mut buffer: Vec<u8> = Vec::new();
-		buffer.resize(uuid::adapter::Urn::LENGTH, 0);
+		let mut buffer: Vec<u8> = vec![0; uuid::adapter::Urn::LENGTH];
 		let uuid = self.next_uuid();
 		let len = uuid.to_urn().encode_lower(buffer.as_mut()).len();
 		buffer.truncate(len);

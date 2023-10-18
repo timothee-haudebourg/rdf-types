@@ -26,26 +26,54 @@ use crate::{
 /// interpretation with a node id generator so that `new_resource` will assign
 /// a lexical representation to new resources (a fresh blank node id for
 /// instance).
-pub struct WithGenerator<'a, I, G> {
-	interpretation: &'a mut I,
+pub struct WithGenerator<I, G> {
+	interpretation: I,
 	generator: G,
 }
 
-impl<'a, I, G> WithGenerator<'a, I, G> {
-	pub fn new(interpretation: &'a mut I, generator: G) -> Self {
+impl<I, G> WithGenerator<I, G> {
+	pub fn new(interpretation: I, generator: G) -> Self {
 		Self {
 			interpretation,
 			generator,
 		}
 	}
+
+	pub fn into_parts(self) -> (I, G) {
+		(self.interpretation, self.generator)
+	}
+
+	pub fn inner_interpretation(&self) -> &I {
+		&self.interpretation
+	}
+
+	pub fn inner_interpretation_mut(&mut self) -> &mut I {
+		&mut self.interpretation
+	}
+
+	pub fn generator(&self) -> &G {
+		&self.generator
+	}
+
+	pub fn generator_mut(&mut self) -> &mut G {
+		&mut self.generator
+	}
+
+	pub fn into_inner_interpretation(self) -> I {
+		self.interpretation
+	}
+
+	pub fn into_generator(self) -> G {
+		self.generator
+	}
 }
 
-impl<'a, I: Interpretation, G> Interpretation for WithGenerator<'a, I, G> {
+impl<I: Interpretation, G> Interpretation for WithGenerator<I, G> {
 	type Resource = I::Resource;
 }
 
-impl<'a, V: IriVocabulary + BlankIdVocabulary, I, G: Generator<V>> InterpretationMut<V>
-	for WithGenerator<'a, I, G>
+impl<V: IriVocabulary + BlankIdVocabulary, I, G: Generator<V>> InterpretationMut<V>
+	for WithGenerator<I, G>
 where
 	I: IriInterpretationMut<V::Iri> + BlankIdInterpretationMut<V::BlankId>,
 {
@@ -57,21 +85,19 @@ where
 	}
 }
 
-impl<'a, Iri, I: IriInterpretation<Iri>, G> IriInterpretation<Iri> for WithGenerator<'a, I, G> {
+impl<Iri, I: IriInterpretation<Iri>, G> IriInterpretation<Iri> for WithGenerator<I, G> {
 	fn iri_interpretation(&self, iri: &Iri) -> Option<Self::Resource> {
 		self.interpretation.iri_interpretation(iri)
 	}
 }
 
-impl<'a, Iri, I: IriInterpretationMut<Iri>, G> IriInterpretationMut<Iri>
-	for WithGenerator<'a, I, G>
-{
+impl<Iri, I: IriInterpretationMut<Iri>, G> IriInterpretationMut<Iri> for WithGenerator<I, G> {
 	fn interpret_iri(&mut self, iri: Iri) -> Self::Resource {
 		self.interpretation.interpret_iri(iri)
 	}
 }
 
-impl<'i, I: ReverseIriInterpretation, G> ReverseIriInterpretation for WithGenerator<'i, I, G> {
+impl<I: ReverseIriInterpretation, G> ReverseIriInterpretation for WithGenerator<I, G> {
 	type Iri = I::Iri;
 	type Iris<'a> = I::Iris<'a> where Self: 'a;
 
@@ -80,31 +106,25 @@ impl<'i, I: ReverseIriInterpretation, G> ReverseIriInterpretation for WithGenera
 	}
 }
 
-impl<'i, I: ReverseIriInterpretationMut, G> ReverseIriInterpretationMut
-	for WithGenerator<'i, I, G>
-{
+impl<I: ReverseIriInterpretationMut, G> ReverseIriInterpretationMut for WithGenerator<I, G> {
 	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool {
 		self.interpretation.assign_iri(id, iri)
 	}
 }
 
-impl<'a, B, I: BlankIdInterpretation<B>, G> BlankIdInterpretation<B> for WithGenerator<'a, I, G> {
+impl<B, I: BlankIdInterpretation<B>, G> BlankIdInterpretation<B> for WithGenerator<I, G> {
 	fn blank_id_interpretation(&self, blank_id: &B) -> Option<Self::Resource> {
 		self.interpretation.blank_id_interpretation(blank_id)
 	}
 }
 
-impl<'a, B, I: BlankIdInterpretationMut<B>, G> BlankIdInterpretationMut<B>
-	for WithGenerator<'a, I, G>
-{
+impl<B, I: BlankIdInterpretationMut<B>, G> BlankIdInterpretationMut<B> for WithGenerator<I, G> {
 	fn interpret_blank_id(&mut self, blank_id: B) -> Self::Resource {
 		self.interpretation.interpret_blank_id(blank_id)
 	}
 }
 
-impl<'i, I: ReverseBlankIdInterpretation, G> ReverseBlankIdInterpretation
-	for WithGenerator<'i, I, G>
-{
+impl<I: ReverseBlankIdInterpretation, G> ReverseBlankIdInterpretation for WithGenerator<I, G> {
 	type BlankId = I::BlankId;
 	type BlankIds<'a> = I::BlankIds<'a> where Self: 'a;
 
@@ -113,31 +133,27 @@ impl<'i, I: ReverseBlankIdInterpretation, G> ReverseBlankIdInterpretation
 	}
 }
 
-impl<'i, I: ReverseBlankIdInterpretationMut, G> ReverseBlankIdInterpretationMut
-	for WithGenerator<'i, I, G>
+impl<I: ReverseBlankIdInterpretationMut, G> ReverseBlankIdInterpretationMut
+	for WithGenerator<I, G>
 {
 	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool {
 		self.interpretation.assign_blank_id(id, blank_id)
 	}
 }
 
-impl<'a, L, I: LiteralInterpretation<L>, G> LiteralInterpretation<L> for WithGenerator<'a, I, G> {
+impl<L, I: LiteralInterpretation<L>, G> LiteralInterpretation<L> for WithGenerator<I, G> {
 	fn literal_interpretation(&self, literal: &L) -> Option<Self::Resource> {
 		self.interpretation.literal_interpretation(literal)
 	}
 }
 
-impl<'a, L, I: LiteralInterpretationMut<L>, G> LiteralInterpretationMut<L>
-	for WithGenerator<'a, I, G>
-{
+impl<L, I: LiteralInterpretationMut<L>, G> LiteralInterpretationMut<L> for WithGenerator<I, G> {
 	fn interpret_literal(&mut self, literal: L) -> Self::Resource {
 		self.interpretation.interpret_literal(literal)
 	}
 }
 
-impl<'i, I: ReverseLiteralInterpretation, G> ReverseLiteralInterpretation
-	for WithGenerator<'i, I, G>
-{
+impl<I: ReverseLiteralInterpretation, G> ReverseLiteralInterpretation for WithGenerator<I, G> {
 	type Literal = I::Literal;
 	type Literals<'a> = I::Literals<'a> where Self: 'a;
 
@@ -146,8 +162,8 @@ impl<'i, I: ReverseLiteralInterpretation, G> ReverseLiteralInterpretation
 	}
 }
 
-impl<'i, I: ReverseLiteralInterpretationMut, G> ReverseLiteralInterpretationMut
-	for WithGenerator<'i, I, G>
+impl<I: ReverseLiteralInterpretationMut, G> ReverseLiteralInterpretationMut
+	for WithGenerator<I, G>
 {
 	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool {
 		self.interpretation.assign_literal(resource, literal)
