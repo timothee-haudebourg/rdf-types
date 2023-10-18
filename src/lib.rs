@@ -29,8 +29,10 @@ pub use interpretation::{
 	Interpret, Interpretation, InterpretationMut, IriInterpretation, IriInterpretationMut,
 	LexicalIdInterpretation, LexicalIdInterpretationMut, LexicalTermInterpretation,
 	LexicalTermInterpretationMut, LiteralInterpretation, LiteralInterpretationMut,
-	ReverseIdInterpretation, ReverseLiteralInterpretation, ReverseTermInterpretation,
-	ReverseTermInterpretationMut, TermInterpretation, TermInterpretationMut,
+	ReverseBlankIdInterpretation, ReverseBlankIdInterpretationMut, ReverseIdInterpretation,
+	ReverseIriInterpretation, ReverseIriInterpretationMut, ReverseLiteralInterpretation,
+	ReverseLiteralInterpretationMut, ReverseTermInterpretation, ReverseTermInterpretationMut,
+	TermInterpretation, TermInterpretationMut,
 };
 use iref::Iri;
 pub use literal::{
@@ -52,8 +54,3 @@ pub const XSD_STRING: &Iri = static_iref::iri!("http://www.w3.org/2001/XMLSchema
 
 #[cfg(feature = "meta")]
 pub use generator::MetaGenerator;
-
-/// Node identifier namespace.
-pub trait Namespace {
-	type Id;
-}

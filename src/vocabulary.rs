@@ -1,4 +1,4 @@
-use crate::{BlankId, BlankIdBuf, Id, Literal, Namespace};
+use crate::{BlankId, BlankIdBuf, Literal};
 use iref::{Iri, IriBuf};
 
 mod indexed;
@@ -36,11 +36,6 @@ pub trait VocabularyMut:
 impl<V: IriVocabulary + BlankIdVocabulary + LiteralVocabulary + LanguageTagVocabulary> Vocabulary
 	for V
 {
-}
-
-/// Any vocabulary is also a namespace.
-impl<V: Vocabulary> Namespace for V {
-	type Id = Id<V::Iri, V::BlankId>;
 }
 
 impl<

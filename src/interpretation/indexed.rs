@@ -100,8 +100,8 @@ impl TraversableInterpretation for Indexed {
 	}
 }
 
-impl InterpretationMut for Indexed {
-	fn new_resource(&mut self) -> Self::Resource {
+impl<V> InterpretationMut<V> for Indexed {
+	fn new_resource(&mut self, _vocabulary: &mut V) -> Self::Resource {
 		self.resources.insert().0
 	}
 }

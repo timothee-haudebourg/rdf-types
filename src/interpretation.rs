@@ -4,13 +4,15 @@ use langtag::LanguageTagBuf;
 use crate::{
 	literal, BlankId, BlankIdBuf, BlankIdVocabulary, BlankIdVocabularyMut, Generator, Id,
 	IriVocabulary, IriVocabularyMut, LanguageTagVocabularyMut, Literal, LiteralVocabulary,
-	LiteralVocabularyMut, Namespace, Quad, Term,
+	LiteralVocabularyMut, Quad, Term,
 };
 
 mod indexed;
 mod none;
+mod with_generator;
 
 pub use indexed::*;
+pub use with_generator::WithGenerator;
 
 pub type UninterpretedIdRef<'a, I> =
 	Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>;
@@ -206,9 +208,9 @@ impl<V: LiteralVocabulary, I: LexicalIdInterpretation<V> + LiteralInterpretation
 }
 
 /// Mutable RDF resource interpretation.
-pub trait InterpretationMut: Interpretation {
+pub trait InterpretationMut<V>: Interpretation {
 	/// Creates a new resource.
-	fn new_resource(&mut self) -> Self::Resource;
+	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource;
 }
 
 /// Mutable IRI interpretation.
@@ -889,14 +891,15 @@ pub trait ReverseTermInterpretationMut:
 
 	/// Generates and assign a node identifier for all the resources that don't
 	/// have any term, using the given generator.
-	fn generate_ids<N: Namespace<Id = Id<Self::Iri, Self::BlankId>>>(
+	fn generate_ids<V: IriVocabulary + BlankIdVocabulary>(
 		&mut self,
-		namespace: &mut N,
-		generator: &mut impl Generator<N>,
+		vocabulary: &mut V,
+		generator: &mut impl Generator<V>,
 	) where
-		Self: TraversableInterpretation + ReverseTermInterpretationMut,
+		Self: TraversableInterpretation
+			+ ReverseTermInterpretationMut<Iri = V::Iri, BlankId = V::BlankId>,
 	{
-		self.assign_terms(|i, r| (!i.has_term(r)).then(|| Term::Id(generator.next(namespace))))
+		self.assign_terms(|i, r| (!i.has_term(r)).then(|| Term::Id(generator.next(vocabulary))))
 	}
 }
 
