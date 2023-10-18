@@ -318,8 +318,8 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Id<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::DisplayWithContext<V>
-	for Id<I, B>
+impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> contextual::DisplayWithContext<V>
+	for Id<V::Iri, V::BlankId>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -340,8 +340,8 @@ impl<I: fmt::Display, B: fmt::Display> RdfDisplay for Id<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> crate::RdfDisplayWithContext<V>
-	for Id<I, B>
+impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> crate::RdfDisplayWithContext<V>
+	for Id<V::Iri, V::BlankId>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -353,8 +353,8 @@ impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> crate::RdfDisplayWithCont
 }
 
 #[cfg(feature = "contextual")]
-impl<I, B, V: crate::Vocabulary<Iri = I, BlankId = B>> contextual::AsRefWithContext<str, V>
-	for Id<I, B>
+impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> contextual::AsRefWithContext<str, V>
+	for Id<V::Iri, V::BlankId>
 {
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
