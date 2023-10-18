@@ -7,7 +7,7 @@ use crate::{
 use locspan::Meta;
 
 /// Subject identifier generator.
-pub trait Generator<V: IriVocabulary + BlankIdVocabulary> {
+pub trait Generator<V: IriVocabulary + BlankIdVocabulary = ()> {
 	/// Generates the next fresh node identifier in the given vocabulary.
 	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId>;
 
