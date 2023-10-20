@@ -13,6 +13,7 @@ mod grdf;
 pub mod interpretation;
 pub mod literal;
 mod quad;
+mod schema;
 mod term;
 mod triple;
 pub mod vocabulary;
@@ -40,6 +41,7 @@ pub use literal::{
 	TryExportLiteralType,
 };
 pub use quad::*;
+pub use schema::*;
 pub use term::*;
 pub use triple::*;
 pub use vocabulary::{
