@@ -115,7 +115,7 @@ pub trait ReverseBlankIdInterpretationMut: ReverseBlankIdInterpretation {
 }
 
 /// Node identifier interpretation.
-pub trait IdInterpretation<I, B>: Interpretation {
+pub trait IdInterpretation<I, B>: IriInterpretation<I> + BlankIdInterpretation<B> {
 	/// Returns the interpretation of the given node identifier, if any.
 	fn id_interpretation(&self, id: &Id<I, B>) -> Option<Self::Resource>;
 }
