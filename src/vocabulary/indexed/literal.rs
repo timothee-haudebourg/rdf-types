@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::hash::Hash;
 
-use crate::Literal;
+use crate::{ExportFromVocabulary, ExportedFromVocabulary, Literal, LiteralVocabulary};
 
 /// Literal index.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -22,6 +22,38 @@ impl From<LiteralIndex> for usize {
 impl<T, S> IndexedLiteral<T, S> for LiteralIndex {
 	fn literal_index(&self) -> LiteralOrIndex<&'_ Literal<T, S>> {
 		LiteralOrIndex::Index(self.0)
+	}
+}
+
+impl<V> ExportFromVocabulary<V> for LiteralIndex
+where
+	V: LiteralVocabulary<Literal = LiteralIndex>,
+	V::Value: AsRef<str>,
+	V::Type: ExportedFromVocabulary<V>,
+{
+	type Output = Literal<<V::Type as ExportedFromVocabulary<V>>::Output, String>;
+
+	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+		let literal = vocabulary.literal(&self).unwrap();
+		let value = literal.value().as_ref().to_owned();
+		let type_ = literal.type_().exported_from_vocabulary(vocabulary);
+		Literal::new(value, type_)
+	}
+}
+
+impl<V> ExportedFromVocabulary<V> for LiteralIndex
+where
+	V: LiteralVocabulary<Literal = LiteralIndex>,
+	V::Value: AsRef<str>,
+	V::Type: ExportedFromVocabulary<V>,
+{
+	type Output = Literal<<V::Type as ExportedFromVocabulary<V>>::Output, String>;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+		let literal = vocabulary.literal(self).unwrap();
+		let value = literal.value().as_ref().to_owned();
+		let type_ = literal.type_().exported_from_vocabulary(vocabulary);
+		Literal::new(value, type_)
 	}
 }
 
