@@ -40,6 +40,14 @@ pub trait Interpretation {
 	type Resource;
 }
 
+impl<'a, I: Interpretation> Interpretation for &'a I {
+	type Resource = I::Resource;
+}
+
+impl<'a, I: Interpretation> Interpretation for &'a mut I {
+	type Resource = I::Resource;
+}
+
 pub trait TraversableInterpretation: Interpretation {
 	/// Interpreted resource iterator.
 	type Resources<'a>: 'a + Iterator<Item = Self::Resource>
@@ -48,6 +56,22 @@ pub trait TraversableInterpretation: Interpretation {
 
 	/// Returns an iterator over the interpreted resources.
 	fn resources(&self) -> Self::Resources<'_>;
+}
+
+impl<'i, I: TraversableInterpretation> TraversableInterpretation for &'i I {
+	type Resources<'a> = I::Resources<'a> where Self: 'a;
+
+	fn resources(&self) -> Self::Resources<'_> {
+		I::resources(*self)
+	}
+}
+
+impl<'i, I: TraversableInterpretation> TraversableInterpretation for &'i mut I {
+	type Resources<'a> = I::Resources<'a> where Self: 'a;
+
+	fn resources(&self) -> Self::Resources<'_> {
+		I::resources(*self)
+	}
 }
 
 /// IRI Interpretation.
@@ -69,6 +93,18 @@ pub trait IriInterpretation<I: ?Sized>: Interpretation {
 	}
 }
 
+impl<'t, I, T: IriInterpretation<I>> IriInterpretation<I> for &'t T {
+	fn iri_interpretation(&self, iri: &I) -> Option<Self::Resource> {
+		T::iri_interpretation(*self, iri)
+	}
+}
+
+impl<'t, I, T: IriInterpretation<I>> IriInterpretation<I> for &'t mut T {
+	fn iri_interpretation(&self, iri: &I) -> Option<Self::Resource> {
+		T::iri_interpretation(*self, iri)
+	}
+}
+
 pub trait ReverseIriInterpretation: Interpretation {
 	type Iri;
 	type Iris<'a>: Clone + Iterator<Item = &'a Self::Iri>
@@ -78,8 +114,32 @@ pub trait ReverseIriInterpretation: Interpretation {
 	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a>;
 }
 
+impl<'t, T: ReverseIriInterpretation> ReverseIriInterpretation for &'t T {
+	type Iri = T::Iri;
+	type Iris<'a> = T::Iris<'a> where Self: 'a;
+
+	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a> {
+		T::iris_of(*self, id)
+	}
+}
+
+impl<'t, T: ReverseIriInterpretation> ReverseIriInterpretation for &'t mut T {
+	type Iri = T::Iri;
+	type Iris<'a> = T::Iris<'a> where Self: 'a;
+
+	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a> {
+		T::iris_of(*self, id)
+	}
+}
+
 pub trait ReverseIriInterpretationMut: ReverseIriInterpretation {
 	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool;
+}
+
+impl<'t, T: ReverseIriInterpretationMut> ReverseIriInterpretationMut for &'t mut T {
+	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool {
+		T::assign_iri(*self, id, iri)
+	}
 }
 
 /// Blank node identifier interpretation.
@@ -101,6 +161,40 @@ pub trait BlankIdInterpretation<B: ?Sized>: Interpretation {
 	}
 }
 
+impl<'t, B, T: BlankIdInterpretation<B>> BlankIdInterpretation<B> for &'t T {
+	fn blank_id_interpretation(&self, blank_id: &B) -> Option<Self::Resource> {
+		T::blank_id_interpretation(*self, blank_id)
+	}
+
+	fn lexical_blank_id_interpretation(
+		&self,
+		vocabulary: &impl BlankIdVocabulary<BlankId = B>,
+		blank_id: &BlankId,
+	) -> Option<Self::Resource>
+	where
+		B: Sized,
+	{
+		T::lexical_blank_id_interpretation(*self, vocabulary, blank_id)
+	}
+}
+
+impl<'t, B, T: BlankIdInterpretation<B>> BlankIdInterpretation<B> for &'t mut T {
+	fn blank_id_interpretation(&self, blank_id: &B) -> Option<Self::Resource> {
+		T::blank_id_interpretation(*self, blank_id)
+	}
+
+	fn lexical_blank_id_interpretation(
+		&self,
+		vocabulary: &impl BlankIdVocabulary<BlankId = B>,
+		blank_id: &BlankId,
+	) -> Option<Self::Resource>
+	where
+		B: Sized,
+	{
+		T::lexical_blank_id_interpretation(*self, vocabulary, blank_id)
+	}
+}
+
 pub trait ReverseBlankIdInterpretation: Interpretation {
 	type BlankId;
 	type BlankIds<'a>: Clone + Iterator<Item = &'a Self::BlankId>
@@ -110,8 +204,32 @@ pub trait ReverseBlankIdInterpretation: Interpretation {
 	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a>;
 }
 
+impl<'t, T: ReverseBlankIdInterpretation> ReverseBlankIdInterpretation for &'t T {
+	type BlankId = T::BlankId;
+	type BlankIds<'a> = T::BlankIds<'a> where Self: 'a;
+
+	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a> {
+		T::blank_ids_of(*self, id)
+	}
+}
+
+impl<'t, T: ReverseBlankIdInterpretation> ReverseBlankIdInterpretation for &'t mut T {
+	type BlankId = T::BlankId;
+	type BlankIds<'a> = T::BlankIds<'a> where Self: 'a;
+
+	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a> {
+		T::blank_ids_of(*self, id)
+	}
+}
+
 pub trait ReverseBlankIdInterpretationMut: ReverseBlankIdInterpretation {
 	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool;
+}
+
+impl<'t, T: ReverseBlankIdInterpretationMut> ReverseBlankIdInterpretationMut for &'t mut T {
+	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool {
+		T::assign_blank_id(*self, id, blank_id)
+	}
 }
 
 /// Node identifier interpretation.
@@ -170,6 +288,34 @@ pub trait LiteralInterpretation<L>: Interpretation {
 	}
 }
 
+impl<'t, L, T: LiteralInterpretation<L>> LiteralInterpretation<L> for &'t T {
+	fn literal_interpretation(&self, literal: &L) -> Option<Self::Resource> {
+		T::literal_interpretation(*self, literal)
+	}
+
+	fn lexical_literal_interpretation<V: LiteralVocabulary<Literal = L>>(
+		&self,
+		vocabulary: &V,
+		literal: &Literal<V::Type, V::Value>,
+	) -> Option<Self::Resource> {
+		T::lexical_literal_interpretation(*self, vocabulary, literal)
+	}
+}
+
+impl<'t, L, T: LiteralInterpretation<L>> LiteralInterpretation<L> for &'t mut T {
+	fn literal_interpretation(&self, literal: &L) -> Option<Self::Resource> {
+		T::literal_interpretation(*self, literal)
+	}
+
+	fn lexical_literal_interpretation<V: LiteralVocabulary<Literal = L>>(
+		&self,
+		vocabulary: &V,
+		literal: &Literal<V::Type, V::Value>,
+	) -> Option<Self::Resource> {
+		T::lexical_literal_interpretation(*self, vocabulary, literal)
+	}
+}
+
 /// RDF Term interpretation.
 pub trait TermInterpretation<I, B, L = Literal>:
 	IdInterpretation<I, B> + LiteralInterpretation<L>
@@ -213,6 +359,12 @@ pub trait InterpretationMut<V>: Interpretation {
 	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource;
 }
 
+impl<'t, V, T: InterpretationMut<V>> InterpretationMut<V> for &'t mut T {
+	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource {
+		T::new_resource(*self, vocabulary)
+	}
+}
+
 /// Mutable IRI interpretation.
 pub trait IriInterpretationMut<I = IriBuf>: Interpretation {
 	/// Interprets the given IRI.
@@ -235,6 +387,28 @@ pub trait IriInterpretationMut<I = IriBuf>: Interpretation {
 	}
 }
 
+impl<'t, I, T: IriInterpretationMut<I>> IriInterpretationMut<I> for &'t mut T {
+	fn interpret_iri(&mut self, iri: I) -> Self::Resource {
+		T::interpret_iri(*self, iri)
+	}
+
+	fn interpret_lexical_iri(
+		&mut self,
+		vocabulary: &mut impl IriVocabularyMut<Iri = I>,
+		iri: &Iri,
+	) -> Self::Resource {
+		T::interpret_lexical_iri(*self, vocabulary, iri)
+	}
+
+	fn interpret_owned_lexical_iri(
+		&mut self,
+		vocabulary: &mut impl IriVocabularyMut<Iri = I>,
+		iri: IriBuf,
+	) -> Self::Resource {
+		T::interpret_owned_lexical_iri(*self, vocabulary, iri)
+	}
+}
+
 /// Blank node identifier interpretation.
 pub trait BlankIdInterpretationMut<B = BlankIdBuf>: Interpretation {
 	/// Interprets the given blank node identifier.
@@ -254,6 +428,28 @@ pub trait BlankIdInterpretationMut<B = BlankIdBuf>: Interpretation {
 		blank_id: BlankIdBuf,
 	) -> Self::Resource {
 		self.interpret_blank_id(vocabulary.insert_owned_blank_id(blank_id))
+	}
+}
+
+impl<'t, B, T: BlankIdInterpretationMut<B>> BlankIdInterpretationMut<B> for &'t mut T {
+	fn interpret_blank_id(&mut self, blank_id: B) -> Self::Resource {
+		T::interpret_blank_id(*self, blank_id)
+	}
+
+	fn interpret_lexical_blank_id(
+		&mut self,
+		vocabulary: &mut impl BlankIdVocabularyMut<BlankId = B>,
+		blank_id: &BlankId,
+	) -> Self::Resource {
+		T::interpret_lexical_blank_id(*self, vocabulary, blank_id)
+	}
+
+	fn interpret_owned_lexical_blank_id(
+		&mut self,
+		vocabulary: &mut impl BlankIdVocabularyMut<BlankId = B>,
+		blank_id: BlankIdBuf,
+	) -> Self::Resource {
+		T::interpret_owned_lexical_blank_id(*self, vocabulary, blank_id)
 	}
 }
 
@@ -523,6 +719,24 @@ pub trait ReverseLiteralInterpretation: Interpretation {
 		Self: 'a;
 
 	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a>;
+}
+
+impl<'t, T: ReverseLiteralInterpretation> ReverseLiteralInterpretation for &'t T {
+	type Literal = T::Literal;
+	type Literals<'a> = T::Literals<'a> where Self: 'a;
+
+	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a> {
+		T::literals_of(*self, id)
+	}
+}
+
+impl<'t, T: ReverseLiteralInterpretation> ReverseLiteralInterpretation for &'t mut T {
+	type Literal = T::Literal;
+	type Literals<'a> = T::Literals<'a> where Self: 'a;
+
+	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a> {
+		T::literals_of(*self, id)
+	}
 }
 
 pub type TermOf<'a, I> = Term<

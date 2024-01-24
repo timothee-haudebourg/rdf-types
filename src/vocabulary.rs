@@ -60,6 +60,38 @@ pub trait IriVocabulary {
 	fn get(&self, iri: &Iri) -> Option<Self::Iri>;
 }
 
+impl<'a, V: IriVocabulary> IriVocabulary for &'a V {
+	type Iri = V::Iri;
+
+	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<&'i Iri> {
+		V::iri(*self, id)
+	}
+
+	fn owned_iri(&self, id: Self::Iri) -> Result<IriBuf, Self::Iri> {
+		V::owned_iri(*self, id)
+	}
+
+	fn get(&self, iri: &Iri) -> Option<Self::Iri> {
+		V::get(*self, iri)
+	}
+}
+
+impl<'a, V: IriVocabulary> IriVocabulary for &'a mut V {
+	type Iri = V::Iri;
+
+	fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<&'i Iri> {
+		V::iri(*self, id)
+	}
+
+	fn owned_iri(&self, id: Self::Iri) -> Result<IriBuf, Self::Iri> {
+		V::owned_iri(*self, id)
+	}
+
+	fn get(&self, iri: &Iri) -> Option<Self::Iri> {
+		V::get(*self, iri)
+	}
+}
+
 /// Mutable IRI vocabulary.
 pub trait IriVocabularyMut: IriVocabulary {
 	/// Inserts an IRI to the vocabulary and returns its id.
@@ -70,6 +102,16 @@ pub trait IriVocabularyMut: IriVocabulary {
 
 	fn insert_owned(&mut self, iri: IriBuf) -> Self::Iri {
 		self.insert(iri.as_iri())
+	}
+}
+
+impl<'a, V: IriVocabularyMut> IriVocabularyMut for &'a mut V {
+	fn insert(&mut self, iri: &Iri) -> Self::Iri {
+		V::insert(*self, iri)
+	}
+
+	fn insert_owned(&mut self, iri: IriBuf) -> Self::Iri {
+		V::insert_owned(*self, iri)
 	}
 }
 
@@ -89,6 +131,38 @@ pub trait BlankIdVocabulary {
 	fn get_blank_id(&self, id: &BlankId) -> Option<Self::BlankId>;
 }
 
+impl<'a, V: BlankIdVocabulary> BlankIdVocabulary for &'a V {
+	type BlankId = V::BlankId;
+
+	fn blank_id<'b>(&'b self, id: &'b Self::BlankId) -> Option<&'b BlankId> {
+		V::blank_id(*self, id)
+	}
+
+	fn owned_blank_id(&self, id: Self::BlankId) -> Result<BlankIdBuf, Self::BlankId> {
+		V::owned_blank_id(*self, id)
+	}
+
+	fn get_blank_id(&self, id: &BlankId) -> Option<Self::BlankId> {
+		V::get_blank_id(*self, id)
+	}
+}
+
+impl<'a, V: BlankIdVocabulary> BlankIdVocabulary for &'a mut V {
+	type BlankId = V::BlankId;
+
+	fn blank_id<'b>(&'b self, id: &'b Self::BlankId) -> Option<&'b BlankId> {
+		V::blank_id(*self, id)
+	}
+
+	fn owned_blank_id(&self, id: Self::BlankId) -> Result<BlankIdBuf, Self::BlankId> {
+		V::owned_blank_id(*self, id)
+	}
+
+	fn get_blank_id(&self, id: &BlankId) -> Option<Self::BlankId> {
+		V::get_blank_id(*self, id)
+	}
+}
+
 /// Mutable blank node identifier vocabulary.
 pub trait BlankIdVocabularyMut: BlankIdVocabulary {
 	/// Inserts a blank node identifier to the vocabulary and returns its id.
@@ -99,6 +173,16 @@ pub trait BlankIdVocabularyMut: BlankIdVocabulary {
 
 	fn insert_owned_blank_id(&mut self, id: BlankIdBuf) -> Self::BlankId {
 		self.insert_blank_id(id.as_blank_id_ref())
+	}
+}
+
+impl<'a, V: BlankIdVocabularyMut> BlankIdVocabularyMut for &'a mut V {
+	fn insert_blank_id(&mut self, id: &BlankId) -> Self::BlankId {
+		V::insert_blank_id(*self, id)
+	}
+
+	fn insert_owned_blank_id(&mut self, id: BlankIdBuf) -> Self::BlankId {
+		V::insert_owned_blank_id(*self, id)
 	}
 }
 
@@ -131,12 +215,70 @@ pub trait LiteralVocabulary {
 	fn get_literal(&self, id: &Literal<Self::Type, Self::Value>) -> Option<Self::Literal>;
 }
 
+impl<'a, V: LiteralVocabulary> LiteralVocabulary for &'a V {
+	type Literal = V::Literal;
+	type Type = V::Type;
+	type Value = V::Value;
+
+	fn literal<'l>(
+		&'l self,
+		id: &'l Self::Literal,
+	) -> Option<&'l Literal<Self::Type, Self::Value>> {
+		V::literal(*self, id)
+	}
+
+	fn owned_literal(
+		&self,
+		id: Self::Literal,
+	) -> Result<Literal<Self::Type, Self::Value>, Self::Literal> {
+		V::owned_literal(*self, id)
+	}
+
+	fn get_literal(&self, id: &Literal<Self::Type, Self::Value>) -> Option<Self::Literal> {
+		V::get_literal(*self, id)
+	}
+}
+
+impl<'a, V: LiteralVocabulary> LiteralVocabulary for &'a mut V {
+	type Literal = V::Literal;
+	type Type = V::Type;
+	type Value = V::Value;
+
+	fn literal<'l>(
+		&'l self,
+		id: &'l Self::Literal,
+	) -> Option<&'l Literal<Self::Type, Self::Value>> {
+		V::literal(*self, id)
+	}
+
+	fn owned_literal(
+		&self,
+		id: Self::Literal,
+	) -> Result<Literal<Self::Type, Self::Value>, Self::Literal> {
+		V::owned_literal(*self, id)
+	}
+
+	fn get_literal(&self, id: &Literal<Self::Type, Self::Value>) -> Option<Self::Literal> {
+		V::get_literal(*self, id)
+	}
+}
+
 /// Mutable literal value vocabulary.
 pub trait LiteralVocabularyMut: LiteralVocabulary {
 	fn insert_literal(&mut self, value: &Literal<Self::Type, Self::Value>) -> Self::Literal;
 
 	fn insert_owned_literal(&mut self, value: Literal<Self::Type, Self::Value>) -> Self::Literal {
 		self.insert_literal(&value)
+	}
+}
+
+impl<'a, V: LiteralVocabularyMut> LiteralVocabularyMut for &'a mut V {
+	fn insert_literal(&mut self, value: &Literal<Self::Type, Self::Value>) -> Self::Literal {
+		V::insert_literal(*self, value)
+	}
+
+	fn insert_owned_literal(&mut self, value: Literal<Self::Type, Self::Value>) -> Self::Literal {
+		V::insert_owned_literal(*self, value)
 	}
 }
 
@@ -158,12 +300,60 @@ pub trait LanguageTagVocabulary {
 	fn get_language_tag(&self, id: LanguageTag) -> Option<Self::LanguageTag>;
 }
 
+impl<'a, V: LanguageTagVocabulary> LanguageTagVocabulary for &'a V {
+	type LanguageTag = V::LanguageTag;
+
+	fn language_tag<'l>(&'l self, id: &'l Self::LanguageTag) -> Option<LanguageTag<'l>> {
+		V::language_tag(*self, id)
+	}
+
+	fn owned_language_tag(
+		&self,
+		id: Self::LanguageTag,
+	) -> Result<LanguageTagBuf, Self::LanguageTag> {
+		V::owned_language_tag(*self, id)
+	}
+
+	fn get_language_tag(&self, id: LanguageTag) -> Option<Self::LanguageTag> {
+		V::get_language_tag(*self, id)
+	}
+}
+
+impl<'a, V: LanguageTagVocabulary> LanguageTagVocabulary for &'a mut V {
+	type LanguageTag = V::LanguageTag;
+
+	fn language_tag<'l>(&'l self, id: &'l Self::LanguageTag) -> Option<LanguageTag<'l>> {
+		V::language_tag(*self, id)
+	}
+
+	fn owned_language_tag(
+		&self,
+		id: Self::LanguageTag,
+	) -> Result<LanguageTagBuf, Self::LanguageTag> {
+		V::owned_language_tag(*self, id)
+	}
+
+	fn get_language_tag(&self, id: LanguageTag) -> Option<Self::LanguageTag> {
+		V::get_language_tag(*self, id)
+	}
+}
+
 /// Mutable literal value vocabulary.
 pub trait LanguageTagVocabularyMut: LanguageTagVocabulary {
 	fn insert_language_tag(&mut self, value: LanguageTag) -> Self::LanguageTag;
 
 	fn insert_owned_language_tag(&mut self, value: LanguageTagBuf) -> Self::LanguageTag {
 		self.insert_language_tag(value.as_ref())
+	}
+}
+
+impl<'a, V: LanguageTagVocabularyMut> LanguageTagVocabularyMut for &'a mut V {
+	fn insert_language_tag(&mut self, value: LanguageTag) -> Self::LanguageTag {
+		V::insert_language_tag(*self, value)
+	}
+
+	fn insert_owned_language_tag(&mut self, value: LanguageTagBuf) -> Self::LanguageTag {
+		V::insert_owned_language_tag(*self, value)
 	}
 }
 
