@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.4] - 2024-02-27
+
+### Added
+
+- [84b0c84] Add `Triple::as_ref` method.
+
 ## [0.18.3] - 2024-01-24
 
 ### Added
@@ -385,10 +391,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [8b0c3d8] Add `gRDF` related functions & types.
 - [f5f597b] Add `Strip` impl for quads & triples.
 - [2ae2f4e] Add convenient `Loc` type aliases.
+- [c60d1a5] Add `StrippedPartialEq` impl in `loc` module.
 - [1536170] Add parameters to `Term`.
 - [db23eed] Add `Borrow` impl for `&BlankIdBuf`.
 - [9ac6deb] Add `Term`/`Object` in `loc` module.
-- [c60d1a5] Add `StrippedPartialEq` impl in `loc` module.
 - [0224b0f] Add type parameters to the `Literal` type.
 - [f7d8f29] Add `PartialEq<BlankIdBuf>` impl for `&BlankId`.
 - [fcf4591] Add `Stripped*` impls for `Term` and `Subject`.
