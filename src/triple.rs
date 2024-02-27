@@ -141,6 +141,11 @@ impl<S, P, O> Triple<S, P, O> {
 	pub fn map_object<U>(self, f: impl FnOnce(O) -> U) -> Triple<S, P, U> {
 		Triple(self.0, self.1, f(self.2))
 	}
+
+	/// Borrows each component of the triple.
+	pub fn as_ref(&self) -> Triple<&S, &P, &O> {
+		Triple(&self.0, &self.1, &self.2)
+	}
 }
 
 impl<L> Triple<Id, IriBuf, Object<Id, L>> {

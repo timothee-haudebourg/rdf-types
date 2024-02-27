@@ -85,12 +85,6 @@ impl Borrow<str> for BlankId {
 	}
 }
 
-impl Borrow<[u8]> for BlankId {
-	fn borrow(&self) -> &[u8] {
-		self.as_bytes()
-	}
-}
-
 impl ToOwned for BlankId {
 	type Owned = BlankIdBuf;
 
@@ -246,13 +240,6 @@ impl AsRef<[u8]> for BlankIdBuf {
 	}
 }
 
-impl Borrow<[u8]> for BlankIdBuf {
-	#[inline(always)]
-	fn borrow(&self) -> &[u8] {
-		self.0.as_bytes()
-	}
-}
-
 impl Borrow<BlankId> for &BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &BlankId {
@@ -264,13 +251,6 @@ impl Borrow<str> for &BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &str {
 		self.0.as_str()
-	}
-}
-
-impl Borrow<[u8]> for &BlankIdBuf {
-	#[inline(always)]
-	fn borrow(&self) -> &[u8] {
-		self.0.as_bytes()
 	}
 }
 

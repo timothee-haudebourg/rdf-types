@@ -34,7 +34,13 @@ use locspan_derive::*;
 pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
+	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]
 	pub fn borrow_components(&self) -> Quad<&S, &P, &O, &G> {
+		self.as_ref()
+	}
+
+	/// Borrows each component of the quad.
+	pub fn as_ref(&self) -> Quad<&S, &P, &O, &G> {
 		Quad(&self.0, &self.1, &self.2, self.3.as_ref())
 	}
 }
