@@ -222,6 +222,13 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	}
 }
 
+impl<T> Quad<T, T, T, T> {
+	/// Maps the components with the given function.
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Quad<U, U, U, U> {
+		Quad(f(self.0), f(self.1), f(self.2), self.3.map(f))
+	}
+}
+
 impl<S: Interpret<I>, P: Interpret<I>, O: Interpret<I>, G: Interpret<I>, I: Interpretation>
 	Interpret<I> for Quad<S, P, O, G>
 {

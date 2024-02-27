@@ -148,6 +148,13 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
+impl<T> Triple<T, T, T> {
+	/// Maps the components with the given function.
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Triple<U, U, U> {
+		Triple(f(self.0), f(self.1), f(self.2))
+	}
+}
+
 impl<L> Triple<Id, IriBuf, Object<Id, L>> {
 	pub fn as_triple_ref(&self) -> TripleRef<L> {
 		Triple(
