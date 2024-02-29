@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2024-02-29
+
+### Added
+
+- [8c597fd] Add `MaybeId` trait.
+- [8c597fd] Add `MaybeLiteral` trait.
+- [8c597fd] Add `TryIntoId` trait.
+- [8c597fd] Add `TryAsId` trait.
+- [32685e1] Add triple pattern API.
+- [32685e1] Add dataset API.
+- [32685e1] Add `LexicalTriple` type.
+- [32685e1] Add `LexicalQuad` type.
+
+### Build
+
+- [8c597fd] Upgrade `langtag` to version 0.4
+
+### Changed
+
+- [8c597fd] Change overall API.
+- [8c597fd] Change `InsertIntoVocabulary` name to `EmbedIntoVocabulary`.
+- [8c597fd] Change `ExportFromVocabulary` name to `ExtractFromVocabulary`.
+- [8c597fd] Change `AsIri` name to `TryAsIri`.
+- [8c597fd] Change `AsIri::as_iri` name to `TryAsIri::try_as_iri`.
+- [8c597fd] Change `AsBlankId` name to `TryAsBlankId`.
+- [8c597fd] Change `AsBlankId::as_blank_id` name to `TryAsBlankId::try_as_blank_id`.
+- [8c597fd] Change `IntoIri` name to `TryIntoIri`.
+- [8c597fd] Change `IntoBlankId` name to `TryIntoBlankId`.
+- [8c597fd] Change type parameters for `Literal`. Now the only parameter is the IRI type.
+- [8c597fd] Change `IntoId` bounds, add blanket implementation.
+- [8c597fd] Change `AsId` bounds, add blanket implementation.
+- [32685e1] Change `Reverse*Interpretation` signature to use references.
+- [32685e1] Change `Triple`'s default type parameters.
+- [32685e1] Change `TripleRef` name to `LexicalTripleRef`.
+- [32685e1] Change `Quad`'s default type parameters.
+- [32685e1] Change `QuadRef` name to `LexicalQuadRef`.
+- [32685e1] Change `as_*_ref` methods names to `as_lexical_*_ref`.
+- [32685e1] Change `SubjectRef` name to `LexicalSubjectRef`.
+- [32685e1] Change `ObjectRef` name to `LexicalObjectRef`.
+- [32685e1] Change `GraphLabel` name to `LexicalGraphLabelRef`.
+
+### Removed
+
+- [8c597fd] Remove `vocabulary` module reexports.
+- [8c597fd] Remove `IntoIri::into_iri`.
+- [8c597fd] Remove `IntoIri::into_blank_id`.
+- [8c597fd] Remove `Value` and `Type` associated types in `LiteralVocabulary`.
+- [8c597fd] Remove `generator::Unscoped`.
+- [8c597fd] Remove `meta` feature (`locspan` support).
+
 ## [0.18.5] - 2024-02-27
 
 ### Added
