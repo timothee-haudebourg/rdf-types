@@ -33,7 +33,7 @@ impl<'a> TryFrom<&'a BlankId> for BlankIdIndex {
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::BlankIdVocabulary<BlankId = Self>> contextual::DisplayWithContext<V>
+impl<V: crate::vocabulary::BlankIdVocabulary<BlankId = Self>> contextual::DisplayWithContext<V>
 	for BlankIdIndex
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -42,7 +42,9 @@ impl<V: crate::BlankIdVocabulary<BlankId = Self>> contextual::DisplayWithContext
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::BlankIdVocabulary<BlankId = Self>> crate::RdfDisplayWithContext<V> for BlankIdIndex {
+impl<V: crate::vocabulary::BlankIdVocabulary<BlankId = Self>> crate::RdfDisplayWithContext<V>
+	for BlankIdIndex
+{
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
 	}
@@ -80,8 +82,8 @@ impl<'a, I: TryFrom<&'a BlankId>> TryFrom<&'a BlankId> for BlankIdOrIndex<I> {
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: crate::BlankIdVocabulary<BlankId = BlankIdOrIndex<I>>> contextual::DisplayWithContext<V>
-	for BlankIdOrIndex<I>
+impl<I, V: crate::vocabulary::BlankIdVocabulary<BlankId = BlankIdOrIndex<I>>>
+	contextual::DisplayWithContext<V> for BlankIdOrIndex<I>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)
@@ -89,8 +91,8 @@ impl<I, V: crate::BlankIdVocabulary<BlankId = BlankIdOrIndex<I>>> contextual::Di
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: crate::BlankIdVocabulary<BlankId = BlankIdOrIndex<I>>> crate::RdfDisplayWithContext<V>
-	for BlankIdOrIndex<I>
+impl<I, V: crate::vocabulary::BlankIdVocabulary<BlankId = BlankIdOrIndex<I>>>
+	crate::RdfDisplayWithContext<V> for BlankIdOrIndex<I>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.blank_id(self).unwrap(), f)

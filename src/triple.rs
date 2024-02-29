@@ -3,8 +3,8 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	Id, InsertIntoVocabulary, InsertedIntoVocabulary, Literal, Object, ObjectRef, Quad, RdfDisplay,
-	SubjectRef,
+	vocabulary::{EmbedIntoVocabulary, EmbeddedIntoVocabulary},
+	Id, Literal, Object, ObjectRef, Quad, RdfDisplay, SubjectRef,
 };
 
 #[cfg(feature = "contextual")]
@@ -13,23 +13,9 @@ use contextual::{DisplayWithContext, WithContext};
 #[cfg(feature = "contextual")]
 use crate::RdfDisplayWithContext;
 
-/// Type definitions for RDF types with metadata.
-#[cfg(feature = "meta")]
-use locspan_derive::*;
-
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-	feature = "meta",
-	derive(
-		StrippedPartialEq,
-		StrippedEq,
-		StrippedPartialOrd,
-		StrippedOrd,
-		StrippedHash
-	)
-)]
 pub struct Triple<S = Id, P = IriBuf, O = Object>(pub S, pub P, pub O);
 
 /// RDF triple reference.
@@ -174,30 +160,30 @@ impl<'a, L> TripleRef<'a, L> {
 	}
 }
 
-impl<V, S: InsertIntoVocabulary<V>, P: InsertIntoVocabulary<V>, O: InsertIntoVocabulary<V>>
-	InsertIntoVocabulary<V> for Triple<S, P, O>
+impl<V, S: EmbedIntoVocabulary<V>, P: EmbedIntoVocabulary<V>, O: EmbedIntoVocabulary<V>>
+	EmbedIntoVocabulary<V> for Triple<S, P, O>
 {
-	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
+	type Embedded = Triple<S::Embedded, P::Embedded, O::Embedded>;
 
-	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
 		Triple(
-			self.0.insert_into_vocabulary(vocabulary),
-			self.1.insert_into_vocabulary(vocabulary),
-			self.2.insert_into_vocabulary(vocabulary),
+			self.0.embed_into_vocabulary(vocabulary),
+			self.1.embed_into_vocabulary(vocabulary),
+			self.2.embed_into_vocabulary(vocabulary),
 		)
 	}
 }
 
 impl<
 		V,
-		S: InsertedIntoVocabulary<V>,
-		P: InsertedIntoVocabulary<V>,
-		O: InsertedIntoVocabulary<V>,
-	> InsertedIntoVocabulary<V> for Triple<S, P, O>
+		S: EmbeddedIntoVocabulary<V>,
+		P: EmbeddedIntoVocabulary<V>,
+		O: EmbeddedIntoVocabulary<V>,
+	> EmbeddedIntoVocabulary<V> for Triple<S, P, O>
 {
-	type Inserted = Triple<S::Inserted, P::Inserted, O::Inserted>;
+	type Embedded = Triple<S::Embedded, P::Embedded, O::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		Triple(
 			self.0.inserted_into_vocabulary(vocabulary),
 			self.1.inserted_into_vocabulary(vocabulary),

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use langtag::{LanguageTag, LanguageTagBuf};
+use langtag::{LangTag, LangTagBuf};
 
 pub trait RdfDisplay {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
@@ -90,7 +90,7 @@ impl<C: ?Sized> RdfDisplayWithContext<C> for iref::IriRefBuf {
 	}
 }
 
-impl<'a> RdfDisplay for LanguageTag<'a> {
+impl RdfDisplay for LangTag {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		self.as_str().fmt(f)
@@ -98,13 +98,13 @@ impl<'a> RdfDisplay for LanguageTag<'a> {
 }
 
 #[cfg(feature = "contextual")]
-impl<'a, C: ?Sized> RdfDisplayWithContext<C> for LanguageTag<'a> {
+impl<C: ?Sized> RdfDisplayWithContext<C> for LangTag {
 	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
 		self.rdf_fmt(f)
 	}
 }
 
-impl RdfDisplay for LanguageTagBuf {
+impl RdfDisplay for LangTagBuf {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		self.as_str().fmt(f)
@@ -112,7 +112,7 @@ impl RdfDisplay for LanguageTagBuf {
 }
 
 #[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for LanguageTagBuf {
+impl<C: ?Sized> RdfDisplayWithContext<C> for LangTagBuf {
 	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
 		self.rdf_fmt(f)
 	}

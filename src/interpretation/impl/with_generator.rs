@@ -1,9 +1,12 @@
 use crate::{
-	BlankIdInterpretation, BlankIdInterpretationMut, BlankIdVocabulary, Generator, Id,
-	Interpretation, InterpretationMut, IriInterpretation, IriInterpretationMut, IriVocabulary,
-	LiteralInterpretation, LiteralInterpretationMut, ReverseBlankIdInterpretation,
-	ReverseBlankIdInterpretationMut, ReverseIriInterpretation, ReverseIriInterpretationMut,
-	ReverseLiteralInterpretation, ReverseLiteralInterpretationMut,
+	interpretation::{
+		BlankIdInterpretation, BlankIdInterpretationMut, IriInterpretation, IriInterpretationMut,
+		LiteralInterpretation, LiteralInterpretationMut, ReverseBlankIdInterpretation,
+		ReverseBlankIdInterpretationMut, ReverseIriInterpretation, ReverseIriInterpretationMut,
+		ReverseLiteralInterpretation, ReverseLiteralInterpretationMut,
+	},
+	vocabulary::{BlankIdVocabulary, IriVocabulary},
+	Generator, Id, Interpretation, InterpretationMut,
 };
 
 /// Combines any RDF interpretation with a node id generator to make it

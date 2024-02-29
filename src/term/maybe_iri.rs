@@ -16,44 +16,39 @@ impl<I: MaybeIri, L> MaybeIri for Term<I, L> {
 
 /// Types that may have an iri representation that can be
 /// borrowed.
-pub trait AsIri: MaybeIri {
+pub trait TryAsIri: MaybeIri {
 	/// Returns a reference to the iri value, if any.
-	fn as_iri(&self) -> Option<&Self::Iri>;
+	fn try_as_iri(&self) -> Option<&Self::Iri>;
 
 	fn is_iri(&self) -> bool {
-		self.as_iri().is_some()
+		self.try_as_iri().is_some()
 	}
 }
 
-impl<I, B> AsIri for Id<I, B> {
-	fn as_iri(&self) -> Option<&I> {
+impl<I, B> TryAsIri for Id<I, B> {
+	fn try_as_iri(&self) -> Option<&I> {
 		self.as_iri()
 	}
 }
 
-impl<I: AsIri, L> AsIri for Term<I, L> {
-	fn as_iri(&self) -> Option<&Self::Iri> {
+impl<I: TryAsIri, L> TryAsIri for Term<I, L> {
+	fn try_as_iri(&self) -> Option<&Self::Iri> {
 		self.as_iri()
 	}
 }
 
 /// Types that can be turned into an iri.
-pub trait IntoIri: MaybeIri + Sized {
-	/// Converts the value into an iri, if any.
-	fn into_iri(self) -> Option<Self::Iri> {
-		self.try_into_iri().ok()
-	}
-
+pub trait TryIntoIri: MaybeIri + Sized {
 	fn try_into_iri(self) -> Result<Self::Iri, Self>;
 }
 
-impl<I, B> IntoIri for Id<I, B> {
+impl<I, B> TryIntoIri for Id<I, B> {
 	fn try_into_iri(self) -> Result<I, Self> {
 		self.try_into_iri().map_err(Self::Blank)
 	}
 }
 
-impl<I: IntoIri, L> IntoIri for Term<I, L> {
+impl<I: TryIntoIri, L> TryIntoIri for Term<I, L> {
 	fn try_into_iri(self) -> Result<Self::Iri, Self> {
 		self.try_into_iri()
 	}

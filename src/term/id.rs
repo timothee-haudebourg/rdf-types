@@ -5,9 +5,12 @@ use std::{cmp::Ordering, fmt, hash::Hash};
 use locspan_derive::*;
 
 use crate::{
-	vocabulary::{ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary},
-	BlankId, BlankIdBuf, BlankIdVocabulary, GraphLabelRef, InsertIntoVocabulary,
-	InsertedIntoVocabulary, IriVocabulary, RdfDisplay, SubjectRef, Term, Vocabulary, VocabularyMut,
+	vocabulary::{
+		BlankIdVocabulary, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
+		ExtractedFromVocabulary, IriVocabulary,
+	},
+	BlankId, BlankIdBuf, GraphLabelRef, MaybeBlankId, MaybeIri, RdfDisplay, SubjectRef, Term,
+	TryAsBlankId, TryAsIri, TryIntoBlankId, TryIntoIri, Vocabulary, VocabularyMut,
 };
 
 /// RDF node identifier.
@@ -113,25 +116,23 @@ impl<I, B> Id<I, B> {
 	}
 }
 
-impl<V, I: InsertIntoVocabulary<V>, B: InsertIntoVocabulary<V>> InsertIntoVocabulary<V>
-	for Id<I, B>
-{
-	type Inserted = Id<I::Inserted, B::Inserted>;
+impl<V, I: EmbedIntoVocabulary<V>, B: EmbedIntoVocabulary<V>> EmbedIntoVocabulary<V> for Id<I, B> {
+	type Embedded = Id<I::Embedded, B::Embedded>;
 
-	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
-			Self::Iri(i) => Id::Iri(i.insert_into_vocabulary(vocabulary)),
-			Self::Blank(b) => Id::Blank(b.insert_into_vocabulary(vocabulary)),
+			Self::Iri(i) => Id::Iri(i.embed_into_vocabulary(vocabulary)),
+			Self::Blank(b) => Id::Blank(b.embed_into_vocabulary(vocabulary)),
 		}
 	}
 }
 
-impl<V, I: InsertedIntoVocabulary<V>, B: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V>
+impl<V, I: EmbeddedIntoVocabulary<V>, B: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V>
 	for Id<I, B>
 {
-	type Inserted = Id<I::Inserted, B::Inserted>;
+	type Embedded = Id<I::Embedded, B::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
 			Self::Iri(i) => Id::Iri(i.inserted_into_vocabulary(vocabulary)),
 			Self::Blank(b) => Id::Blank(b.inserted_into_vocabulary(vocabulary)),
@@ -139,10 +140,10 @@ impl<V, I: InsertedIntoVocabulary<V>, B: InsertedIntoVocabulary<V>> InsertedInto
 	}
 }
 
-impl<V: IriVocabulary + BlankIdVocabulary> ExportedFromVocabulary<V> for Id<V::Iri, V::BlankId> {
-	type Output = Id<IriBuf, BlankIdBuf>;
+impl<V: IriVocabulary + BlankIdVocabulary> ExtractedFromVocabulary<V> for Id<V::Iri, V::BlankId> {
+	type Extracted = Id<IriBuf, BlankIdBuf>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
 			Self::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
@@ -150,26 +151,13 @@ impl<V: IriVocabulary + BlankIdVocabulary> ExportedFromVocabulary<V> for Id<V::I
 	}
 }
 
-impl<V: IriVocabulary + BlankIdVocabulary> ExportFromVocabulary<V> for Id<V::Iri, V::BlankId> {
-	type Output = Id<IriBuf, BlankIdBuf>;
+impl<V: IriVocabulary + BlankIdVocabulary> ExtractFromVocabulary<V> for Id<V::Iri, V::BlankId> {
+	type Extracted = Id<IriBuf, BlankIdBuf>;
 
-	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Iri(i) => Id::Iri(vocabulary.owned_iri(i).ok().unwrap()),
 			Self::Blank(b) => Id::Blank(vocabulary.owned_blank_id(b).ok().unwrap()),
-		}
-	}
-}
-
-impl<'a, V: IriVocabulary + BlankIdVocabulary> ExportRefFromVocabulary<V>
-	for Id<&'a V::Iri, &'a V::BlankId>
-{
-	type Output = Id<IriBuf, BlankIdBuf>;
-
-	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
-		match self {
-			Self::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
-			Self::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
 		}
 	}
 }
@@ -318,8 +306,8 @@ impl<I: fmt::Display, B: fmt::Display> fmt::Display for Id<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> contextual::DisplayWithContext<V>
-	for Id<V::Iri, V::BlankId>
+impl<V: crate::vocabulary::IriVocabulary + crate::vocabulary::BlankIdVocabulary>
+	contextual::DisplayWithContext<V> for Id<V::Iri, V::BlankId>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -340,8 +328,8 @@ impl<I: fmt::Display, B: fmt::Display> RdfDisplay for Id<I, B> {
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> crate::RdfDisplayWithContext<V>
-	for Id<V::Iri, V::BlankId>
+impl<V: crate::vocabulary::IriVocabulary + crate::vocabulary::BlankIdVocabulary>
+	crate::RdfDisplayWithContext<V> for Id<V::Iri, V::BlankId>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -353,8 +341,8 @@ impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> crate::RdfDisplayWithCo
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> contextual::AsRefWithContext<str, V>
-	for Id<V::Iri, V::BlankId>
+impl<V: crate::vocabulary::IriVocabulary + crate::vocabulary::BlankIdVocabulary>
+	contextual::AsRefWithContext<str, V> for Id<V::Iri, V::BlankId>
 {
 	fn as_ref_with<'a>(&'a self, vocabulary: &'a V) -> &'a str {
 		match self {
@@ -364,28 +352,50 @@ impl<V: crate::IriVocabulary + crate::BlankIdVocabulary> contextual::AsRefWithCo
 	}
 }
 
-/// Type that can be converted into an `Id`.
-pub trait AsId {
-	type Iri;
-	type BlankId;
+/// Types tha may represent a resource identifier.
+pub trait MaybeId: MaybeIri + MaybeBlankId {}
 
+impl<T: MaybeIri + MaybeBlankId> MaybeId for T {}
+
+/// Type that can be converted into an `Id`.
+pub trait TryAsId: TryAsIri + TryAsBlankId {
+	fn try_as_id(&self) -> Option<Id<&Self::Iri, &Self::BlankId>> {
+		self.try_as_iri()
+			.map(Id::Iri)
+			.or_else(|| self.try_as_blank().map(Id::Blank))
+	}
+}
+
+impl<T: TryAsIri + TryAsBlankId> TryAsId for T {}
+
+/// Type that can be converted into an `Id`.
+pub trait TryIntoId: TryIntoIri + TryIntoBlankId {
+	fn try_into_id(self) -> Result<Id<Self::Iri, Self::BlankId>, Self> {
+		self.try_into_iri()
+			.map(Id::Iri)
+			.or_else(|t| t.try_into_blank().map(Id::Blank))
+	}
+}
+
+impl<I, B> TryIntoId for Id<I, B> {
+	fn try_into_id(self) -> Result<Self, Self> {
+		Ok(self)
+	}
+}
+
+/// Type that can surely be borrowed as an `Id`.
+pub trait AsId: MaybeId {
 	fn as_id(&self) -> Id<&Self::Iri, &Self::BlankId>;
 }
 
 impl<I, B> AsId for Id<I, B> {
-	type Iri = I;
-	type BlankId = B;
-
 	fn as_id(&self) -> Id<&I, &B> {
-		match self {
-			Self::Iri(i) => Id::Iri(i),
-			Self::Blank(b) => Id::Blank(b),
-		}
+		self.as_ref()
 	}
 }
 
-/// Type that can be converted into an `Id`.
-pub trait IntoId: AsId {
+/// Type that can surely be converted into an `Id`.
+pub trait IntoId: MaybeId {
 	fn into_id(self) -> Id<Self::Iri, Self::BlankId>;
 }
 

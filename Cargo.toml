@@ -13,7 +13,7 @@ readme = "README.md"
 
 [features]
 default = []
-meta = ["locspan", "locspan-derive"]
+serde = ["dep:serde", "langtag/serde"]
 uuid-generator = ["uuid-generator-v3", "uuid-generator-v4", "uuid-generator-v5"]
 uuid-generator-v3 = ["uuid", "uuid/v3"]
 uuid-generator-v4 = ["uuid", "uuid/v4"]
@@ -22,11 +22,9 @@ uuid-generator-v5 = ["uuid", "uuid/v5"]
 [dependencies]
 iref = "3.0"
 static-iref = "3.0"
-langtag = "0.3.4"
+langtag = "0.4.0"
 indexmap = "1.9.3"
 thiserror = "1.0.40"
-locspan = { version = "0.8", optional = true }
-locspan-derive = { version = "0.6", optional = true }
 contextual = { version = "0.1.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 uuid = { version = "0.8", optional = true }

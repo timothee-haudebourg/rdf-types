@@ -1,17 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::interpretation::{
+	BlankIdInterpretation, BlankIdInterpretationMut, IriInterpretation, IriInterpretationMut,
+	LiteralInterpretation, LiteralInterpretationMut, ReverseBlankIdInterpretation,
+	ReverseBlankIdInterpretationMut, ReverseIriInterpretation, ReverseIriInterpretationMut,
+	ReverseLiteralInterpretation, ReverseLiteralInterpretationMut, TraversableInterpretation,
+};
 use crate::vocabulary::{BlankIdIndex, IriIndex, LiteralIndex};
-
-use crate::{
-	BlankIdInterpretation, BlankIdInterpretationMut, Interpretation, InterpretationMut,
-	IriInterpretation, IriInterpretationMut, LiteralInterpretation, LiteralInterpretationMut,
-};
-
-use super::{
-	ReverseBlankIdInterpretation, ReverseBlankIdInterpretationMut, ReverseIriInterpretation,
-	ReverseIriInterpretationMut, ReverseLiteralInterpretation, ReverseLiteralInterpretationMut,
-	TraversableInterpretation,
-};
+use crate::{Interpretation, InterpretationMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ResourceIndex(usize);

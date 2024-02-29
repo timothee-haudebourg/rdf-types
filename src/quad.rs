@@ -3,9 +3,13 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary, GraphLabel,
-	GraphLabelRef, Id, InsertIntoVocabulary, InsertedIntoVocabulary, Interpret, Interpretation,
-	Literal, Object, ObjectRef, RdfDisplay, SubjectRef, Triple, TryExportFromVocabulary,
+	interpretation::Interpret,
+	vocabulary::{
+		EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
+		ExtractedFromVocabulary, TryExtractFromVocabulary,
+	},
+	GraphLabel, GraphLabelRef, Id, Interpretation, Literal, Object, ObjectRef, RdfDisplay,
+	SubjectRef, Triple,
 };
 
 #[cfg(feature = "contextual")]
@@ -14,23 +18,9 @@ use contextual::{DisplayWithContext, WithContext};
 #[cfg(feature = "contextual")]
 use crate::RdfDisplayWithContext;
 
-/// Type definitions for RDF types with metadata.
-#[cfg(feature = "meta")]
-use locspan_derive::*;
-
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-	feature = "meta",
-	derive(
-		StrippedPartialEq,
-		StrippedEq,
-		StrippedPartialOrd,
-		StrippedOrd,
-		StrippedHash
-	)
-)]
 pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
@@ -76,35 +66,35 @@ impl<'a, L> QuadRef<'a, L> {
 
 impl<
 		V,
-		S: InsertIntoVocabulary<V>,
-		P: InsertIntoVocabulary<V>,
-		O: InsertIntoVocabulary<V>,
-		G: InsertIntoVocabulary<V>,
-	> InsertIntoVocabulary<V> for Quad<S, P, O, G>
+		S: EmbedIntoVocabulary<V>,
+		P: EmbedIntoVocabulary<V>,
+		O: EmbedIntoVocabulary<V>,
+		G: EmbedIntoVocabulary<V>,
+	> EmbedIntoVocabulary<V> for Quad<S, P, O, G>
 {
-	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
+	type Embedded = Quad<S::Embedded, P::Embedded, O::Embedded, G::Embedded>;
 
-	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
 		Quad(
-			self.0.insert_into_vocabulary(vocabulary),
-			self.1.insert_into_vocabulary(vocabulary),
-			self.2.insert_into_vocabulary(vocabulary),
-			self.3.insert_into_vocabulary(vocabulary),
+			self.0.embed_into_vocabulary(vocabulary),
+			self.1.embed_into_vocabulary(vocabulary),
+			self.2.embed_into_vocabulary(vocabulary),
+			self.3.embed_into_vocabulary(vocabulary),
 		)
 	}
 }
 
 impl<
 		V,
-		S: InsertedIntoVocabulary<V>,
-		P: InsertedIntoVocabulary<V>,
-		O: InsertedIntoVocabulary<V>,
-		G: InsertedIntoVocabulary<V>,
-	> InsertedIntoVocabulary<V> for Quad<S, P, O, G>
+		S: EmbeddedIntoVocabulary<V>,
+		P: EmbeddedIntoVocabulary<V>,
+		O: EmbeddedIntoVocabulary<V>,
+		G: EmbeddedIntoVocabulary<V>,
+	> EmbeddedIntoVocabulary<V> for Quad<S, P, O, G>
 {
-	type Inserted = Quad<S::Inserted, P::Inserted, O::Inserted, G::Inserted>;
+	type Embedded = Quad<S::Embedded, P::Embedded, O::Embedded, G::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		Quad(
 			self.0.inserted_into_vocabulary(vocabulary),
 			self.1.inserted_into_vocabulary(vocabulary),
@@ -246,60 +236,40 @@ impl<S: Interpret<I>, P: Interpret<I>, O: Interpret<I>, G: Interpret<I>, I: Inte
 
 impl<
 		V,
-		S: ExportFromVocabulary<V>,
-		P: ExportFromVocabulary<V>,
-		O: ExportFromVocabulary<V>,
-		G: ExportFromVocabulary<V>,
-	> ExportFromVocabulary<V> for Quad<S, P, O, G>
+		S: ExtractFromVocabulary<V>,
+		P: ExtractFromVocabulary<V>,
+		O: ExtractFromVocabulary<V>,
+		G: ExtractFromVocabulary<V>,
+	> ExtractFromVocabulary<V> for Quad<S, P, O, G>
 {
-	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
 
-	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
 		Quad(
-			self.0.export_from_vocabulary(vocabulary),
-			self.1.export_from_vocabulary(vocabulary),
-			self.2.export_from_vocabulary(vocabulary),
-			self.3.export_from_vocabulary(vocabulary),
+			self.0.extract_from_vocabulary(vocabulary),
+			self.1.extract_from_vocabulary(vocabulary),
+			self.2.extract_from_vocabulary(vocabulary),
+			self.3.extract_from_vocabulary(vocabulary),
 		)
 	}
 }
 
 impl<
 		V,
-		S: ExportedFromVocabulary<V>,
-		P: ExportedFromVocabulary<V>,
-		O: ExportedFromVocabulary<V>,
-		G: ExportedFromVocabulary<V>,
-	> ExportedFromVocabulary<V> for Quad<S, P, O, G>
+		S: ExtractedFromVocabulary<V>,
+		P: ExtractedFromVocabulary<V>,
+		O: ExtractedFromVocabulary<V>,
+		G: ExtractedFromVocabulary<V>,
+	> ExtractedFromVocabulary<V> for Quad<S, P, O, G>
 {
-	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		Quad(
 			self.0.exported_from_vocabulary(vocabulary),
 			self.1.exported_from_vocabulary(vocabulary),
 			self.2.exported_from_vocabulary(vocabulary),
 			self.3.exported_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<
-		V,
-		S: ExportRefFromVocabulary<V>,
-		P: ExportRefFromVocabulary<V>,
-		O: ExportRefFromVocabulary<V>,
-		G: ExportRefFromVocabulary<V>,
-	> ExportRefFromVocabulary<V> for Quad<S, P, O, G>
-{
-	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
-
-	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
-		Quad(
-			self.0.export_ref_from_vocabulary(vocabulary),
-			self.1.export_ref_from_vocabulary(vocabulary),
-			self.2.export_ref_from_vocabulary(vocabulary),
-			self.3.export_ref_from_vocabulary(vocabulary),
 		)
 	}
 }
@@ -328,28 +298,28 @@ pub enum QuadExportFailed<S, P, O, G> {
 
 impl<
 		V,
-		S: TryExportFromVocabulary<V>,
-		P: TryExportFromVocabulary<V>,
-		O: TryExportFromVocabulary<V>,
-		G: TryExportFromVocabulary<V>,
-	> TryExportFromVocabulary<V> for Quad<S, P, O, G>
+		S: TryExtractFromVocabulary<V>,
+		P: TryExtractFromVocabulary<V>,
+		O: TryExtractFromVocabulary<V>,
+		G: TryExtractFromVocabulary<V>,
+	> TryExtractFromVocabulary<V> for Quad<S, P, O, G>
 {
-	type Output = Quad<S::Output, P::Output, O::Output, G::Output>;
+	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
 	type Error = QuadExportFailed<S::Error, P::Error, O::Error, G::Error>;
 
-	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
+	fn try_extract_from_vocabulary(self, vocabulary: &V) -> Result<Self::Extracted, Self::Error> {
 		Ok(Quad(
 			self.0
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(QuadExportFailed::Subject)?,
 			self.1
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(QuadExportFailed::Predicate)?,
 			self.2
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(QuadExportFailed::Object)?,
 			self.3
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(QuadExportFailed::Graph)?,
 		))
 	}

@@ -16,44 +16,39 @@ impl<I: MaybeBlankId, L> MaybeBlankId for Term<I, L> {
 
 /// Types that may have a blank node identifier representation that can be
 /// borrowed.
-pub trait AsBlankId: MaybeBlankId {
+pub trait TryAsBlankId: MaybeBlankId {
 	/// Returns a reference to the blank node identifier value, if any.
-	fn as_blank(&self) -> Option<&Self::BlankId>;
+	fn try_as_blank(&self) -> Option<&Self::BlankId>;
 
 	fn is_blank(&self) -> bool {
-		self.as_blank().is_some()
+		self.try_as_blank().is_some()
 	}
 }
 
-impl<I, B> AsBlankId for Id<I, B> {
-	fn as_blank(&self) -> Option<&Self::BlankId> {
+impl<I, B> TryAsBlankId for Id<I, B> {
+	fn try_as_blank(&self) -> Option<&Self::BlankId> {
 		self.as_blank()
 	}
 }
 
-impl<I: AsBlankId, L> AsBlankId for Term<I, L> {
-	fn as_blank(&self) -> Option<&Self::BlankId> {
+impl<I: TryAsBlankId, L> TryAsBlankId for Term<I, L> {
+	fn try_as_blank(&self) -> Option<&Self::BlankId> {
 		self.as_blank()
 	}
 }
 
 /// Types that can be turned into a blank node identifier.
-pub trait IntoBlankId: MaybeBlankId + Sized {
-	/// Converts the value into a blank node identifier, if any.
-	fn into_blank(self) -> Option<Self::BlankId> {
-		self.try_into_blank().ok()
-	}
-
+pub trait TryIntoBlankId: MaybeBlankId + Sized {
 	fn try_into_blank(self) -> Result<Self::BlankId, Self>;
 }
 
-impl<I, B> IntoBlankId for Id<I, B> {
+impl<I, B> TryIntoBlankId for Id<I, B> {
 	fn try_into_blank(self) -> Result<Self::BlankId, Self> {
 		self.try_into_blank().map_err(Self::Iri)
 	}
 }
 
-impl<I: IntoBlankId, L> IntoBlankId for Term<I, L> {
+impl<I: TryIntoBlankId, L> TryIntoBlankId for Term<I, L> {
 	fn try_into_blank(self) -> Result<Self::BlankId, Self> {
 		self.try_into_blank()
 	}

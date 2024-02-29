@@ -1,8 +1,9 @@
-use crate::vocabulary::{ExportFromVocabulary, ExportRefFromVocabulary, ExportedFromVocabulary};
-use crate::{
-	BlankIdBuf, InsertIntoVocabulary, InsertedIntoVocabulary, Interpret, Literal,
-	LiteralInterpretationMut, LiteralVocabulary, RdfDisplay, TryExportFromVocabulary,
+use crate::interpretation::{Interpret, LiteralInterpretationMut};
+use crate::vocabulary::{
+	EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary, ExtractedFromVocabulary,
+	LiteralVocabulary, TryExtractFromVocabulary,
 };
+use crate::{BlankIdBuf, Literal, RdfDisplay};
 use iref::IriBuf;
 use std::fmt;
 use std::{cmp::Ordering, hash::Hash};
@@ -11,11 +12,13 @@ mod id;
 mod into;
 mod maybe_blank;
 mod maybe_iri;
+mod maybe_literal;
 
 pub use id::*;
 pub use into::*;
 pub use maybe_blank::*;
 pub use maybe_iri::*;
+// pub use maybe_literal::*;
 
 #[cfg(feature = "contextual")]
 use contextual::{AsRefWithContext, DisplayWithContext};
@@ -135,7 +138,7 @@ impl<I, L> Term<I, L> {
 
 	pub fn is_blank(&self) -> bool
 	where
-		I: AsBlankId,
+		I: TryAsBlankId,
 	{
 		match self {
 			Self::Id(id) => id.is_blank(),
@@ -145,7 +148,7 @@ impl<I, L> Term<I, L> {
 
 	pub fn is_iri(&self) -> bool
 	where
-		I: AsIri,
+		I: TryAsIri,
 	{
 		match self {
 			Self::Id(id) => id.is_iri(),
@@ -155,17 +158,17 @@ impl<I, L> Term<I, L> {
 
 	pub fn as_blank(&self) -> Option<&I::BlankId>
 	where
-		I: AsBlankId,
+		I: TryAsBlankId,
 	{
 		match self {
-			Self::Id(id) => id.as_blank(),
+			Self::Id(id) => id.try_as_blank(),
 			_ => None,
 		}
 	}
 
 	pub fn try_into_blank(self) -> Result<I::BlankId, Self>
 	where
-		I: IntoBlankId,
+		I: TryIntoBlankId,
 	{
 		match self {
 			Self::Id(id) => id.try_into_blank().map_err(Self::Id),
@@ -175,24 +178,24 @@ impl<I, L> Term<I, L> {
 
 	pub fn into_blank(self) -> Option<I::BlankId>
 	where
-		I: IntoBlankId,
+		I: TryIntoBlankId,
 	{
 		self.try_into_blank().ok()
 	}
 
 	pub fn as_iri(&self) -> Option<&I::Iri>
 	where
-		I: AsIri,
+		I: TryAsIri,
 	{
 		match self {
-			Self::Id(id) => id.as_iri(),
+			Self::Id(id) => id.try_as_iri(),
 			_ => None,
 		}
 	}
 
 	pub fn try_into_iri(self) -> Result<I::Iri, Self>
 	where
-		I: IntoIri,
+		I: TryIntoIri,
 	{
 		match self {
 			Self::Id(id) => id.try_into_iri().map_err(Self::Id),
@@ -202,7 +205,7 @@ impl<I, L> Term<I, L> {
 
 	pub fn into_iri(self) -> Option<I::Iri>
 	where
-		I: IntoIri,
+		I: TryIntoIri,
 	{
 		self.try_into_iri().ok()
 	}
@@ -229,78 +232,51 @@ impl<I: LiteralInterpretationMut<L>, T: Interpret<I, Interpreted = I::Resource>,
 	}
 }
 
-impl<V: LiteralVocabulary, I: ExportedFromVocabulary<V>> ExportedFromVocabulary<V>
+impl<V: LiteralVocabulary, I: ExtractedFromVocabulary<V>> ExtractedFromVocabulary<V>
 	for Term<I, V::Literal>
 where
-	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
+	V::Literal: ExtractedFromVocabulary<V>,
 {
-	type Output =
-		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
+	type Extracted = Term<I::Extracted, <V::Literal as ExtractedFromVocabulary<V>>::Extracted>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Output {
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Id(i) => Term::Id(i.exported_from_vocabulary(vocabulary)),
-			Self::Literal(l) => {
-				let l = vocabulary.literal(l).unwrap();
-				Term::Literal(l.exported_from_vocabulary(vocabulary))
-			}
+			Self::Literal(l) => Term::Literal(l.exported_from_vocabulary(vocabulary)),
 		}
 	}
 }
 
-impl<V: LiteralVocabulary, I: ExportFromVocabulary<V>> ExportFromVocabulary<V>
+impl<V: LiteralVocabulary, I: ExtractFromVocabulary<V>> ExtractFromVocabulary<V>
 	for Term<I, V::Literal>
 where
-	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
+	V::Literal: ExtractedFromVocabulary<V>,
 {
-	type Output =
-		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
+	type Extracted = Term<I::Extracted, <V::Literal as ExtractedFromVocabulary<V>>::Extracted>;
 
-	fn export_from_vocabulary(self, vocabulary: &V) -> Self::Output {
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
 		match self {
-			Self::Id(i) => Term::Id(i.export_from_vocabulary(vocabulary)),
-			Self::Literal(l) => {
-				let l = vocabulary.literal(&l).unwrap();
-				Term::Literal(l.exported_from_vocabulary(vocabulary))
-			}
+			Self::Id(i) => Term::Id(i.extract_from_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(l.exported_from_vocabulary(vocabulary)),
 		}
 	}
 }
 
-impl<'a, V: LiteralVocabulary, I: ExportRefFromVocabulary<V>> ExportRefFromVocabulary<V>
-	for Term<I, &'a V::Literal>
-where
-	Literal<V::Type, V::Value>: ExportedFromVocabulary<V>,
-{
-	type Output =
-		Term<I::Output, <Literal<V::Type, V::Value> as ExportedFromVocabulary<V>>::Output>;
-
-	fn export_ref_from_vocabulary(self, vocabulary: &V) -> Self::Output {
-		match self {
-			Self::Id(i) => Term::Id(i.export_ref_from_vocabulary(vocabulary)),
-			Self::Literal(l) => {
-				let l = vocabulary.literal(l).unwrap();
-				Term::Literal(l.exported_from_vocabulary(vocabulary))
-			}
-		}
-	}
-}
-
-impl<V, I: TryExportFromVocabulary<V>, L: TryExportFromVocabulary<V>> TryExportFromVocabulary<V>
+impl<V, I: TryExtractFromVocabulary<V>, L: TryExtractFromVocabulary<V>> TryExtractFromVocabulary<V>
 	for Term<I, L>
 {
-	type Output = Term<I::Output, L::Output>;
+	type Extracted = Term<I::Extracted, L::Extracted>;
 
 	type Error = Term<I::Error, L::Error>;
 
-	fn try_export_from_vocabulary(self, vocabulary: &V) -> Result<Self::Output, Self::Error> {
+	fn try_extract_from_vocabulary(self, vocabulary: &V) -> Result<Self::Extracted, Self::Error> {
 		match self {
 			Self::Id(i) => i
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(Term::Id)
 				.map(Term::Id),
 			Self::Literal(l) => l
-				.try_export_from_vocabulary(vocabulary)
+				.try_extract_from_vocabulary(vocabulary)
 				.map_err(Term::Literal)
 				.map(Term::Literal),
 		}
@@ -347,25 +323,25 @@ impl<L> Term<Id, L> {
 	}
 }
 
-impl<V, I: InsertIntoVocabulary<V>, L: InsertIntoVocabulary<V>> InsertIntoVocabulary<V>
+impl<V, I: EmbedIntoVocabulary<V>, L: EmbedIntoVocabulary<V>> EmbedIntoVocabulary<V>
 	for Term<I, L>
 {
-	type Inserted = Term<I::Inserted, L::Inserted>;
+	type Embedded = Term<I::Embedded, L::Embedded>;
 
-	fn insert_into_vocabulary(self, vocabulary: &mut V) -> Self::Inserted {
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
-			Self::Id(id) => Term::Id(id.insert_into_vocabulary(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.insert_into_vocabulary(vocabulary)),
+			Self::Id(id) => Term::Id(id.embed_into_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(l.embed_into_vocabulary(vocabulary)),
 		}
 	}
 }
 
-impl<V, I: InsertedIntoVocabulary<V>, L: InsertedIntoVocabulary<V>> InsertedIntoVocabulary<V>
+impl<V, I: EmbeddedIntoVocabulary<V>, L: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V>
 	for Term<I, L>
 {
-	type Inserted = Term<I::Inserted, L::Inserted>;
+	type Embedded = Term<I::Embedded, L::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Inserted {
+	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
 			Self::Id(id) => Term::Id(id.inserted_into_vocabulary(vocabulary)),
 			Self::Literal(l) => Term::Literal(l.inserted_into_vocabulary(vocabulary)),

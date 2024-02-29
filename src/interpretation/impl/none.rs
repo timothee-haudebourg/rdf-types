@@ -1,12 +1,13 @@
 use iref::{Iri, IriBuf};
 
 use crate::{
-	BlankId, BlankIdBuf, BlankIdInterpretation, BlankIdInterpretationMut, Id, Interpretation,
-	IriInterpretation, IriInterpretationMut, Literal, LiteralInterpretation,
-	LiteralInterpretationMut, ReverseLiteralInterpretation, Term,
+	interpretation::{
+		BlankIdInterpretation, BlankIdInterpretationMut, IriInterpretation, IriInterpretationMut,
+		LiteralInterpretation, LiteralInterpretationMut, ReverseBlankIdInterpretation,
+		ReverseIriInterpretation, ReverseLiteralInterpretation,
+	},
+	BlankId, BlankIdBuf, Id, Interpretation, Literal, Term,
 };
-
-use super::{ReverseBlankIdInterpretation, ReverseIriInterpretation};
 
 impl Interpretation for () {
 	type Resource = Term;

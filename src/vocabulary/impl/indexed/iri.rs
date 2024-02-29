@@ -2,8 +2,6 @@ use iref::Iri;
 use std::convert::TryFrom;
 use std::hash::Hash;
 
-use crate::XSD_STRING;
-
 /// Iri index.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub struct IriIndex(usize);
@@ -34,21 +32,17 @@ impl<'a> TryFrom<&'a Iri> for IriIndex {
 	}
 }
 
-impl<V: crate::IriVocabulary<Iri = Self>> crate::literal::RdfTypeIriWithContext<V> for IriIndex {
-	fn is_xsd_string_with(&self, vocabulary: &V) -> bool {
-		vocabulary.iri(self).unwrap() == XSD_STRING
-	}
-}
-
 #[cfg(feature = "contextual")]
-impl<V: crate::IriVocabulary<Iri = Self>> contextual::DisplayWithContext<V> for IriIndex {
+impl<V: crate::vocabulary::IriVocabulary<Iri = Self>> contextual::DisplayWithContext<V>
+	for IriIndex
+{
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
 	}
 }
 
 #[cfg(feature = "contextual")]
-impl<V: crate::IriVocabulary<Iri = Self>> crate::RdfDisplayWithContext<V> for IriIndex {
+impl<V: crate::vocabulary::IriVocabulary<Iri = Self>> crate::RdfDisplayWithContext<V> for IriIndex {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		std::fmt::Display::fmt(&vocabulary.iri(self).unwrap(), f)
 	}
@@ -101,16 +95,8 @@ impl<'a, I: TryFrom<&'a Iri>> TryFrom<&'a Iri> for IriOrIndex<I> {
 	}
 }
 
-impl<I, V: crate::IriVocabulary<Iri = Self>> crate::literal::RdfTypeIriWithContext<V>
-	for IriOrIndex<I>
-{
-	fn is_xsd_string_with(&self, vocabulary: &V) -> bool {
-		vocabulary.iri(self).unwrap() == XSD_STRING
-	}
-}
-
 #[cfg(feature = "contextual")]
-impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> contextual::DisplayWithContext<V>
+impl<I, V: crate::vocabulary::IriVocabulary<Iri = IriOrIndex<I>>> contextual::DisplayWithContext<V>
 	for IriOrIndex<I>
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -119,7 +105,7 @@ impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> contextual::DisplayWithCon
 }
 
 #[cfg(feature = "contextual")]
-impl<I, V: crate::IriVocabulary<Iri = IriOrIndex<I>>> crate::RdfDisplayWithContext<V>
+impl<I, V: crate::vocabulary::IriVocabulary<Iri = IriOrIndex<I>>> crate::RdfDisplayWithContext<V>
 	for IriOrIndex<I>
 {
 	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
