@@ -9,8 +9,9 @@ use crate::{
 		BlankIdVocabulary, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
 		ExtractedFromVocabulary, IriVocabulary,
 	},
-	BlankId, BlankIdBuf, GraphLabelRef, MaybeBlankId, MaybeIri, RdfDisplay, SubjectRef, Term,
-	TryAsBlankId, TryAsIri, TryIntoBlankId, TryIntoIri, Vocabulary, VocabularyMut,
+	BlankId, BlankIdBuf, LexicalGraphLabelRef, LexicalSubjectRef, MaybeBlankId, MaybeIri,
+	RdfDisplay, Term, TryAsBlankId, TryAsIri, TryIntoBlankId, TryIntoIri, Vocabulary,
+	VocabularyMut,
 };
 
 /// RDF node identifier.
@@ -37,8 +38,8 @@ pub enum Id<I = IriBuf, B = BlankIdBuf> {
 	Iri(#[cfg_attr(feature = "meta", locspan(stripped))] I),
 }
 
-/// Standard RDF node identifier reference.
-pub type IdRef<'a> = Id<&'a Iri, &'a BlankId>;
+/// Lexical RDF node identifier reference.
+pub type LexicalIdRef<'a> = Id<&'a Iri, &'a BlankId>;
 
 impl<I, B> Id<I, B> {
 	pub fn is_blank(&self) -> bool {
@@ -212,7 +213,7 @@ impl<'a, I, B> Id<&'a I, &'a B> {
 impl Id {
 	/// Turns this reference into an `IdRef`.
 	#[inline(always)]
-	pub fn as_id_ref(&self) -> IdRef {
+	pub fn as_lexical_id_ref(&self) -> LexicalIdRef {
 		match self {
 			Self::Iri(i) => Id::Iri(i.as_iri()),
 			Self::Blank(b) => Id::Blank(b.as_blank_id_ref()),
@@ -221,14 +222,14 @@ impl Id {
 
 	/// Alias for `as_id_ref`.
 	#[inline(always)]
-	pub fn as_subject_ref(&self) -> SubjectRef {
-		self.as_id_ref()
+	pub fn as_lexical_subject_ref(&self) -> LexicalSubjectRef {
+		self.as_lexical_id_ref()
 	}
 
 	/// Alias for `as_id_ref`.
 	#[inline(always)]
-	pub fn as_graph_label_ref(&self) -> GraphLabelRef {
-		self.as_id_ref()
+	pub fn as_graph_label_ref(&self) -> LexicalGraphLabelRef {
+		self.as_lexical_id_ref()
 	}
 
 	pub fn inserted_into<V: VocabularyMut>(&self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
@@ -246,7 +247,7 @@ impl Id {
 	}
 }
 
-impl<'a> IdRef<'a> {
+impl<'a> LexicalIdRef<'a> {
 	#[inline(always)]
 	pub fn into_owned(self) -> Id {
 		match self {

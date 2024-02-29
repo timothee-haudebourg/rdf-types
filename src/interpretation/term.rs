@@ -411,7 +411,7 @@ impl<I: ?Sized + ReverseIdInterpretation + ReverseLiteralInterpretation> Reverse
 
 pub trait ReverseLiteralInterpretationMut: ReverseLiteralInterpretation {
 	/// Assigns the given literal to the given resource.
-	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool;
+	fn assign_literal(&mut self, resource: &Self::Resource, literal: Self::Literal) -> bool;
 }
 
 /// Mutable reverse term identifier interpretation.
@@ -423,7 +423,7 @@ pub trait ReverseTermInterpretationMut:
 	/// Assigns the given term to the given resource.
 	fn assign_term(
 		&mut self,
-		resource: Self::Resource,
+		resource: &Self::Resource,
 		term: Term<Id<Self::Iri, Self::BlankId>, Self::Literal>,
 	) -> bool {
 		match term {
@@ -440,17 +440,18 @@ pub trait ReverseTermInterpretationMut:
 			&Self::Resource,
 		) -> Option<Term<Id<Self::Iri, Self::BlankId>, Self::Literal>>,
 	) where
+		Self::Resource: Clone,
 		Self: TraversableInterpretation,
 	{
 		let mut terms = Vec::new();
 		for r in self.resources() {
-			if let Some(term) = f(self, &r) {
-				terms.push((r, term))
+			if let Some(term) = f(self, r) {
+				terms.push((r.clone(), term))
 			}
 		}
 
 		for (r, term) in terms {
-			self.assign_term(r, term);
+			self.assign_term(&r, term);
 		}
 	}
 
@@ -461,6 +462,7 @@ pub trait ReverseTermInterpretationMut:
 		vocabulary: &mut V,
 		generator: &mut impl Generator<V>,
 	) where
+		Self::Resource: Clone,
 		Self: TraversableInterpretation
 			+ ReverseTermInterpretationMut<Iri = V::Iri, BlankId = V::BlankId>,
 	{

@@ -4,7 +4,7 @@ use iref::{Iri, IriBuf};
 
 use crate::{
 	vocabulary::{EmbedIntoVocabulary, EmbeddedIntoVocabulary},
-	Id, Literal, Object, ObjectRef, Quad, RdfDisplay, SubjectRef,
+	Id, LexicalObjectRef, LexicalSubjectRef, Object, Quad, RdfDisplay,
 };
 
 #[cfg(feature = "contextual")]
@@ -13,13 +13,16 @@ use contextual::{DisplayWithContext, WithContext};
 #[cfg(feature = "contextual")]
 use crate::RdfDisplayWithContext;
 
+/// Lexical RDF triple.
+pub type LexicalTriple = Triple<Id, IriBuf, Object>;
+
+/// Lexical RDF triple reference.
+pub type LexicalTripleRef<'a> = Triple<LexicalSubjectRef<'a>, &'a Iri, LexicalObjectRef<'a>>;
+
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Triple<S = Id, P = IriBuf, O = Object>(pub S, pub P, pub O);
-
-/// RDF triple reference.
-pub type TripleRef<'a, L = Literal> = Triple<SubjectRef<'a>, &'a Iri, ObjectRef<'a, L>>;
+pub struct Triple<S, P = S, O = S>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
@@ -141,21 +144,18 @@ impl<T> Triple<T, T, T> {
 	}
 }
 
-impl<L> Triple<Id, IriBuf, Object<Id, L>> {
-	pub fn as_triple_ref(&self) -> TripleRef<L> {
+impl LexicalTriple {
+	pub fn as_lexical_triple_ref(&self) -> LexicalTripleRef {
 		Triple(
-			self.0.as_subject_ref(),
+			self.0.as_lexical_subject_ref(),
 			self.1.as_iri(),
-			self.2.as_object_ref(),
+			self.2.as_lexical_object_ref(),
 		)
 	}
 }
 
-impl<'a, L> TripleRef<'a, L> {
-	pub fn into_owned(self) -> Triple<Id, IriBuf, Object<Id, L>>
-	where
-		L: Clone,
-	{
+impl<'a> LexicalTripleRef<'a> {
+	pub fn into_owned(self) -> LexicalTriple {
 		Triple(self.0.into_owned(), self.1.to_owned(), self.2.into_owned())
 	}
 }

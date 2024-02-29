@@ -19,6 +19,9 @@ pub use id::*;
 mod term;
 pub use term::*;
 
+pub mod fallible;
+pub use fallible::FallibleInterpretation;
+
 /// RDF resource interpretation.
 pub trait Interpretation {
 	/// Resource identifier type.
@@ -35,7 +38,7 @@ impl<'a, I: Interpretation> Interpretation for &'a mut I {
 
 pub trait TraversableInterpretation: Interpretation {
 	/// Interpreted resource iterator.
-	type Resources<'a>: 'a + Iterator<Item = Self::Resource>
+	type Resources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 

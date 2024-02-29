@@ -8,8 +8,8 @@ use crate::{
 		EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
 		ExtractedFromVocabulary, TryExtractFromVocabulary,
 	},
-	GraphLabel, GraphLabelRef, Id, Interpretation, Literal, Object, ObjectRef, RdfDisplay,
-	SubjectRef, Triple,
+	GraphLabel, Id, Interpretation, LexicalGraphLabelRef, LexicalObjectRef, LexicalSubjectRef,
+	Object, RdfDisplay, Triple,
 };
 
 #[cfg(feature = "contextual")]
@@ -18,10 +18,17 @@ use contextual::{DisplayWithContext, WithContext};
 #[cfg(feature = "contextual")]
 use crate::RdfDisplayWithContext;
 
+/// Lexical RDF quad.
+pub type LexicalQuad = Quad<Id, IriBuf, Object, GraphLabel>;
+
+/// Lexical RDF quad reference.
+pub type LexicalQuadRef<'a> =
+	Quad<LexicalSubjectRef<'a>, &'a Iri, LexicalObjectRef<'a>, LexicalGraphLabelRef<'a>>;
+
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Quad<S = Id, P = IriBuf, O = Object, G = GraphLabel>(pub S, pub P, pub O, pub Option<G>);
+pub struct Quad<S, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]
@@ -35,31 +42,24 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	}
 }
 
-/// Standard RDF quad reference.
-pub type QuadRef<'a, L = Literal> =
-	Quad<SubjectRef<'a>, &'a Iri, ObjectRef<'a, L>, GraphLabelRef<'a>>;
-
-impl<L> Quad<Id, IriBuf, Object<Id, L>, GraphLabel> {
-	pub fn as_quad_ref(&self) -> QuadRef<L> {
+impl LexicalQuad {
+	pub fn as_lexical_quad_ref(&self) -> LexicalQuadRef {
 		Quad(
-			self.0.as_subject_ref(),
+			self.0.as_lexical_subject_ref(),
 			self.1.as_iri(),
-			self.2.as_object_ref(),
+			self.2.as_lexical_object_ref(),
 			self.3.as_ref().map(GraphLabel::as_graph_label_ref),
 		)
 	}
 }
 
-impl<'a, L> QuadRef<'a, L> {
-	pub fn into_owned(self) -> Quad<Id, IriBuf, Object<Id, L>, GraphLabel>
-	where
-		L: Clone,
-	{
+impl<'a> LexicalQuadRef<'a> {
+	pub fn into_owned(self) -> LexicalQuad {
 		Quad(
 			self.0.into_owned(),
 			self.1.to_owned(),
 			self.2.into_owned(),
-			self.3.map(GraphLabelRef::into_owned),
+			self.3.map(LexicalGraphLabelRef::into_owned),
 		)
 	}
 }
@@ -278,7 +278,7 @@ impl<
 pub trait TryExportQuad<S, P, O, G> {
 	type Error;
 
-	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<Quad, Self::Error>;
+	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<LexicalQuad, Self::Error>;
 }
 
 #[derive(Debug, thiserror::Error)]

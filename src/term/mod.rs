@@ -49,8 +49,8 @@ pub enum Term<I = Id, L = Literal> {
 	Literal(L),
 }
 
-/// Standard gRDF term reference.
-pub type TermRef<'a, L = Literal> = Term<IdRef<'a>, &'a L>;
+/// Lexical RDF term reference.
+pub type LexicalTermRef<'a> = Term<LexicalIdRef<'a>, &'a Literal>;
 
 impl<I: Hash, L: Hash> Hash for Term<I, L> {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -307,19 +307,19 @@ impl<'a, I, L> Term<&'a I, &'a L> {
 	}
 }
 
-impl<L> Term<Id, L> {
+impl Term {
 	#[inline(always)]
-	pub fn as_term_ref(&self) -> TermRef<L> {
+	pub fn as_lexical_term_ref(&self) -> LexicalTermRef {
 		match self {
-			Self::Id(id) => Term::Id(id.as_id_ref()),
+			Self::Id(id) => Term::Id(id.as_lexical_id_ref()),
 			Self::Literal(l) => Term::Literal(l),
 		}
 	}
 
-	/// Alias for `as_term_ref`.
+	/// Alias for [`Self::as_lexical_term_ref`].
 	#[inline(always)]
-	pub fn as_object_ref(&self) -> ObjectRef<L> {
-		self.as_term_ref()
+	pub fn as_lexical_object_ref(&self) -> LexicalObjectRef {
+		self.as_lexical_term_ref()
 	}
 }
 
@@ -420,11 +420,8 @@ impl<I: AsRefWithContext<str, V>, L: AsRef<str>, V> AsRefWithContext<str, V> for
 	}
 }
 
-impl<'a, L> TermRef<'a, L> {
-	pub fn into_owned(self) -> Term<Id, L>
-	where
-		L: Clone,
-	{
+impl<'a> LexicalTermRef<'a> {
+	pub fn into_owned(self) -> Term {
 		match self {
 			Self::Id(id) => Term::Id(id.into_owned()),
 			Self::Literal(l) => Term::Literal(l.clone()),
@@ -435,20 +432,20 @@ impl<'a, L> TermRef<'a, L> {
 /// RDF triple/quad subject.
 pub type Subject<I = IriBuf, B = BlankIdBuf> = Id<I, B>;
 
-/// Standard RDF subject reference.
-pub type SubjectRef<'a> = IdRef<'a>;
+/// Lexical RDF subject reference.
+pub type LexicalSubjectRef<'a> = LexicalIdRef<'a>;
 
 /// RDF triple/quad object.
 pub type Object<I = Id, L = Literal> = Term<I, L>;
 
-/// Standard RDF object reference.
-pub type ObjectRef<'a, L = Literal> = TermRef<'a, L>;
+/// Lexical RDF object reference.
+pub type LexicalObjectRef<'a> = LexicalTermRef<'a>;
 
 /// RDF quad graph Label.
 pub type GraphLabel<I = IriBuf, B = BlankIdBuf> = Id<I, B>;
 
-/// Standard RDF graph label reference.
-pub type GraphLabelRef<'a> = IdRef<'a>;
+/// Lexical RDF graph label reference.
+pub type LexicalGraphLabelRef<'a> = LexicalIdRef<'a>;
 
 pub trait AsRdfTerm<I, B, L> {
 	fn as_rdf_term(&self) -> Term<Id<&I, &B>, &L>;

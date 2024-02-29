@@ -125,7 +125,7 @@ impl<'a, I: 'a + ?Sized + ReverseIdInterpretation> Iterator for IdsOf<'a, I> {
 pub trait ReverseIdInterpretationMut:
 	ReverseIriInterpretationMut + ReverseBlankIdInterpretationMut
 {
-	fn assign_id(&mut self, r: Self::Resource, id: Id<Self::Iri, Self::BlankId>) -> bool {
+	fn assign_id(&mut self, r: &Self::Resource, id: Id<Self::Iri, Self::BlankId>) -> bool {
 		match id {
 			Id::Iri(i) => self.assign_iri(r, i),
 			Id::Blank(b) => self.assign_blank_id(r, b),

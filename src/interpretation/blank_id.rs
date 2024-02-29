@@ -128,11 +128,11 @@ impl<'t, T: ReverseBlankIdInterpretation> ReverseBlankIdInterpretation for &'t m
 }
 
 pub trait ReverseBlankIdInterpretationMut: ReverseBlankIdInterpretation {
-	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool;
+	fn assign_blank_id(&mut self, id: &Self::Resource, blank_id: Self::BlankId) -> bool;
 }
 
 impl<'t, T: ReverseBlankIdInterpretationMut> ReverseBlankIdInterpretationMut for &'t mut T {
-	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool {
+	fn assign_blank_id(&mut self, id: &Self::Resource, blank_id: Self::BlankId) -> bool {
 		T::assign_blank_id(*self, id, blank_id)
 	}
 }

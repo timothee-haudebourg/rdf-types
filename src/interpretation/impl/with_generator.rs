@@ -110,7 +110,7 @@ impl<I: ReverseIriInterpretation, G> ReverseIriInterpretation for WithGenerator<
 }
 
 impl<I: ReverseIriInterpretationMut, G> ReverseIriInterpretationMut for WithGenerator<G, I> {
-	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool {
+	fn assign_iri(&mut self, id: &Self::Resource, iri: Self::Iri) -> bool {
 		self.interpretation.assign_iri(id, iri)
 	}
 }
@@ -139,7 +139,7 @@ impl<I: ReverseBlankIdInterpretation, G> ReverseBlankIdInterpretation for WithGe
 impl<I: ReverseBlankIdInterpretationMut, G> ReverseBlankIdInterpretationMut
 	for WithGenerator<G, I>
 {
-	fn assign_blank_id(&mut self, id: Self::Resource, blank_id: Self::BlankId) -> bool {
+	fn assign_blank_id(&mut self, id: &Self::Resource, blank_id: Self::BlankId) -> bool {
 		self.interpretation.assign_blank_id(id, blank_id)
 	}
 }
@@ -168,7 +168,7 @@ impl<I: ReverseLiteralInterpretation, G> ReverseLiteralInterpretation for WithGe
 impl<I: ReverseLiteralInterpretationMut, G> ReverseLiteralInterpretationMut
 	for WithGenerator<G, I>
 {
-	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool {
+	fn assign_literal(&mut self, resource: &Self::Resource, literal: Self::Literal) -> bool {
 		self.interpretation.assign_literal(resource, literal)
 	}
 }

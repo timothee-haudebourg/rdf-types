@@ -24,11 +24,23 @@ impl From<ResourceIndex> for usize {
 	}
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Resource {
+	index: ResourceIndex,
 	iris: HashSet<IriIndex>,
 	blank_ids: HashSet<BlankIdIndex>,
 	literals: HashSet<LiteralIndex>,
+}
+
+impl Resource {
+	fn new(index: ResourceIndex) -> Self {
+		Self {
+			index,
+			iris: HashSet::new(),
+			blank_ids: HashSet::new(),
+			literals: HashSet::new(),
+		}
+	}
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -53,7 +65,7 @@ impl Resources {
 
 	fn insert(&mut self) -> (ResourceIndex, &mut Resource) {
 		let i = ResourceIndex(self.0.len());
-		self.0.push(Resource::default());
+		self.0.push(Resource::new(i));
 		let r = self.0.last_mut().unwrap();
 		(i, r)
 	}
@@ -86,13 +98,10 @@ impl Interpretation for Indexed {
 }
 
 impl TraversableInterpretation for Indexed {
-	type Resources<'a> = ResourceIndexIter;
+	type Resources<'a> = ResourceIndexIter<'a>;
 
 	fn resources(&self) -> Self::Resources<'_> {
-		ResourceIndexIter {
-			i: 0,
-			len: self.resources.len(),
-		}
+		ResourceIndexIter(self.resources.0.iter())
 	}
 }
 
@@ -102,22 +111,13 @@ impl<V> InterpretationMut<V> for Indexed {
 	}
 }
 
-pub struct ResourceIndexIter {
-	i: usize,
-	len: usize,
-}
+pub struct ResourceIndexIter<'a>(std::slice::Iter<'a, Resource>);
 
-impl Iterator for ResourceIndexIter {
-	type Item = ResourceIndex;
+impl<'a> Iterator for ResourceIndexIter<'a> {
+	type Item = &'a ResourceIndex;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.i < self.len {
-			let i = ResourceIndex(self.i);
-			self.i += 1;
-			Some(i)
-		} else {
-			None
-		}
+		self.0.next().map(|r| &r.index)
 	}
 }
 
@@ -217,23 +217,23 @@ impl ReverseLiteralInterpretation for Indexed {
 }
 
 impl ReverseIriInterpretationMut for Indexed {
-	fn assign_iri(&mut self, resource: Self::Resource, iri: Self::Iri) -> bool {
-		let r = self.resources.get_mut(resource).unwrap();
+	fn assign_iri(&mut self, resource: &Self::Resource, iri: Self::Iri) -> bool {
+		let r = self.resources.get_mut(*resource).unwrap();
 		r.iris.insert(iri)
 	}
 }
 
 impl ReverseBlankIdInterpretationMut for Indexed {
-	fn assign_blank_id(&mut self, resource: Self::Resource, blank_id: Self::BlankId) -> bool {
-		let r = self.resources.get_mut(resource).unwrap();
+	fn assign_blank_id(&mut self, resource: &Self::Resource, blank_id: Self::BlankId) -> bool {
+		let r = self.resources.get_mut(*resource).unwrap();
 		r.blank_ids.insert(blank_id)
 	}
 }
 
 impl ReverseLiteralInterpretationMut for Indexed {
-	fn assign_literal(&mut self, resource: Self::Resource, literal: Self::Literal) -> bool {
+	fn assign_literal(&mut self, resource: &Self::Resource, literal: Self::Literal) -> bool {
 		self.resources
-			.get_mut(resource)
+			.get_mut(*resource)
 			.unwrap()
 			.literals
 			.insert(literal)

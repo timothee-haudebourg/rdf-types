@@ -107,11 +107,11 @@ impl<'t, T: ReverseIriInterpretation> ReverseIriInterpretation for &'t mut T {
 }
 
 pub trait ReverseIriInterpretationMut: ReverseIriInterpretation {
-	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool;
+	fn assign_iri(&mut self, id: &Self::Resource, iri: Self::Iri) -> bool;
 }
 
 impl<'t, T: ReverseIriInterpretationMut> ReverseIriInterpretationMut for &'t mut T {
-	fn assign_iri(&mut self, id: Self::Resource, iri: Self::Iri) -> bool {
+	fn assign_iri(&mut self, id: &Self::Resource, iri: Self::Iri) -> bool {
 		T::assign_iri(*self, id, iri)
 	}
 }

@@ -26,10 +26,14 @@ pub use schema::*;
 pub use term::*;
 pub use triple::*;
 
+pub mod dataset;
 pub mod generator;
 pub mod interpretation;
+pub mod pattern;
+pub mod utils;
 pub mod vocabulary;
 
+pub use dataset::Dataset;
 pub use generator::Generator;
 pub use interpretation::{Interpretation, InterpretationMut};
 pub use vocabulary::{Vocabulary, VocabularyMut};
