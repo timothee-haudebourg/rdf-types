@@ -50,6 +50,35 @@ impl<I> LiteralType<I> {
 			Self::LangString(_) => false,
 		}
 	}
+
+	pub fn is_iri(&self, iri: &I) -> bool
+	where
+		I: PartialEq,
+	{
+		match self {
+			Self::Any(i) => i == iri,
+			Self::LangString(_) => false,
+		}
+	}
+
+	pub fn as_lexical_type_ref_with<'a>(
+		&'a self,
+		vocabulary: &'a impl IriVocabulary<Iri = I>,
+	) -> LexicalLiteralTypeRef<'a> {
+		match self {
+			Self::Any(i) => LexicalLiteralTypeRef::Any(vocabulary.iri(i).unwrap()),
+			Self::LangString(l) => LexicalLiteralTypeRef::LangString(l),
+		}
+	}
+}
+
+impl LiteralType {
+	pub fn as_lexical_type_ref(&self) -> LexicalLiteralTypeRef {
+		match self {
+			Self::Any(i) => LexicalLiteralTypeRef::Any(i),
+			Self::LangString(l) => LexicalLiteralTypeRef::LangString(l),
+		}
+	}
 }
 
 impl<V, I: EmbedIntoVocabulary<V>> EmbedIntoVocabulary<V> for LiteralType<I> {
@@ -169,4 +198,15 @@ impl<T: crate::RdfDisplayWithContext<V>, V> crate::RdfDisplayWithContext<V> for 
 			}
 		}
 	}
+}
+
+/// RDF literal type.
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub enum LexicalLiteralTypeRef<'a> {
+	/// Any type.
+	Any(&'a Iri),
+
+	/// Language string.
+	LangString(&'a LangTag),
 }
