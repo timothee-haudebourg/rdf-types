@@ -36,13 +36,6 @@ impl<V, T: Eq + Hash> TriplePatternMap<V, T> {
 	}
 }
 
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for Map<V> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
-
 pub struct Values<'a, V> {
 	any: AnySubjectValues<'a, V>,
 	given: Option<GivenSubjectValues<'a, V>>,

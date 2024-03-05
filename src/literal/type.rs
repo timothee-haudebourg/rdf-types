@@ -210,3 +210,12 @@ pub enum LexicalLiteralTypeRef<'a> {
 	/// Language string.
 	LangString(&'a LangTag),
 }
+
+impl<'a> LexicalLiteralTypeRef<'a> {
+	pub fn is_iri(&self, iri: &Iri) -> bool {
+		match self {
+			Self::Any(i) => *i == iri,
+			Self::LangString(_) => false,
+		}
+	}
+}

@@ -4,7 +4,7 @@ use iref::{Iri, IriBuf};
 
 use crate::{
 	vocabulary::{EmbedIntoVocabulary, EmbeddedIntoVocabulary},
-	Id, LexicalObjectRef, LexicalSubjectRef, Object, Quad, RdfDisplay,
+	Id, LexicalObjectRef, LexicalSubjectRef, Object, Quad, RdfDisplay, Term,
 };
 
 #[cfg(feature = "contextual")]
@@ -22,7 +22,7 @@ pub type LexicalTripleRef<'a> = Triple<LexicalSubjectRef<'a>, &'a Iri, LexicalOb
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Triple<S, P = S, O = S>(pub S, pub P, pub O);
+pub struct Triple<S = Term, P = S, O = S>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>

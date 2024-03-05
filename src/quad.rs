@@ -9,7 +9,7 @@ use crate::{
 		ExtractedFromVocabulary, TryExtractFromVocabulary,
 	},
 	GraphLabel, Id, Interpretation, LexicalGraphLabelRef, LexicalObjectRef, LexicalSubjectRef,
-	Object, RdfDisplay, Triple,
+	Object, RdfDisplay, Term, Triple,
 };
 
 #[cfg(feature = "contextual")]
@@ -28,7 +28,7 @@ pub type LexicalQuadRef<'a> =
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Quad<S, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
+pub struct Quad<S = Term, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]

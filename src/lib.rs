@@ -6,12 +6,17 @@
 //! The optional feature `meta` provides compatibility
 //! with the `locspan` crate to locate every sub-component
 //! of a term.
+#![recursion_limit = "1024"]
 use iref::{Iri, IriBuf};
+
+#[doc(hidden)]
+pub use static_iref;
 
 mod blankid;
 mod display;
 mod grdf;
 mod literal;
+mod r#macro;
 mod quad;
 mod schema;
 mod term;

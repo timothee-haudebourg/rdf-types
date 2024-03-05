@@ -1,4 +1,4 @@
-use crate::utils::InfallibleIterator;
+use crate::{utils::InfallibleIterator, InterpretationMut};
 
 pub trait FallibleInterpretation {
 	type Resource;
@@ -23,5 +23,15 @@ impl<I: super::TraversableInterpretation> TraversableFallibleInterpretation for 
 
 	fn try_resources(&self) -> Self::Resources<'_> {
 		InfallibleIterator(self.resources())
+	}
+}
+
+pub trait FallibleInterpretationMut<V>: FallibleInterpretation {
+	fn try_new_resource(&mut self, vocabulary: &mut V) -> Result<Self::Resource, Self::Error>;
+}
+
+impl<V, I: InterpretationMut<V>> FallibleInterpretationMut<V> for I {
+	fn try_new_resource(&mut self, vocabulary: &mut V) -> Result<Self::Resource, Self::Error> {
+		Ok(self.new_resource(vocabulary))
 	}
 }

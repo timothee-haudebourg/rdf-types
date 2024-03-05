@@ -26,6 +26,8 @@ langtag = "0.4.0"
 indexmap = "1.9.3"
 thiserror = "1.0.40"
 educe = "0.5.11"
+slab = "0.4.9"
+replace_with = "0.1.7"
 contextual = { version = "0.1.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 uuid = { version = "0.8", optional = true }
