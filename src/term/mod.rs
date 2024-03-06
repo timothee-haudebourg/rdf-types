@@ -447,7 +447,9 @@ pub type GraphLabel<I = IriBuf, B = BlankIdBuf> = Id<I, B>;
 /// Lexical RDF graph label reference.
 pub type LexicalGraphLabelRef<'a> = LexicalIdRef<'a>;
 
+/// Type that can be interpreted as an RDF term.
 pub trait AsRdfTerm<I, B, L> {
+	/// Returns this value as an RDF term.
 	fn as_rdf_term(&self) -> Term<Id<&I, &B>, &L>;
 }
 

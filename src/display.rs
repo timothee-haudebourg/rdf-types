@@ -2,9 +2,12 @@ use std::fmt;
 
 use langtag::{LangTag, LangTagBuf};
 
+/// Display method for RDF syntax elements.
 pub trait RdfDisplay {
+	/// Formats the value using the given formatter.
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 
+	/// Prepare the value to be formatted as an RDF syntax element.
 	#[inline(always)]
 	fn rdf_display(&self) -> RdfDisplayed<&Self> {
 		RdfDisplayed(self)
@@ -125,6 +128,7 @@ impl<'a, T: RdfDisplay + ?Sized> RdfDisplay for &'a T {
 	}
 }
 
+/// Value ready to be formatted as an RDF syntax element.
 pub struct RdfDisplayed<T>(T);
 
 impl<T: RdfDisplay> fmt::Display for RdfDisplayed<T> {

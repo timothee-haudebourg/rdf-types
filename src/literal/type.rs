@@ -125,7 +125,12 @@ impl<V: IriVocabulary> ExtractedFromVocabulary<V> for LiteralType<V::Iri> {
 	}
 }
 
+/// Literal type IRI.
+///
+/// This trait is used to correctly format literal type IRIs, which can be
+/// omitted when it is [`XSD_STRING`].
 pub trait RdfTypeIri {
+	/// Checks if the type IRI is [`XSD_STRING`].
 	fn is_xsd_string(&self) -> bool;
 }
 
@@ -147,7 +152,12 @@ impl<'a, T: RdfTypeIri> RdfTypeIri for &'a T {
 	}
 }
 
+/// Literal type IRI.
+///
+/// This trait is used to correctly format literal type IRIs, which can be
+/// omitted when it is [`XSD_STRING`].
 pub trait RdfTypeIriWithContext<C> {
+	/// Checks if the type IRI is [`XSD_STRING`] using the given context.
 	fn is_xsd_string_with(&self, context: &C) -> bool;
 }
 

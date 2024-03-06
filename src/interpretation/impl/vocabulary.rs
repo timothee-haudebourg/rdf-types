@@ -25,8 +25,9 @@ pub struct VocabularyInterpretationSubstitution<V: Vocabulary>(Vec<VocabTerm<V>>
 ///
 /// This type is a special sort of interpretation where every term is
 /// interpreted as itself, while allowing anonymous resources to be added to
-/// the interpretation. In particular, it implements the `InterpretationMut`
-/// trait, which is not implemented by the unit `()` interpretation.
+/// the interpretation without using a blank id generator. In particular, it
+/// implements the `InterpretationMut` trait, which is not implemented by the
+/// unit `()` interpretation.
 ///
 /// It is possible to remove anonymous nodes by building
 /// [`VocabularyInterpretationSubstitution`] with [`Self::into_substitution`] or
