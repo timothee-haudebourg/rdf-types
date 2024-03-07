@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{cmp::Ordering, collections::BTreeMap, hash::Hash};
 
 use crate::{
 	dataset::{btree_graph, BTreeGraph, DatasetMut, PatternMatchingDataset, TraversableDataset},
@@ -164,6 +164,44 @@ impl<R: Ord> BTreeDataset<R> {
 			named_graphs: self.named_graphs.iter(),
 			current_named_graph: None,
 		}
+	}
+}
+
+impl<R: PartialEq> PartialEq for BTreeDataset<R> {
+	fn eq(&self, other: &Self) -> bool {
+		self.named_graphs.len() == other.named_graphs.len()
+			&& self.default_graph == other.default_graph
+			&& self
+				.named_graphs
+				.iter()
+				.zip(&other.named_graphs)
+				.all(|(a, b)| a == b)
+	}
+}
+
+impl<R: Eq> Eq for BTreeDataset<R> {}
+
+impl<R: PartialOrd> PartialOrd for BTreeDataset<R> {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		match self.default_graph.partial_cmp(&other.default_graph) {
+			Some(Ordering::Equal) => self.named_graphs.partial_cmp(&other.named_graphs),
+			cmp => cmp,
+		}
+	}
+}
+
+impl<R: Ord> Ord for BTreeDataset<R> {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.default_graph
+			.cmp(&other.default_graph)
+			.then_with(|| self.named_graphs.cmp(&other.named_graphs))
+	}
+}
+
+impl<R: Hash> Hash for BTreeDataset<R> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.default_graph.hash(state);
+		self.named_graphs.hash(state)
 	}
 }
 

@@ -1,8 +1,10 @@
 use std::{
 	cmp::Ordering,
 	collections::{BTreeMap, BTreeSet},
+	hash::Hash,
 };
 
+use raw_btree::RawBTree;
 use slab::Slab;
 
 use super::super::{Graph, PatternMatchingGraph};
@@ -15,9 +17,18 @@ use crate::{
 	Term, Triple,
 };
 
+fn triple_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &Triple<&R>) -> Ordering {
+	|&i, triple| triples[i].as_ref().cmp(triple)
+}
+
+fn index_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &usize) -> Ordering {
+	|&i, &j| triples[i].cmp(&triples[j])
+}
+
 /// BTree-based RDF graph.
 pub struct BTreeGraph<R = Term> {
 	triples: Slab<Triple<R>>,
+	indexes: RawBTree<usize>,
 	resources: BTreeMap<R, Resource>,
 }
 
@@ -25,6 +36,7 @@ impl<R> Default for BTreeGraph<R> {
 	fn default() -> Self {
 		Self {
 			triples: Slab::new(),
+			indexes: RawBTree::new(),
 			resources: BTreeMap::new(),
 		}
 	}
@@ -48,75 +60,19 @@ impl<R> BTreeGraph<R> {
 
 	/// Returns an iterator over the triples of the graph.
 	pub fn iter(&self) -> Triples<R> {
-		Triples(self.triples.iter())
+		Triples {
+			triples: &self.triples,
+			indexes: self.indexes.iter(),
+		}
 	}
 }
 
 impl<R: Ord> BTreeGraph<R> {
 	/// Returns the index of the given triple in the graph, if any.
 	fn index_of(&self, triple: Triple<&R>) -> Option<usize> {
-		let mut s = self
-			.resources
-			.get(triple.0)?
-			.as_subject
-			.iter()
+		self.indexes
+			.get(triple_cmp(&self.triples), &triple)
 			.copied()
-			.peekable();
-		let mut p = self
-			.resources
-			.get(triple.1)?
-			.as_predicate
-			.iter()
-			.copied()
-			.peekable();
-		let mut o = self
-			.resources
-			.get(triple.2)?
-			.as_object
-			.iter()
-			.copied()
-			.peekable();
-		let mut min = std::cmp::max(*s.peek()?, std::cmp::max(*p.peek()?, *o.peek()?));
-
-		for i in s {
-			if i >= min {
-				loop {
-					match p.peek().copied() {
-						Some(j) => match j.cmp(&i) {
-							Ordering::Equal => {
-								loop {
-									match o.peek().copied() {
-										Some(j) => match j.cmp(&i) {
-											Ordering::Equal => return Some(i),
-											Ordering::Greater => {
-												min = j;
-												break;
-											}
-											Ordering::Less => {
-												o.next();
-											}
-										},
-										None => return None,
-									}
-								}
-
-								break;
-							}
-							Ordering::Greater => {
-								min = j;
-								break;
-							}
-							Ordering::Less => {
-								p.next();
-							}
-						},
-						None => return None,
-					}
-				}
-			}
-		}
-
-		None
 	}
 
 	/// Checks if the provided triple is in the graph.
@@ -136,38 +92,41 @@ impl<R: Ord> BTreeGraph<R> {
 			false
 		} else {
 			let e = self.triples.vacant_entry();
+			let i = e.key();
 
 			match self.resources.get_mut(&triple.0) {
 				Some(s) => {
-					s.as_subject.insert(e.key());
+					s.as_subject.insert(i);
 				}
 				None => {
 					self.resources
-						.insert(triple.0.clone(), Resource::subject(e.key()));
+						.insert(triple.0.clone(), Resource::subject(i));
 				}
 			}
 
 			match self.resources.get_mut(&triple.1) {
 				Some(p) => {
-					p.as_predicate.insert(e.key());
+					p.as_predicate.insert(i);
 				}
 				None => {
 					self.resources
-						.insert(triple.1.clone(), Resource::predicate(e.key()));
+						.insert(triple.1.clone(), Resource::predicate(i));
 				}
 			}
 
 			match self.resources.get_mut(&triple.2) {
 				Some(o) => {
-					o.as_object.insert(e.key());
+					o.as_object.insert(i);
 				}
 				None => {
-					self.resources
-						.insert(triple.2.clone(), Resource::object(e.key()));
+					self.resources.insert(triple.2.clone(), Resource::object(i));
 				}
 			}
 
 			e.insert(triple);
+
+			self.indexes.insert(index_cmp(&self.triples), i);
+
 			true
 		}
 	}
@@ -179,6 +138,8 @@ impl<R: Ord> BTreeGraph<R> {
 	pub fn remove(&mut self, triple: Triple<&R>) -> Option<Triple<R>> {
 		match self.index_of(triple) {
 			Some(i) => {
+				self.indexes.remove(index_cmp(&self.triples), &i);
+
 				let s = self.resources.get_mut(triple.0).unwrap();
 				s.as_subject.remove(&i);
 				if s.is_empty() {
@@ -270,24 +231,30 @@ impl<R: Ord> PatternMatchingGraph for BTreeGraph<R> {
 }
 
 /// Iterator over the triples of a [`BTreeGraph`].
-pub struct Triples<'a, R>(slab::Iter<'a, Triple<R>>);
+pub struct Triples<'a, R> {
+	triples: &'a Slab<Triple<R>>,
+	indexes: raw_btree::Iter<'a, usize>,
+}
 
 impl<'a, R> Iterator for Triples<'a, R> {
 	type Item = Triple<&'a R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0.next().map(|(_, t)| t.as_ref())
+		self.indexes.next().map(|&i| self.triples[i].as_ref())
 	}
 }
 
 /// Iterator over the triples of a [`BTreeGraph`].
-pub struct IntoTriples<R>(slab::IntoIter<Triple<R>>);
+pub struct IntoTriples<R> {
+	triples: Slab<Triple<R>>,
+	indexes: raw_btree::IntoIter<usize>,
+}
 
 impl<R> Iterator for IntoTriples<R> {
 	type Item = Triple<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0.next().map(|(_, t)| t)
+		self.indexes.next().map(|i| self.triples.remove(i))
 	}
 }
 
@@ -305,7 +272,39 @@ impl<R> IntoIterator for BTreeGraph<R> {
 	type IntoIter = IntoTriples<R>;
 
 	fn into_iter(self) -> Self::IntoIter {
-		IntoTriples(self.triples.into_iter())
+		IntoTriples {
+			triples: self.triples,
+			indexes: self.indexes.into_iter(),
+		}
+	}
+}
+
+impl<R: PartialEq> PartialEq for BTreeGraph<R> {
+	fn eq(&self, other: &Self) -> bool {
+		self.len() == other.len() && self.iter().zip(other).all(|(a, b)| a == b)
+	}
+}
+
+impl<R: Eq> Eq for BTreeGraph<R> {}
+
+impl<R: PartialOrd> PartialOrd for BTreeGraph<R> {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		self.iter().partial_cmp(other)
+	}
+}
+
+impl<R: Ord> Ord for BTreeGraph<R> {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.iter().cmp(other)
+	}
+}
+
+impl<R: Hash> Hash for BTreeGraph<R> {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		state.write_usize(self.len());
+		for elt in self {
+			elt.hash(state);
+		}
 	}
 }
 
@@ -520,5 +519,85 @@ impl Resource {
 
 	pub fn is_empty(&self) -> bool {
 		self.as_subject.is_empty() && self.as_predicate.is_empty() && self.as_object.is_empty()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use rand::{rngs::SmallRng, RngCore, SeedableRng};
+
+	use crate::Triple;
+
+	use super::BTreeGraph;
+
+	fn insert_test(n: usize, seed: [u8; 32]) {
+		let mut rng = SmallRng::from_seed(seed);
+		let mut triples = Vec::new();
+		triples.resize_with(n, || Triple(rng.next_u32(), rng.next_u32(), rng.next_u32()));
+
+		let mut graph = BTreeGraph::new();
+		for &t in &triples {
+			graph.insert(t);
+		}
+
+		triples.sort_unstable();
+		triples.dedup();
+
+		assert_eq!(graph.len(), triples.len());
+
+		test_eq(graph, triples)
+	}
+
+	fn remove_test(n: usize, seed: [u8; 32]) {
+		use rand::prelude::SliceRandom;
+		let mut rng = SmallRng::from_seed(seed);
+		let mut triples = Vec::new();
+		triples.resize_with(n, || Triple(rng.next_u32(), rng.next_u32(), rng.next_u32()));
+
+		let mut graph = BTreeGraph::new();
+		for &t in &triples {
+			graph.insert(t);
+		}
+
+		triples.shuffle(&mut rng);
+
+		for _ in 0..(n / 2) {
+			let t = triples.pop().unwrap();
+			graph.remove(t.as_ref());
+		}
+
+		triples.sort_unstable();
+		triples.dedup();
+
+		test_eq(graph, triples)
+	}
+
+	fn test_eq(graph: BTreeGraph<u32>, triples: Vec<Triple<u32>>) {
+		assert_eq!(graph.len(), triples.len());
+
+		let mut a = triples.iter().copied();
+		let mut b = graph.iter().map(Triple::into_copied);
+
+		loop {
+			match (a.next(), b.next()) {
+				(Some(a), Some(b)) => assert_eq!(a, b),
+				(None, None) => break,
+				_ => panic!("different length"),
+			}
+		}
+	}
+
+	#[test]
+	fn insert() {
+		for i in 0u8..32 {
+			insert_test(i as usize * 11, [i; 32]);
+		}
+	}
+
+	#[test]
+	fn remove() {
+		for i in 0u8..32 {
+			remove_test(i as usize * 11, [i; 32]);
+		}
 	}
 }

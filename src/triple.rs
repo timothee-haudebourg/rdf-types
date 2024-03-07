@@ -137,6 +137,46 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
+impl<'s, 'p, 'o, S, P, O> Triple<&'s S, &'p P, &'o O> {
+	pub fn cloned(&self) -> Triple<S, P, O>
+	where
+		S: Clone,
+		P: Clone,
+		O: Clone,
+	{
+		Triple(self.0.clone(), self.1.clone(), self.2.clone())
+	}
+
+	pub fn into_cloned(self) -> Triple<S, P, O>
+	where
+		S: Clone,
+		P: Clone,
+		O: Clone,
+	{
+		Triple(self.0.clone(), self.1.clone(), self.2.clone())
+	}
+}
+
+impl<'s, 'p, 'o, S, P, O> Triple<&'s S, &'p P, &'o O> {
+	pub fn copied(&self) -> Triple<S, P, O>
+	where
+		S: Copy,
+		P: Copy,
+		O: Copy,
+	{
+		Triple(*self.0, *self.1, *self.2)
+	}
+
+	pub fn into_copied(self) -> Triple<S, P, O>
+	where
+		S: Copy,
+		P: Copy,
+		O: Copy,
+	{
+		Triple(*self.0, *self.1, *self.2)
+	}
+}
+
 impl<T> Triple<T, T, T> {
 	/// Maps the components with the given function.
 	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Triple<U, U, U> {
