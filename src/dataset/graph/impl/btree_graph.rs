@@ -1,6 +1,7 @@
 use std::{
 	cmp::Ordering,
 	collections::{BTreeMap, BTreeSet},
+	fmt::Debug,
 	hash::Hash,
 };
 
@@ -14,7 +15,7 @@ use crate::{
 		triple::canonical::{PatternObject, PatternPredicate, PatternSubject},
 		CanonicalTriplePattern,
 	},
-	Term, Triple,
+	RdfDisplay, Term, Triple,
 };
 
 fn triple_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &Triple<&R>) -> Ordering {
@@ -519,6 +520,22 @@ impl Resource {
 
 	pub fn is_empty(&self) -> bool {
 		self.as_subject.is_empty() && self.as_predicate.is_empty() && self.as_object.is_empty()
+	}
+}
+
+impl<R: Debug> Debug for BTreeGraph<R> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_set().entries(self.iter()).finish()
+	}
+}
+
+impl<R: RdfDisplay> RdfDisplay for BTreeGraph<R> {
+	fn rdf_fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		for t in self {
+			writeln!(f, "{} .", t.rdf_display())?;
+		}
+
+		Ok(())
 	}
 }
 

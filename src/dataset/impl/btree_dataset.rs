@@ -1,10 +1,10 @@
-use std::{cmp::Ordering, collections::BTreeMap, hash::Hash};
+use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug, hash::Hash};
 
 use crate::{
 	dataset::{btree_graph, BTreeGraph, DatasetMut, PatternMatchingDataset, TraversableDataset},
 	pattern::{quad::canonical::PatternGraph, CanonicalQuadPattern, CanonicalTriplePattern},
 	utils::OptionIterator,
-	Dataset, Quad, Term, Triple,
+	Dataset, Quad, RdfDisplay, Term, Triple,
 };
 
 /// BTree-based RDF dataset.
@@ -403,6 +403,22 @@ impl<R: Clone + Ord> FromIterator<Triple<R>> for BTreeDataset<R> {
 		let mut result = Self::new();
 		result.extend(iter);
 		result
+	}
+}
+
+impl<R: Debug> Debug for BTreeDataset<R> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_set().entries(self.iter()).finish()
+	}
+}
+
+impl<R: RdfDisplay> RdfDisplay for BTreeDataset<R> {
+	fn rdf_fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		for t in self {
+			writeln!(f, "{} .", t.rdf_display())?;
+		}
+
+		Ok(())
 	}
 }
 
