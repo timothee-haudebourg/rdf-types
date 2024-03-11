@@ -427,6 +427,50 @@ impl<R: RdfDisplay> RdfDisplay for BTreeDataset<R> {
 	}
 }
 
+#[cfg(feature = "serde")]
+impl<R: serde::Serialize> serde::Serialize for BTreeDataset<R> {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		use serde::ser::SerializeSeq;
+		let mut seq = serializer.serialize_seq(Some(self.len()))?;
+
+		for quad in self {
+			seq.serialize_element(&quad)?;
+		}
+
+		seq.end()
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de, R: Clone + Ord + serde::Deserialize<'de>> serde::Deserialize<'de> for BTreeDataset<R> {
+	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		struct Visitor<R>(std::marker::PhantomData<R>);
+
+		impl<'de, R: Clone + Ord + serde::Deserialize<'de>> serde::de::Visitor<'de> for Visitor<R> {
+			type Value = BTreeDataset<R>;
+
+			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+				write!(formatter, "an RDF graph")
+			}
+
+			fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+			where
+				A: serde::de::SeqAccess<'de>,
+			{
+				let mut result = BTreeDataset::new();
+
+				while let Some(quad) = seq.next_element()? {
+					result.insert(quad);
+				}
+
+				Ok(result)
+			}
+		}
+
+		deserializer.deserialize_seq(Visitor(std::marker::PhantomData))
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::{grdf_quad, grdf_quad_pattern, grdf_quads, pattern::ResourceOrVar};
