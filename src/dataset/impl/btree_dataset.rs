@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug, hash::Hash};
 
+use educe::Educe;
+
 use crate::{
 	dataset::{btree_graph, BTreeGraph, DatasetMut, PatternMatchingDataset, TraversableDataset},
 	pattern::{quad::canonical::PatternGraph, CanonicalQuadPattern, CanonicalTriplePattern},
@@ -219,6 +221,8 @@ impl<R> TraversableDataset for BTreeDataset<R> {
 }
 
 /// Iterator over the quads of a [`BTreeDataset`].
+#[derive(Educe)]
+#[educe(Clone)]
 pub struct Quads<'a, R> {
 	default_graph: btree_graph::Triples<'a, R>,
 	named_graphs: std::collections::btree_map::Iter<'a, R, BTreeGraph<R>>,

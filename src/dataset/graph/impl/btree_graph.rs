@@ -5,6 +5,7 @@ use std::{
 	hash::Hash,
 };
 
+use educe::Educe;
 use raw_btree::RawBTree;
 use slab::Slab;
 
@@ -233,6 +234,8 @@ impl<R: Ord> PatternMatchingGraph for BTreeGraph<R> {
 }
 
 /// Iterator over the triples of a [`BTreeGraph`].
+#[derive(Educe)]
+#[educe(Clone, Copy)]
 pub struct Triples<'a, R> {
 	triples: &'a Slab<Triple<R>>,
 	indexes: raw_btree::Iter<'a, usize>,
