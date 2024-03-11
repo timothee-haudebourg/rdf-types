@@ -1,6 +1,6 @@
 [package]
 name = "rdf-types"
-version = "0.19.6"
+version = "0.19.7"
 edition = "2021"
 authors = ["Timothée Haudebourg <author@haudebourg.net>"]
 description = "Data-structures and traits definitions for RDF."
