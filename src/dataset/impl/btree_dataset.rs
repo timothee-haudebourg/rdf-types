@@ -8,6 +8,7 @@ use crate::{
 };
 
 /// BTree-based RDF dataset.
+#[derive(Clone)]
 pub struct BTreeDataset<R = Term> {
 	default_graph: BTreeGraph<R>,
 	named_graphs: BTreeMap<R, BTreeGraph<R>>,

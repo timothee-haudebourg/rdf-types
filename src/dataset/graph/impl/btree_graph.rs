@@ -27,6 +27,7 @@ fn index_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &usize) 
 }
 
 /// BTree-based RDF graph.
+#[derive(Clone)]
 pub struct BTreeGraph<R = Term> {
 	triples: Slab<Triple<R>>,
 	indexes: RawBTree<usize>,
@@ -486,7 +487,7 @@ impl<'a> ObjectConstraints<'a> {
 	}
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Resource {
 	as_subject: BTreeSet<usize>,
 	as_predicate: BTreeSet<usize>,
