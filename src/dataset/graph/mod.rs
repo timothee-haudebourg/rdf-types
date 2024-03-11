@@ -17,6 +17,10 @@ pub trait TraversableGraph: Graph {
 		Self: 'a;
 
 	fn triples(&self) -> Self::Triples<'_>;
+
+	fn triples_count(&self) -> usize {
+		self.triples().count()
+	}
 }
 
 /// Pattern-matching-capable dataset.

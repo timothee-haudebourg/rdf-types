@@ -14,6 +14,8 @@ pub use graph::*;
 mod r#impl;
 pub use r#impl::*;
 
+pub mod isomorphism;
+
 /// RDF dataset.
 pub trait Dataset {
 	/// Resource type.
@@ -33,6 +35,10 @@ pub trait TraversableDataset: Dataset {
 
 	/// Returns an iterator over the quads of the dataset.
 	fn quads(&self) -> Self::Quads<'_>;
+
+	fn quads_count(&self) -> usize {
+		self.quads().count()
+	}
 }
 
 impl<G: TraversableGraph> TraversableDataset for G {
@@ -40,6 +46,10 @@ impl<G: TraversableGraph> TraversableDataset for G {
 
 	fn quads(&self) -> Self::Quads<'_> {
 		TripleToQuadIterator::new(self.triples())
+	}
+
+	fn quads_count(&self) -> usize {
+		TraversableGraph::triples_count(self)
 	}
 }
 
