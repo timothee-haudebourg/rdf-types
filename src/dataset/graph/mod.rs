@@ -38,6 +38,38 @@ pub trait PatternMatchingGraph: Graph {
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
 		self.triple_pattern_matching(triple.into()).next().is_some()
 	}
+
+	/// Returns an iterator over all the objects `o` matching the triple `subject predicate o`.
+	fn triple_objects<'p>(
+		&self,
+		subject: &'p Self::Resource,
+		predicate: &'p Self::Resource,
+	) -> TripleObjects<'_, 'p, Self> {
+		TripleObjects(
+			self.triple_pattern_matching(CanonicalTriplePattern::from_option_triple(Triple(
+				Some(subject),
+				Some(predicate),
+				None,
+			))),
+		)
+	}
+}
+
+pub struct TripleObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph>(
+	D::TriplePatternMatching<'a, 'p>,
+)
+where
+	D::Resource: 'p;
+
+impl<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph> Iterator for TripleObjects<'a, 'p, D>
+where
+	D::Resource: 'p,
+{
+	type Item = &'a D::Resource;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0.next().map(Triple::into_object)
+	}
 }
 
 /// Mutable dataset.

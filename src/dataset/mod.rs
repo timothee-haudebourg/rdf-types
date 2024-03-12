@@ -72,6 +72,23 @@ pub trait PatternMatchingDataset: Dataset {
 	fn contains_quad(&self, quad: Quad<&Self::Resource>) -> bool {
 		self.quad_pattern_matching(quad.into()).next().is_some()
 	}
+
+	/// Returns an iterator over all the objects `o` matching the quad `subject predicate o graph`.
+	fn quad_objects<'p>(
+		&self,
+		graph: Option<&'p Self::Resource>,
+		subject: &'p Self::Resource,
+		predicate: &'p Self::Resource,
+	) -> QuadObjects<'_, 'p, Self> {
+		QuadObjects(
+			self.quad_pattern_matching(CanonicalQuadPattern::from_option_quad(Quad(
+				Some(subject),
+				Some(predicate),
+				None,
+				Some(graph),
+			))),
+		)
+	}
 }
 
 impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
@@ -88,6 +105,23 @@ impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 			)),
 			_ => OptionIterator(None),
 		}
+	}
+}
+
+pub struct QuadObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset>(
+	D::QuadPatternMatching<'a, 'p>,
+)
+where
+	D::Resource: 'p;
+
+impl<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset> Iterator for QuadObjects<'a, 'p, D>
+where
+	D::Resource: 'p,
+{
+	type Item = &'a D::Resource;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0.next().map(Quad::into_object)
 	}
 }
 
