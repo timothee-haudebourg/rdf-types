@@ -2,7 +2,7 @@ use iref::Iri;
 
 use crate::{
 	vocabulary::{BlankIdVocabulary, IriVocabulary},
-	BlankId, Generator, Id, Literal, Quad, Term, Vocabulary, VocabularyMut,
+	BlankId, Generator, Id, Literal, LiteralRef, Quad, Term, Vocabulary, VocabularyMut,
 };
 
 use super::{
@@ -27,7 +27,7 @@ pub trait TermInterpretation<I, B, L = Literal>:
 	fn lexical_term_interpretation(
 		&self,
 		vocabulary: &impl Vocabulary<Iri = I, BlankId = B, Literal = L>,
-		term: Term<Id<&Iri, &BlankId>, &Literal<I>>,
+		term: Term<Id<&Iri, &BlankId>, LiteralRef<I>>,
 	) -> Option<Self::Resource> {
 		match term {
 			Term::Id(id) => self.lexical_id_interpretation(vocabulary, id),
@@ -54,7 +54,7 @@ pub trait TermInterpretationMut<I, B, L = Literal>:
 	fn interpret_lexical_term(
 		&mut self,
 		vocabulary: &mut impl VocabularyMut<Iri = I, BlankId = B, Literal = L>,
-		term: Term<Id<&Iri, &BlankId>, &Literal<I>>,
+		term: Term<Id<&Iri, &BlankId>, LiteralRef<I>>,
 	) -> Self::Resource {
 		match term {
 			Term::Id(id) => self.interpret_lexical_id(vocabulary, id),

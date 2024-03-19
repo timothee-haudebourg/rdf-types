@@ -341,10 +341,10 @@ impl<V, I: EmbeddedIntoVocabulary<V>, L: EmbeddedIntoVocabulary<V>> EmbeddedInto
 {
 	type Embedded = Term<I::Embedded, L::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
-			Self::Id(id) => Term::Id(id.inserted_into_vocabulary(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.inserted_into_vocabulary(vocabulary)),
+			Self::Id(id) => Term::Id(id.embedded_into_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(l.embedded_into_vocabulary(vocabulary)),
 		}
 	}
 }

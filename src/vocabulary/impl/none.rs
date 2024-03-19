@@ -3,7 +3,7 @@ use crate::{
 		BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut,
 		LiteralVocabulary, LiteralVocabularyMut,
 	},
-	BlankId, BlankIdBuf, Literal,
+	BlankId, BlankIdBuf, Literal, LiteralRef,
 };
 use iref::{Iri, IriBuf};
 
@@ -82,22 +82,22 @@ impl BlankIdVocabularyMut for NoVocabulary {
 impl LiteralVocabulary for NoVocabulary {
 	type Literal = Literal;
 
-	fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<&'l Literal> {
-		Some(id)
+	fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<LiteralRef<'l>> {
+		Some(id.as_ref())
 	}
 
 	fn owned_literal(&self, id: Self::Literal) -> Result<Literal, Self::Literal> {
 		Ok(id)
 	}
 
-	fn get_literal(&self, id: &Literal) -> Option<Self::Literal> {
-		Some(id.to_owned())
+	fn get_literal(&self, id: LiteralRef<Self::Iri>) -> Option<Self::Literal> {
+		Some(id.into_owned())
 	}
 }
 
 impl LiteralVocabularyMut for NoVocabulary {
-	fn insert_literal(&mut self, value: &Literal) -> Self::Literal {
-		value.to_owned()
+	fn insert_literal(&mut self, value: LiteralRef<Self::Iri>) -> Self::Literal {
+		value.into_owned()
 	}
 
 	fn insert_owned_literal(&mut self, value: Literal) -> Self::Literal {

@@ -5,7 +5,7 @@ use crate::vocabulary::{
 	BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut, LiteralVocabulary,
 	LiteralVocabularyMut,
 };
-use crate::{BlankId, BlankIdBuf, Literal};
+use crate::{BlankId, BlankIdBuf, Literal, LiteralRef};
 use indexmap::IndexSet;
 use iref::{Iri, IriBuf};
 
@@ -121,10 +121,10 @@ impl<I: Clone + IndexedIri + Eq + Hash, B, L: IndexedLiteral<I>> LiteralVocabula
 {
 	type Literal = L;
 
-	fn literal<'b>(&'b self, id: &'b L) -> Option<&'b Literal<I>> {
+	fn literal<'b>(&'b self, id: &'b L) -> Option<LiteralRef<'b, I>> {
 		match id.literal_index() {
-			LiteralOrIndex::Literal(id) => Some(id),
-			LiteralOrIndex::Index(i) => self.literal.get_index(i),
+			LiteralOrIndex::Literal(id) => Some(id.as_ref()),
+			LiteralOrIndex::Index(i) => self.literal.get_index(i).map(Literal::as_ref),
 		}
 	}
 
@@ -138,10 +138,13 @@ impl<I: Clone + IndexedIri + Eq + Hash, B, L: IndexedLiteral<I>> LiteralVocabula
 		}
 	}
 
-	fn get_literal(&self, literal: &Literal<I>) -> Option<L> {
+	fn get_literal(&self, literal: LiteralRef<Self::Iri>) -> Option<L> {
 		match L::try_from(literal) {
 			Ok(id) => Some(id),
-			Err(_) => self.literal.get_index_of(&literal.to_owned()).map(L::from),
+			Err(_) => self
+				.literal
+				.get_index_of(&literal.into_owned())
+				.map(L::from),
 		}
 	}
 }
@@ -149,18 +152,17 @@ impl<I: Clone + IndexedIri + Eq + Hash, B, L: IndexedLiteral<I>> LiteralVocabula
 impl<I: IndexedIri + Clone + Eq + Hash, B, L: IndexedLiteral<I>> LiteralVocabularyMut
 	for IndexVocabulary<I, B, L>
 {
-	fn insert_literal(&mut self, literal: &Literal<I>) -> Self::Literal {
+	fn insert_literal(&mut self, literal: LiteralRef<Self::Iri>) -> Self::Literal {
 		match L::try_from(literal) {
 			Ok(id) => id,
-			Err(_) => self.literal.insert_full(literal.to_owned()).0.into(),
+			Err(_) => self.literal.insert_full(literal.into_owned()).0.into(),
 		}
 	}
 
-	fn insert_owned_literal(&mut self, id: Literal<I>) -> Self::Literal {
-		if let Ok(id) = L::try_from(&id) {
-			return id;
+	fn insert_owned_literal(&mut self, literal: Literal<I>) -> Self::Literal {
+		match L::try_from(literal) {
+			Ok(id) => id,
+			Err(literal) => self.literal.insert_full(literal).0.into(),
 		}
-
-		self.literal.insert_full(id).0.into()
 	}
 }

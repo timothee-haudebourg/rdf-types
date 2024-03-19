@@ -1,8 +1,7 @@
-use std::convert::TryFrom;
 use std::hash::Hash;
 
 use crate::vocabulary::{ExtractFromVocabulary, ExtractedFromVocabulary, LiteralVocabulary};
-use crate::Literal;
+use crate::{Literal, LiteralRef};
 
 /// Literal index.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
@@ -52,16 +51,24 @@ where
 
 	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		let literal = vocabulary.literal(self).unwrap();
-		let value = literal.value.clone();
+		let value = literal.value.to_owned();
 		let type_ = literal.type_.exported_from_vocabulary(vocabulary);
 		Literal::new(value, type_)
 	}
 }
 
-impl<'a, T> TryFrom<&'a Literal<T>> for LiteralIndex {
+impl<T> TryFrom<Literal<T>> for LiteralIndex {
+	type Error = Literal<T>;
+
+	fn try_from(value: Literal<T>) -> Result<Self, Self::Error> {
+		Err(value)
+	}
+}
+
+impl<'a, T> TryFrom<LiteralRef<'a, T>> for LiteralIndex {
 	type Error = ();
 
-	fn try_from(_value: &'a Literal<T>) -> Result<Self, Self::Error> {
+	fn try_from(_value: LiteralRef<'a, T>) -> Result<Self, Self::Error> {
 		Err(())
 	}
 }
@@ -117,11 +124,19 @@ impl<I> From<usize> for LiteralOrIndex<I> {
 	}
 }
 
-impl<'a, T, L: TryFrom<&'a Literal<T>>> TryFrom<&'a Literal<T>> for LiteralOrIndex<L> {
+impl<I, L: TryFrom<Literal<I>>> TryFrom<Literal<I>> for LiteralOrIndex<L> {
 	type Error = L::Error;
 
-	fn try_from(value: &'a Literal<T>) -> Result<Self, Self::Error> {
+	fn try_from(value: Literal<I>) -> Result<Self, Self::Error> {
 		Ok(Self::Literal(L::try_from(value)?))
+	}
+}
+
+impl<'a, I, L: TryFrom<LiteralRef<'a, I>>> TryFrom<LiteralRef<'a, I>> for LiteralOrIndex<L> {
+	type Error = L::Error;
+
+	fn try_from(literal: LiteralRef<'a, I>) -> Result<Self, Self::Error> {
+		Ok(Self::Literal(L::try_from(literal)?))
 	}
 }
 
@@ -132,7 +147,8 @@ where
 	V::Iri: crate::RdfDisplayWithContext<V>,
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		crate::RdfDisplayWithContext::rdf_fmt_with(vocabulary.literal(self).unwrap(), vocabulary, f)
+		use crate::RdfDisplayWithContext;
+		vocabulary.literal(self).unwrap().rdf_fmt_with(vocabulary, f)
 	}
 }
 
@@ -151,7 +167,9 @@ where
 }
 
 /// Partly indexed literal value type.
-pub trait IndexedLiteral<T>: From<usize> + for<'a> TryFrom<&'a Literal<T>> {
+pub trait IndexedLiteral<T>:
+	From<usize> + for<'a> TryFrom<LiteralRef<'a, T>> + TryFrom<Literal<T>, Error = Literal<T>>
+{
 	fn literal_index(&self) -> LiteralOrIndex<&Literal<T>>;
 
 	fn into_literal_index(self) -> LiteralOrIndex<Literal<T>>;
@@ -159,7 +177,10 @@ pub trait IndexedLiteral<T>: From<usize> + for<'a> TryFrom<&'a Literal<T>> {
 
 impl<T, L> IndexedLiteral<T> for LiteralOrIndex<L>
 where
-	L: AsRef<Literal<T>> + Into<Literal<T>> + for<'a> TryFrom<&'a Literal<T>>,
+	L: AsRef<Literal<T>>
+		+ Into<Literal<T>>
+		+ for<'a> TryFrom<LiteralRef<'a, T>>
+		+ TryFrom<Literal<T>, Error = Literal<T>>,
 {
 	fn literal_index(&self) -> LiteralOrIndex<&Literal<T>> {
 		match self {

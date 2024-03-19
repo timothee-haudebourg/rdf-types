@@ -92,7 +92,7 @@ impl<V: IriVocabularyMut> EmbedIntoVocabulary<V> for IriBuf {
 impl<'a, V: IriVocabularyMut> EmbeddedIntoVocabulary<V> for &'a Iri {
 	type Embedded = V::Iri;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		vocabulary.insert(self)
 	}
 }
@@ -100,7 +100,7 @@ impl<'a, V: IriVocabularyMut> EmbeddedIntoVocabulary<V> for &'a Iri {
 impl<V: IriVocabularyMut> EmbeddedIntoVocabulary<V> for IriBuf {
 	type Embedded = V::Iri;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		vocabulary.insert(self.as_iri())
 	}
 }

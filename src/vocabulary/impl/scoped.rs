@@ -1,13 +1,12 @@
-use iref::Iri;
-use std::collections::HashMap;
-
 use crate::{
 	vocabulary::{
 		BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut,
 		LiteralVocabulary, LiteralVocabularyMut,
 	},
-	BlankId, BlankIdBuf, Literal,
+	BlankId, BlankIdBuf, Literal, LiteralRef,
 };
+use iref::Iri;
+use std::collections::HashMap;
 
 /// Vocabulary wrapper that helps avoid blank id collisions.
 ///
@@ -127,7 +126,7 @@ where
 impl<'a, V: BlankIdVocabulary + LiteralVocabulary, S> LiteralVocabulary for Scoped<'a, V, S> {
 	type Literal = V::Literal;
 
-	fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<&'l Literal<Self::Iri>> {
+	fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<LiteralRef<'l, Self::Iri>> {
 		self.inner.literal(id)
 	}
 
@@ -135,13 +134,13 @@ impl<'a, V: BlankIdVocabulary + LiteralVocabulary, S> LiteralVocabulary for Scop
 		self.inner.owned_literal(id)
 	}
 
-	fn get_literal(&self, literal: &Literal<Self::Iri>) -> Option<Self::Literal> {
+	fn get_literal(&self, literal: LiteralRef<Self::Iri>) -> Option<Self::Literal> {
 		self.inner.get_literal(literal)
 	}
 }
 
 impl<'a, V: BlankIdVocabulary + LiteralVocabularyMut, S> LiteralVocabularyMut for Scoped<'a, V, S> {
-	fn insert_literal(&mut self, literal: &Literal<Self::Iri>) -> Self::Literal {
+	fn insert_literal(&mut self, literal: LiteralRef<Self::Iri>) -> Self::Literal {
 		self.inner.insert_literal(literal)
 	}
 

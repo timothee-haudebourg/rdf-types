@@ -68,15 +68,15 @@ impl<V, T: EmbedIntoVocabulary<V>> EmbedIntoVocabulary<V> for Option<T> {
 pub trait EmbeddedIntoVocabulary<V> {
 	type Embedded;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded;
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded;
 }
 
 impl<V, T: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V> for Vec<T> {
 	type Embedded = Vec<T::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		self.iter()
-			.map(|t| t.inserted_into_vocabulary(vocabulary))
+			.map(|t| t.embedded_into_vocabulary(vocabulary))
 			.collect()
 	}
 }
@@ -84,9 +84,9 @@ impl<V, T: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V> for Vec<T> {
 impl<V, T: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V> for Option<T> {
 	type Embedded = Option<T::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		self.as_ref()
-			.map(|t| t.inserted_into_vocabulary(vocabulary))
+			.map(|t| t.embedded_into_vocabulary(vocabulary))
 	}
 }
 

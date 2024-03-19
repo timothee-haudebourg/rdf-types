@@ -133,10 +133,10 @@ impl<V, I: EmbeddedIntoVocabulary<V>, B: EmbeddedIntoVocabulary<V>> EmbeddedInto
 {
 	type Embedded = Id<I::Embedded, B::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		match self {
-			Self::Iri(i) => Id::Iri(i.inserted_into_vocabulary(vocabulary)),
-			Self::Blank(b) => Id::Blank(b.inserted_into_vocabulary(vocabulary)),
+			Self::Iri(i) => Id::Iri(i.embedded_into_vocabulary(vocabulary)),
+			Self::Blank(b) => Id::Blank(b.embedded_into_vocabulary(vocabulary)),
 		}
 	}
 }

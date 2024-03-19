@@ -3,6 +3,7 @@ use crate::vocabulary::{
 	IriVocabulary, LiteralVocabularyMut,
 };
 use crate::{IsXsdStringIri, RdfDisplay};
+use educe::Educe;
 use iref::IriBuf;
 use langtag::LangTag;
 use std::borrow::Borrow;
@@ -90,8 +91,12 @@ impl<I> Literal<I> {
 	{
 		Literal {
 			value: self.value.clone(),
-			type_: self.type_.inserted_into_vocabulary(vocabulary),
+			type_: self.type_.embedded_into_vocabulary(vocabulary),
 		}
+	}
+
+	pub fn as_ref(&self) -> LiteralRef<I> {
+		LiteralRef::new(&self.value, self.type_.as_ref())
 	}
 }
 
@@ -103,11 +108,14 @@ impl<V: LiteralVocabularyMut> EmbedIntoVocabulary<V> for Literal<V::Iri> {
 	}
 }
 
-impl<V: LiteralVocabularyMut> EmbeddedIntoVocabulary<V> for Literal<V::Iri> {
+impl<V: LiteralVocabularyMut> EmbeddedIntoVocabulary<V> for Literal<V::Iri>
+where
+	V::Iri: Clone,
+{
 	type Embedded = V::Literal;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
-		vocabulary.insert_literal(self)
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+		vocabulary.insert_literal(self.as_ref())
 	}
 }
 
@@ -183,6 +191,207 @@ where
 
 #[cfg(feature = "contextual")]
 impl<V: crate::vocabulary::IriVocabulary> crate::RdfDisplayWithContext<V> for Literal<V::Iri>
+where
+	V::Iri: crate::RdfDisplayWithContext<V>,
+{
+	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		self.value.rdf_fmt(f)?;
+		if self.type_.is_xsd_string_with(vocabulary) {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_with(vocabulary, f)
+		}
+	}
+}
+
+/// RDF Literal reference.
+#[derive(Educe, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+#[educe(Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct LiteralRef<'a, I = IriBuf> {
+	/// Literal value.
+	pub value: &'a str,
+
+	/// Literal type.
+	pub type_: LiteralTypeRef<'a, I>,
+}
+
+impl<'a, I> LiteralRef<'a, I> {
+	pub fn new(value: &'a str, type_: LiteralTypeRef<'a, I>) -> Self {
+		Self { value, type_ }
+	}
+
+	pub fn as_type(&self) -> LiteralTypeRef<'a, I> {
+		self.type_
+	}
+
+	pub fn as_type_mut(&mut self) -> &mut LiteralTypeRef<'a, I> {
+		&mut self.type_
+	}
+
+	pub fn into_type(self) -> LiteralTypeRef<'a, I> {
+		self.type_
+	}
+
+	pub fn as_value(&self) -> &'a str {
+		self.value
+	}
+
+	pub fn into_value(self) -> &'a str {
+		self.value
+	}
+
+	pub fn into_parts(self) -> (&'a str, LiteralTypeRef<'a, I>) {
+		(self.value, self.type_)
+	}
+
+	pub fn as_str(&self) -> &'a str {
+		self.value
+	}
+
+	pub fn as_bytes(&self) -> &'a [u8] {
+		self.value.as_ref()
+	}
+
+	pub fn is_lang_string(&self) -> bool {
+		self.type_.is_lang_string()
+	}
+
+	pub fn lang_tag(&self) -> Option<&'a LangTag> {
+		self.type_.lang_tag()
+	}
+
+	pub fn insert_type_into_vocabulary<V>(self, vocabulary: &mut V) -> Literal<I::Embedded>
+	where
+		I: EmbeddedIntoVocabulary<V>,
+	{
+		Literal {
+			value: self.value.to_owned(),
+			type_: self.type_.embed_into_vocabulary(vocabulary),
+		}
+	}
+
+	pub fn inserted_type_into_vocabulary<V>(&self, vocabulary: &mut V) -> Literal<I::Embedded>
+	where
+		I: EmbeddedIntoVocabulary<V>,
+	{
+		Literal {
+			value: self.value.to_owned(),
+			type_: self.type_.embedded_into_vocabulary(vocabulary),
+		}
+	}
+}
+
+impl<'a, I: ToOwned> LiteralRef<'a, I> {
+	pub fn into_owned(self) -> Literal<I::Owned> {
+		Literal::new(self.value.to_owned(), self.type_.into_owned())
+	}
+}
+
+impl<'a, I> LiteralRef<'a, I> {
+	pub fn cast_into_owned<J>(self) -> Literal<J>
+	where
+		&'a I: Into<J>,
+	{
+		Literal::new(self.value.to_owned(), self.type_.cast_into_owned())
+	}
+}
+
+impl<'a, V: LiteralVocabularyMut> EmbedIntoVocabulary<V> for LiteralRef<'a, V::Iri>
+where
+	V::Iri: Clone,
+{
+	type Embedded = V::Literal;
+
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
+		vocabulary.insert_literal(self)
+	}
+}
+
+impl<'a, V: LiteralVocabularyMut> EmbeddedIntoVocabulary<V> for LiteralRef<'a, V::Iri>
+where
+	V::Iri: Clone,
+{
+	type Embedded = V::Literal;
+
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+		vocabulary.insert_literal(*self)
+	}
+}
+
+impl<'a, V: IriVocabulary> ExtractFromVocabulary<V> for LiteralRef<'a, V::Iri> {
+	type Extracted = Literal;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		let (value, type_) = self.into_parts();
+		Literal::new(value.to_owned(), type_.extract_from_vocabulary(vocabulary))
+	}
+}
+
+impl<'a, V: IriVocabulary> ExtractedFromVocabulary<V> for LiteralRef<'a, V::Iri> {
+	type Extracted = Literal;
+
+	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+		Literal::new(
+			self.value.to_owned(),
+			self.type_.exported_from_vocabulary(vocabulary),
+		)
+	}
+}
+
+impl<'a, I> Borrow<str> for LiteralRef<'a, I> {
+	fn borrow(&self) -> &str {
+		self.as_str()
+	}
+}
+
+impl<'a, I> AsRef<str> for LiteralRef<'a, I> {
+	fn as_ref(&self) -> &str {
+		self.as_str()
+	}
+}
+
+impl<'a> fmt::Display for LiteralRef<'a> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.value.rdf_fmt(f)?;
+		if self.type_.is_xsd_string() {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt(f)
+		}
+	}
+}
+
+impl<'a, I: RdfDisplay + IsXsdStringIri> RdfDisplay for LiteralRef<'a, I> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.value.rdf_fmt(f)?;
+		if self.type_.is_xsd_string() {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt(f)
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<'a, V: crate::vocabulary::IriVocabulary> DisplayWithContext<V> for LiteralRef<'a, V::Iri>
+where
+	V::Iri: crate::RdfDisplayWithContext<V>,
+{
+	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
+		use crate::RdfDisplayWithContext;
+		self.value.rdf_fmt(f)?;
+		if self.type_.is_xsd_string_with(vocabulary) {
+			Ok(())
+		} else {
+			self.type_.rdf_fmt_with(vocabulary, f)
+		}
+	}
+}
+
+#[cfg(feature = "contextual")]
+impl<'a, V: crate::vocabulary::IriVocabulary> crate::RdfDisplayWithContext<V>
+	for LiteralRef<'a, V::Iri>
 where
 	V::Iri: crate::RdfDisplayWithContext<V>,
 {

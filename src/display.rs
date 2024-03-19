@@ -14,7 +14,7 @@ pub trait RdfDisplay {
 	}
 }
 
-impl RdfDisplay for String {
+impl RdfDisplay for str {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		write!(f, "\"")?;
@@ -30,6 +30,12 @@ impl RdfDisplay for String {
 		}
 
 		write!(f, "\"")
+	}
+}
+
+impl RdfDisplay for String {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.as_str().rdf_fmt(f)
 	}
 }
 

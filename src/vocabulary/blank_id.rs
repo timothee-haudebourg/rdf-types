@@ -92,7 +92,7 @@ impl<V: BlankIdVocabularyMut> EmbedIntoVocabulary<V> for BlankIdBuf {
 impl<'a, V: BlankIdVocabularyMut> EmbeddedIntoVocabulary<V> for &'a BlankId {
 	type Embedded = V::BlankId;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		vocabulary.insert_blank_id(self)
 	}
 }
@@ -100,7 +100,7 @@ impl<'a, V: BlankIdVocabularyMut> EmbeddedIntoVocabulary<V> for &'a BlankId {
 impl<V: BlankIdVocabularyMut> EmbeddedIntoVocabulary<V> for BlankIdBuf {
 	type Embedded = V::BlankId;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		vocabulary.insert_blank_id(self.as_blank_id_ref())
 	}
 }

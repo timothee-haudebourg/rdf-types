@@ -94,12 +94,12 @@ impl<
 {
 	type Embedded = Quad<S::Embedded, P::Embedded, O::Embedded, G::Embedded>;
 
-	fn inserted_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
+	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
 		Quad(
-			self.0.inserted_into_vocabulary(vocabulary),
-			self.1.inserted_into_vocabulary(vocabulary),
-			self.2.inserted_into_vocabulary(vocabulary),
-			self.3.inserted_into_vocabulary(vocabulary),
+			self.0.embedded_into_vocabulary(vocabulary),
+			self.1.embedded_into_vocabulary(vocabulary),
+			self.2.embedded_into_vocabulary(vocabulary),
+			self.3.embedded_into_vocabulary(vocabulary),
 		)
 	}
 }
