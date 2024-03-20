@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2024-03-20
+
+### Added
+
+- [2f2de7e] Add `ResourceTraversableDataset` and `ResourceTraversableGraph` traits.
+- [2f2de7e] Add `PatternMatchingGraph::triple_predicates_objects`.
+- [2f2de7e] Add `PatternMatchingDataset::quad_predicates_objects`
+- [2f2de7e] Add `CanonicalQuadPattern::into_*` methods.
+
+### Changed
+
+- [2f2de7e] Change `BTreeDataset` implementation, now independent of `BTreeGraph`.
+
+### Fixed
+
+- [d3128bf] Fix formatting.
+
+### Removed
+
+- [2f2de7e] Remove `BTreeDataset::graph`/`graph_mut` methods.
+
 ## [0.20.0] - 2024-03-19
 
 ### Added
@@ -191,14 +212,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5fb72db] Impl `DisplayWithContext` for `LanguageTagIndex`.
 - [5fb72db] Impl `DisplayWithContext` for `LiteralIndex`.
 
-## [0.17.1] - 2023-10-18
-
-### Changed
-
-- [96ef48a] Changed (relaxed) bounds for `Id: DisplayWithContext`.
-- [96ef48a] Changed (relaxed) bounds for `Id: RdfDisplayWithContext`.
-- [96ef48a] Changed (relaxed) bounds for `Id: AsRefWithContext<str>`.
-
 ## [0.17.0] - 2023-10-18
 
 ### Added
@@ -308,8 +321,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [ab2c615] Change `S` bound in `Literal` display with context
-- [ab2c615] Changed `S: Display` to `S: RdfDisplay` in `Literal: DisplayWithContext`
-- [ab2c615] Changed `S: Display` to `S: RdfDisplay` in `Literal: RdfDisplayWithContext`.
 
 ## [0.14.2] - 2023-02-28
 
@@ -335,23 +346,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [6f1d2b6] Added `AsRdfTerm` trait.
 - [27f0a5e] Add `CHANGELOG.md` file.
 
-### Changed
-
-- [6f1d2b6] Changed type parameters of `Term`.
-- [6f1d2b6] Changed meaning of the `I` param in `Term`: it is now the node id type.
-- [6f1d2b6] Changed the `Generator` parameter: `V: Vocabulary` -> 'N: Namespace'.
-
 ### Removed
 
 - [6f1d2b6] Removed the `B` param in `Term`, now included in `I`.
 - [6f1d2b6] Removed `*Ref` types.
 
 ## [0.13.0] - 2023-02-28
-
-### Changed
-
-- [f8b3571] Change: factorize `Subject` (now `Id`) type in `Term`.
-- [f8b3571] Changed `Subject` type name for `Id` (a type alias remains).
 
 ### Removed
 
@@ -466,10 +466,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [e4b35a1] Add `RdfDisplay` trait.
-
-### Changed
-
-- [e4b35a1] Changes the way terms are displayed.
 
 ## [0.10.4] - 2022-10-20
 
