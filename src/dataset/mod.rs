@@ -53,6 +53,30 @@ impl<G: TraversableGraph> TraversableDataset for G {
 	}
 }
 
+pub trait ResourceTraversableDataset: Dataset {
+	type Resources<'a>: Iterator<Item = &'a Self::Resource>
+	where
+		Self: 'a;
+
+	fn resources(&self) -> Self::Resources<'_>;
+
+	fn resource_count(&self) -> usize {
+		self.resources().count()
+	}
+}
+
+impl<G: ResourceTraversableGraph> ResourceTraversableDataset for G {
+	type Resources<'a> = G::GraphResources<'a> where Self: 'a;
+
+	fn resources(&self) -> Self::Resources<'_> {
+		self.graph_resources()
+	}
+
+	fn resource_count(&self) -> usize {
+		self.graph_resource_count()
+	}
+}
+
 /// Pattern-matching-capable dataset.
 pub trait PatternMatchingDataset: Dataset {
 	/// Pattern-matching iterator.
@@ -73,6 +97,24 @@ pub trait PatternMatchingDataset: Dataset {
 		self.quad_pattern_matching(quad.into()).next().is_some()
 	}
 
+	/// Returns an iterator over all the predicates `p` matching any quad
+	/// `subject p o graph` present in the dataset, for any object `o`.
+	fn quad_predicates_objects<'p>(
+		&self,
+		graph: Option<&'p Self::Resource>,
+		subject: &'p Self::Resource,
+	) -> QuadPredicatesObjects<'_, 'p, Self>
+	where
+		Self: ResourceTraversableDataset,
+	{
+		QuadPredicatesObjects {
+			graph,
+			subject,
+			predicates: self.resources(),
+			dataset: self,
+		}
+	}
+
 	/// Returns an iterator over all the objects `o` matching the quad `subject predicate o graph`.
 	fn quad_objects<'p>(
 		&self,
@@ -80,14 +122,15 @@ pub trait PatternMatchingDataset: Dataset {
 		subject: &'p Self::Resource,
 		predicate: &'p Self::Resource,
 	) -> QuadObjects<'_, 'p, Self> {
-		QuadObjects(
-			self.quad_pattern_matching(CanonicalQuadPattern::from_option_quad(Quad(
+		QuadObjects {
+			first: None,
+			inner: self.quad_pattern_matching(CanonicalQuadPattern::from_option_quad(Quad(
 				Some(subject),
 				Some(predicate),
 				None,
 				Some(graph),
 			))),
-		)
+		}
 	}
 }
 
@@ -108,11 +151,62 @@ impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 	}
 }
 
-pub struct QuadObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset>(
-	D::QuadPatternMatching<'a, 'p>,
-)
+pub struct QuadPredicatesObjects<
+	'a,
+	'p,
+	D: 'a + ?Sized + ResourceTraversableDataset + PatternMatchingDataset,
+> {
+	graph: Option<&'p D::Resource>,
+	subject: &'p D::Resource,
+	predicates: D::Resources<'a>,
+	dataset: &'a D,
+}
+
+impl<'a: 'p, 'p, D: 'a + ?Sized + ResourceTraversableDataset + PatternMatchingDataset> Iterator
+	for QuadPredicatesObjects<'a, 'p, D>
 where
-	D::Resource: 'p;
+	D::Resource: 'p,
+{
+	type Item = (&'a D::Resource, QuadObjects<'p, 'p, D>);
+
+	fn next(&mut self) -> Option<Self::Item> {
+		for predicate in &mut self.predicates {
+			use crate::pattern::quad::canonical::{
+				GivenSubject, GivenSubjectGivenPredicate, GivenSubjectGivenPredicateAnyObject,
+			};
+			let pattern = CanonicalQuadPattern::GivenSubject(
+				self.subject,
+				GivenSubject::GivenPredicate(
+					predicate,
+					GivenSubjectGivenPredicate::AnyObject(
+						GivenSubjectGivenPredicateAnyObject::GivenGraph(self.graph),
+					),
+				),
+			);
+
+			let mut iter = self.dataset.quad_pattern_matching(pattern);
+			if let Some(Quad(_, _, o, _)) = iter.next() {
+				return Some((
+					predicate,
+					QuadObjects {
+						first: Some(o),
+						inner: iter,
+					},
+				));
+			}
+		}
+
+		None
+	}
+}
+
+pub struct QuadObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset>
+where
+	D::Resource: 'p,
+{
+	first: Option<&'a D::Resource>,
+	inner: D::QuadPatternMatching<'a, 'p>,
+}
 
 impl<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset> Iterator for QuadObjects<'a, 'p, D>
 where
@@ -121,7 +215,9 @@ where
 	type Item = &'a D::Resource;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0.next().map(Quad::into_object)
+		self.first
+			.take()
+			.or_else(|| self.inner.next().map(Quad::into_object))
 	}
 }
 

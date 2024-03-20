@@ -124,10 +124,24 @@ impl<T> CanonicalQuadPattern<T> {
 		}
 	}
 
+	pub fn into_subject(self) -> PatternSubject<T> {
+		match self {
+			Self::AnySubject(_) => PatternSubject::Any,
+			Self::GivenSubject(id, _) => PatternSubject::Given(id),
+		}
+	}
+
 	pub fn predicate(&self) -> PatternPredicate<&T> {
 		match self {
 			Self::AnySubject(t) => t.predicate(),
 			Self::GivenSubject(_, t) => t.predicate(),
+		}
+	}
+
+	pub fn into_predicate(self) -> PatternPredicate<T> {
+		match self {
+			Self::AnySubject(t) => t.into_predicate(),
+			Self::GivenSubject(_, t) => t.into_predicate(),
 		}
 	}
 
@@ -138,10 +152,24 @@ impl<T> CanonicalQuadPattern<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnySubject(t) => t.into_object(),
+			Self::GivenSubject(_, t) => t.into_object(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnySubject(t) => t.graph(),
 			Self::GivenSubject(_, t) => t.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnySubject(t) => t.into_graph(),
+			Self::GivenSubject(_, t) => t.into_graph(),
 		}
 	}
 
@@ -323,6 +351,14 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn into_predicate(self) -> PatternPredicate<T> {
+		match self {
+			Self::AnyPredicate(_) => PatternPredicate::Any,
+			Self::SameAsSubject(_) => PatternPredicate::SameAsSubject,
+			Self::GivenPredicate(id, _) => PatternPredicate::Given(id),
+		}
+	}
+
 	pub fn object(&self) -> PatternObject<&T> {
 		match self {
 			Self::AnyPredicate(t) => t.object(),
@@ -331,11 +367,27 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyPredicate(t) => t.into_object(),
+			Self::SameAsSubject(t) => t.into_object(),
+			Self::GivenPredicate(_, t) => t.into_object(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyPredicate(t) => t.graph(),
 			Self::SameAsSubject(t) => t.graph(),
 			Self::GivenPredicate(_, t) => t.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyPredicate(t) => t.into_graph(),
+			Self::SameAsSubject(t) => t.into_graph(),
+			Self::GivenPredicate(_, t) => t.into_graph(),
 		}
 	}
 
@@ -404,12 +456,30 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyObject(_) => PatternObject::Any,
+			Self::SameAsSubject(_) => PatternObject::SameAsSubject,
+			Self::SameAsPredicate(_) => PatternObject::SameAsPredicate,
+			Self::GivenObject(id, _) => PatternObject::Given(id),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyObject(g) => g.graph(),
 			Self::SameAsSubject(g) => g.graph(),
 			Self::SameAsPredicate(g) => g.graph(),
 			Self::GivenObject(_, g) => g.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(g) => g.into_graph(),
+			Self::SameAsSubject(g) => g.into_graph(),
+			Self::SameAsPredicate(g) => g.into_graph(),
+			Self::GivenObject(_, g) => g.into_graph(),
 		}
 	}
 
@@ -482,11 +552,27 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyObject(_) => PatternObject::Any,
+			Self::SameAsSubject(_) => PatternObject::SameAsSubject,
+			Self::GivenObject(id, _) => PatternObject::Given(id),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyObject(g) => g.graph(),
 			Self::SameAsSubject(g) => g.graph(),
 			Self::GivenObject(_, g) => g.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(g) => g.into_graph(),
+			Self::SameAsSubject(g) => g.into_graph(),
+			Self::GivenObject(_, g) => g.into_graph(),
 		}
 	}
 
@@ -549,6 +635,13 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
+	pub fn into_predicate(self) -> PatternPredicate<T> {
+		match self {
+			Self::AnyPredicate(_) => PatternPredicate::Any,
+			Self::GivenPredicate(id, _) => PatternPredicate::Given(id),
+		}
+	}
+
 	pub fn object(&self) -> PatternObject<&T> {
 		match self {
 			Self::AnyPredicate(t) => t.object(),
@@ -556,10 +649,24 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyPredicate(t) => t.into_object(),
+			Self::GivenPredicate(_, t) => t.into_object(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyPredicate(t) => t.graph(),
 			Self::GivenPredicate(_, t) => t.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyPredicate(t) => t.into_graph(),
+			Self::GivenPredicate(_, t) => t.into_graph(),
 		}
 	}
 
@@ -619,11 +726,27 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyObject(_) => PatternObject::Any,
+			Self::SameAsPredicate(_) => PatternObject::SameAsPredicate,
+			Self::GivenObject(id, _) => PatternObject::Given(id),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyObject(t) => t.graph(),
 			Self::SameAsPredicate(t) => t.graph(),
 			Self::GivenObject(_, t) => t.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(t) => t.into_graph(),
+			Self::SameAsPredicate(t) => t.into_graph(),
+			Self::GivenObject(_, t) => t.into_graph(),
 		}
 	}
 
@@ -685,10 +808,24 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
+	pub fn into_object(self) -> PatternObject<T> {
+		match self {
+			Self::AnyObject(_) => PatternObject::Any,
+			Self::GivenObject(id, _) => PatternObject::Given(id),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyObject(t) => t.graph(),
 			Self::GivenObject(_, t) => t.graph(),
+		}
+	}
+
+	pub fn into_graph(self) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(t) => t.into_graph(),
+			Self::GivenObject(_, t) => t.into_graph(),
 		}
 	}
 

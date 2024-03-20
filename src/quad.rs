@@ -42,6 +42,60 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	}
 }
 
+impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
+	pub fn cloned(&self) -> Quad<S, P, O, G>
+	where
+		S: Clone,
+		P: Clone,
+		O: Clone,
+		G: Clone,
+	{
+		Quad(
+			self.0.clone(),
+			self.1.clone(),
+			self.2.clone(),
+			self.3.cloned(),
+		)
+	}
+
+	pub fn into_cloned(self) -> Quad<S, P, O, G>
+	where
+		S: Clone,
+		P: Clone,
+		O: Clone,
+		G: Clone,
+	{
+		Quad(
+			self.0.clone(),
+			self.1.clone(),
+			self.2.clone(),
+			self.3.cloned(),
+		)
+	}
+}
+
+impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
+	pub fn copied(&self) -> Quad<S, P, O, G>
+	where
+		S: Copy,
+		P: Copy,
+		O: Copy,
+		G: Copy,
+	{
+		Quad(*self.0, *self.1, *self.2, self.3.copied())
+	}
+
+	pub fn into_copied(self) -> Quad<S, P, O, G>
+	where
+		S: Copy,
+		P: Copy,
+		O: Copy,
+		G: Copy,
+	{
+		Quad(*self.0, *self.1, *self.2, self.3.copied())
+	}
+}
+
 impl LexicalQuad {
 	pub fn as_lexical_quad_ref(&self) -> LexicalQuadRef {
 		Quad(

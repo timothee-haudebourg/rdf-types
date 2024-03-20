@@ -1,9 +1,4 @@
-use std::{
-	cmp::Ordering,
-	collections::{BTreeMap, BTreeSet},
-	fmt::Debug,
-	hash::Hash,
-};
+use std::{cmp::Ordering, collections::BTreeSet, fmt::Debug, hash::Hash};
 
 use educe::Educe;
 use raw_btree::RawBTree;
@@ -11,7 +6,7 @@ use slab::Slab;
 
 use super::super::{Graph, PatternMatchingGraph};
 use crate::{
-	dataset::{GraphMut, TraversableGraph},
+	dataset::{GraphMut, ResourceTraversableGraph, TraversableGraph},
 	pattern::{
 		triple::canonical::{PatternObject, PatternPredicate, PatternSubject},
 		CanonicalTriplePattern,
@@ -19,28 +14,54 @@ use crate::{
 	RdfDisplay, Term, Triple,
 };
 
-fn triple_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &Triple<&R>) -> Ordering {
-	|&i, triple| triples[i].as_ref().cmp(triple)
+fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
+	|&i, resource| resources[i].value.cmp(resource)
 }
 
-fn index_cmp<R: Ord>(triples: &Slab<Triple<R>>) -> impl '_ + Fn(&usize, &usize) -> Ordering {
-	|&i, &j| triples[i].cmp(&triples[j])
+fn triple_with_resources<R>(
+	resources: &Slab<Resource<R>>,
+	Triple(s, p, o): Triple<usize>,
+) -> Triple<&R> {
+	Triple(
+		&resources[s].value,
+		&resources[p].value,
+		&resources[o].value,
+	)
+}
+
+fn triple_cmp<'a, R: Ord>(
+	resources: &'a Slab<Resource<R>>,
+	triples: &'a Slab<Triple<usize>>,
+) -> impl 'a + Fn(&usize, &Triple<&R>) -> Ordering {
+	|&i, triple| triple_with_resources(resources, triples[i]).cmp(triple)
+}
+
+fn triple_index_cmp<'a, R: Ord>(
+	resources: &'a Slab<Resource<R>>,
+	triples: &'a Slab<Triple<usize>>,
+) -> impl 'a + Fn(&usize, &usize) -> Ordering {
+	|&i, &j| {
+		triple_with_resources(resources, triples[i])
+			.cmp(&triple_with_resources(resources, triples[j]))
+	}
 }
 
 /// BTree-based RDF graph.
 #[derive(Clone)]
 pub struct BTreeGraph<R = Term> {
-	triples: Slab<Triple<R>>,
-	indexes: RawBTree<usize>,
-	resources: BTreeMap<R, Resource>,
+	resources: Slab<Resource<R>>,
+	triples: Slab<Triple<usize>>,
+	resources_indexes: RawBTree<usize>,
+	triples_indexes: RawBTree<usize>,
 }
 
 impl<R> Default for BTreeGraph<R> {
 	fn default() -> Self {
 		Self {
 			triples: Slab::new(),
-			indexes: RawBTree::new(),
-			resources: BTreeMap::new(),
+			resources: Slab::new(),
+			triples_indexes: RawBTree::new(),
+			resources_indexes: RawBTree::new(),
 		}
 	}
 }
@@ -64,71 +85,92 @@ impl<R> BTreeGraph<R> {
 	/// Returns an iterator over the triples of the graph.
 	pub fn iter(&self) -> Triples<R> {
 		Triples {
+			resources: &self.resources,
 			triples: &self.triples,
-			indexes: self.indexes.iter(),
+			indexes: self.triples_indexes.iter(),
+		}
+	}
+
+	/// Returns an iterator over the resources of the graph.
+	pub fn resources(&self) -> Resources<R> {
+		Resources {
+			resources: &self.resources,
+			indexes: self.resources_indexes.iter(),
 		}
 	}
 }
 
 impl<R: Ord> BTreeGraph<R> {
-	/// Returns the index of the given triple in the graph, if any.
-	fn index_of(&self, triple: Triple<&R>) -> Option<usize> {
-		self.indexes
-			.get(triple_cmp(&self.triples), &triple)
+	fn index_of_resource(&self, resource: &R) -> Option<usize> {
+		self.resources_indexes
+			.get(resource_cmp(&self.resources), resource)
 			.copied()
+	}
+
+	fn get_resource(&self, resource: &R) -> Option<&Resource<R>> {
+		self.resources.get(self.index_of_resource(resource)?)
+	}
+
+	/// Returns the index of the given triple in the graph, if any.
+	fn index_of_triple(&self, triple: Triple<&R>) -> Option<usize> {
+		self.triples_indexes
+			.get(triple_cmp(&self.resources, &self.triples), &triple)
+			.copied()
+	}
+
+	/// Checks if the provided resource appears in any triple in the graph.
+	pub fn contains_resource(&self, resource: &R) -> bool {
+		self.index_of_resource(resource).is_some()
 	}
 
 	/// Checks if the provided triple is in the graph.
 	pub fn contains(&self, triple: Triple<&R>) -> bool {
-		self.index_of(triple).is_some()
+		self.index_of_triple(triple).is_some()
 	}
 
 	/// Inserts the given triple in the graph.
 	///
 	/// Returns `true` if the triple was not already in the graph, and `false`
 	/// if it was.
-	pub fn insert(&mut self, triple: Triple<R>) -> bool
-	where
-		R: Clone,
-	{
+	pub fn insert(&mut self, triple: Triple<R>) -> bool {
 		if self.contains(triple.as_ref()) {
 			false
 		} else {
+			let s_i = self.index_of_resource(&triple.0);
+			let p_i = self.index_of_resource(&triple.1);
+			let o_i = self.index_of_resource(&triple.2);
+
 			let e = self.triples.vacant_entry();
 			let i = e.key();
 
-			match self.resources.get_mut(&triple.0) {
-				Some(s) => {
-					s.as_subject.insert(i);
+			let s_i = match s_i {
+				Some(s_i) => {
+					self.resources[s_i].as_subject.insert(i);
+					s_i
 				}
-				None => {
-					self.resources
-						.insert(triple.0.clone(), Resource::subject(i));
-				}
-			}
+				None => self.resources.insert(Resource::subject(triple.0, i)),
+			};
 
-			match self.resources.get_mut(&triple.1) {
-				Some(p) => {
-					p.as_predicate.insert(i);
+			let p_i = match p_i {
+				Some(p_i) => {
+					self.resources[p_i].as_predicate.insert(i);
+					p_i
 				}
-				None => {
-					self.resources
-						.insert(triple.1.clone(), Resource::predicate(i));
-				}
-			}
+				None => self.resources.insert(Resource::predicate(triple.1, i)),
+			};
 
-			match self.resources.get_mut(&triple.2) {
-				Some(o) => {
-					o.as_object.insert(i);
+			let o_i = match o_i {
+				Some(o_i) => {
+					self.resources[o_i].as_object.insert(i);
+					o_i
 				}
-				None => {
-					self.resources.insert(triple.2.clone(), Resource::object(i));
-				}
-			}
+				None => self.resources.insert(Resource::object(triple.2, i)),
+			};
 
-			e.insert(triple);
+			e.insert(Triple(s_i, p_i, o_i));
 
-			self.indexes.insert(index_cmp(&self.triples), i);
+			self.triples_indexes
+				.insert(triple_index_cmp(&self.resources, &self.triples), i);
 
 			true
 		}
@@ -136,34 +178,43 @@ impl<R: Ord> BTreeGraph<R> {
 
 	/// Removes the given triple from the graph.
 	///
-	/// Returns the instance of the triple that has been removed from the graph,
-	/// if any. Does nothing if the triple was not in the graph.
-	pub fn remove(&mut self, triple: Triple<&R>) -> Option<Triple<R>> {
-		match self.index_of(triple) {
+	/// Returns whether or not the triple was in the graph.
+	/// Does nothing if the triple was not in the graph.
+	pub fn remove(&mut self, triple: Triple<&R>) -> bool {
+		match self
+			.triples_indexes
+			.remove(triple_cmp(&self.resources, &self.triples), &triple)
+		{
 			Some(i) => {
-				self.indexes.remove(index_cmp(&self.triples), &i);
+				let Triple(s_i, p_i, o_i) = self.triples.remove(i);
 
-				let s = self.resources.get_mut(triple.0).unwrap();
+				let s = &mut self.resources[s_i];
 				s.as_subject.remove(&i);
 				if s.is_empty() {
-					self.resources.remove(triple.0);
+					self.resources_indexes
+						.remove(resource_cmp(&self.resources), triple.0);
+					self.resources.remove(s_i);
 				}
 
-				let p = self.resources.get_mut(triple.1).unwrap();
+				let p = &mut self.resources[p_i];
 				p.as_predicate.remove(&i);
 				if p.is_empty() {
-					self.resources.remove(triple.1);
+					self.resources_indexes
+						.remove(resource_cmp(&self.resources), triple.1);
+					self.resources.remove(p_i);
 				}
 
-				let o = self.resources.get_mut(triple.2).unwrap();
+				let o = &mut self.resources[o_i];
 				o.as_object.remove(&i);
 				if o.is_empty() {
-					self.resources.remove(triple.2);
+					self.resources_indexes
+						.remove(resource_cmp(&self.resources), triple.2);
+					self.resources.remove(o_i);
 				}
 
-				Some(self.triples.remove(i))
+				true
 			}
-			None => None,
+			None => false,
 		}
 	}
 
@@ -171,10 +222,11 @@ impl<R: Ord> BTreeGraph<R> {
 	/// triple pattern.
 	pub fn pattern_matching(&self, pattern: CanonicalTriplePattern<&R>) -> PatternMatching<R> {
 		PatternMatching {
+			resources: &self.resources,
 			triples: &self.triples,
-			subject: SubjectConstraints::new(&self.resources, pattern.into_subject()),
-			predicate: PredicateConstraints::new(&self.resources, pattern.into_predicate()),
-			object: ObjectConstraints::new(&self.resources, pattern.into_object()),
+			subject: SubjectConstraints::new(self, pattern.into_subject()),
+			predicate: PredicateConstraints::new(self, pattern.into_predicate()),
+			object: ObjectConstraints::new(self, pattern.into_object()),
 			i: 0,
 		}
 	}
@@ -208,6 +260,14 @@ impl<R> TraversableGraph for BTreeGraph<R> {
 	}
 }
 
+impl<R> ResourceTraversableGraph for BTreeGraph<R> {
+	type GraphResources<'a> = Resources<'a, R> where R: 'a;
+
+	fn graph_resources(&self) -> Self::GraphResources<'_> {
+		self.resources()
+	}
+}
+
 impl<R: Clone + Ord> GraphMut for BTreeGraph<R> {
 	fn insert(&mut self, triple: Triple<Self::Resource>) {
 		self.insert(triple);
@@ -237,7 +297,8 @@ impl<R: Ord> PatternMatchingGraph for BTreeGraph<R> {
 #[derive(Educe)]
 #[educe(Clone, Copy)]
 pub struct Triples<'a, R> {
-	triples: &'a Slab<Triple<R>>,
+	resources: &'a Slab<Resource<R>>,
+	triples: &'a Slab<Triple<usize>>,
 	indexes: raw_btree::Iter<'a, usize>,
 }
 
@@ -245,21 +306,26 @@ impl<'a, R> Iterator for Triples<'a, R> {
 	type Item = Triple<&'a R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.indexes.next().map(|&i| self.triples[i].as_ref())
+		self.indexes
+			.next()
+			.map(|&i| triple_with_resources(self.resources, self.triples[i]))
 	}
 }
 
 /// Iterator over the triples of a [`BTreeGraph`].
 pub struct IntoTriples<R> {
-	triples: Slab<Triple<R>>,
+	resources: Slab<Resource<R>>,
+	triples: Slab<Triple<usize>>,
 	indexes: raw_btree::IntoIter<usize>,
 }
 
-impl<R> Iterator for IntoTriples<R> {
+impl<R: Clone> Iterator for IntoTriples<R> {
 	type Item = Triple<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.indexes.next().map(|i| self.triples.remove(i))
+		self.indexes
+			.next()
+			.map(|i| triple_with_resources(&self.resources, self.triples.remove(i)).cloned())
 	}
 }
 
@@ -272,15 +338,29 @@ impl<'a, R> IntoIterator for &'a BTreeGraph<R> {
 	}
 }
 
-impl<R> IntoIterator for BTreeGraph<R> {
+impl<R: Clone> IntoIterator for BTreeGraph<R> {
 	type Item = Triple<R>;
 	type IntoIter = IntoTriples<R>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		IntoTriples {
+			resources: self.resources,
 			triples: self.triples,
-			indexes: self.indexes.into_iter(),
+			indexes: self.triples_indexes.into_iter(),
 		}
+	}
+}
+
+pub struct Resources<'a, R> {
+	resources: &'a Slab<Resource<R>>,
+	indexes: raw_btree::Iter<'a, usize>,
+}
+
+impl<'a, R> Iterator for Resources<'a, R> {
+	type Item = &'a R;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.indexes.next().map(|&i| &self.resources[i].value)
 	}
 }
 
@@ -315,25 +395,26 @@ impl<R: Hash> Hash for BTreeGraph<R> {
 
 /// Iterator over the triples of a [`BTreeGraph`] matching some given pattern.
 pub struct PatternMatching<'a, R> {
-	triples: &'a Slab<Triple<R>>,
+	resources: &'a Slab<Resource<R>>,
+	triples: &'a Slab<Triple<usize>>,
 	subject: SubjectConstraints<'a>,
 	predicate: PredicateConstraints<'a>,
 	object: ObjectConstraints<'a>,
 	i: usize,
 }
 
-impl<'a, R: PartialEq> Iterator for PatternMatching<'a, R> {
+impl<'a, R> Iterator for PatternMatching<'a, R> {
 	type Item = Triple<&'a R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.triples.capacity() {
 			match self.triples.get(self.i) {
-				Some(triple) => match self.subject.next(self.i) {
+				Some(&triple) => match self.subject.next(self.i) {
 					Some(i) => match self.predicate.next(i, triple) {
 						Ok(()) => match self.object.next(i, triple) {
 							Ok(()) => {
 								self.i = i + 1;
-								return Some(triple.as_ref());
+								return Some(triple_with_resources(self.resources, triple));
 							}
 							Err(Some(j)) => self.i = j,
 							Err(None) => return None,
@@ -358,10 +439,10 @@ enum SubjectConstraints<'a> {
 }
 
 impl<'a> SubjectConstraints<'a> {
-	fn new<R: Ord>(resources: &'a BTreeMap<R, Resource>, s: PatternSubject<&R>) -> Self {
+	fn new<R: Ord>(graph: &'a BTreeGraph<R>, s: PatternSubject<&R>) -> Self {
 		match s {
 			PatternSubject::Any => Self::Any,
-			PatternSubject::Given(s) => match resources.get(s) {
+			PatternSubject::Given(s) => match graph.get_resource(s) {
 				Some(subject) => Self::Fixed(subject.as_subject.iter().copied().peekable()),
 				None => Self::None,
 			},
@@ -395,18 +476,18 @@ enum PredicateConstraints<'a> {
 }
 
 impl<'a> PredicateConstraints<'a> {
-	fn new<R: Ord>(resources: &'a BTreeMap<R, Resource>, p: PatternPredicate<&R>) -> Self {
+	fn new<R: Ord>(graph: &'a BTreeGraph<R>, p: PatternPredicate<&R>) -> Self {
 		match p {
 			PatternPredicate::Any => Self::Any,
 			PatternPredicate::SameAsSubject => Self::SameAsSubject,
-			PatternPredicate::Given(s) => match resources.get(s) {
+			PatternPredicate::Given(s) => match graph.get_resource(s) {
 				Some(subject) => Self::Fixed(subject.as_predicate.iter().copied().peekable()),
 				None => Self::None,
 			},
 		}
 	}
 
-	fn next<R: PartialEq>(&mut self, i: usize, triple: &Triple<R>) -> Result<(), Option<usize>> {
+	fn next(&mut self, i: usize, triple: Triple<usize>) -> Result<(), Option<usize>> {
 		match self {
 			Self::None => Err(None),
 			Self::Any => Ok(()),
@@ -443,19 +524,19 @@ enum ObjectConstraints<'a> {
 }
 
 impl<'a> ObjectConstraints<'a> {
-	fn new<R: Ord>(resources: &'a BTreeMap<R, Resource>, p: PatternObject<&R>) -> Self {
+	fn new<R: Ord>(graph: &'a BTreeGraph<R>, p: PatternObject<&R>) -> Self {
 		match p {
 			PatternObject::Any => Self::Any,
 			PatternObject::SameAsSubject => Self::SameAsSubject,
 			PatternObject::SameAsPredicate => Self::SameAsPredicate,
-			PatternObject::Given(s) => match resources.get(s) {
+			PatternObject::Given(s) => match graph.get_resource(s) {
 				Some(subject) => Self::Fixed(subject.as_object.iter().copied().peekable()),
 				None => Self::None,
 			},
 		}
 	}
 
-	fn next<R: PartialEq>(&mut self, i: usize, triple: &Triple<R>) -> Result<(), Option<usize>> {
+	fn next(&mut self, i: usize, triple: Triple<usize>) -> Result<(), Option<usize>> {
 		match self {
 			Self::None => Err(None),
 			Self::Any => Ok(()),
@@ -491,31 +572,35 @@ impl<'a> ObjectConstraints<'a> {
 }
 
 #[derive(Default, Clone)]
-struct Resource {
+struct Resource<R> {
+	value: R,
 	as_subject: BTreeSet<usize>,
 	as_predicate: BTreeSet<usize>,
 	as_object: BTreeSet<usize>,
 }
 
-impl Resource {
-	pub fn subject(i: usize) -> Self {
+impl<R> Resource<R> {
+	pub fn subject(value: R, i: usize) -> Self {
 		Self {
+			value,
 			as_subject: std::iter::once(i).collect(),
 			as_predicate: BTreeSet::new(),
 			as_object: BTreeSet::new(),
 		}
 	}
 
-	pub fn predicate(i: usize) -> Self {
+	pub fn predicate(value: R, i: usize) -> Self {
 		Self {
+			value,
 			as_subject: BTreeSet::new(),
 			as_predicate: std::iter::once(i).collect(),
 			as_object: BTreeSet::new(),
 		}
 	}
 
-	pub fn object(i: usize) -> Self {
+	pub fn object(value: R, i: usize) -> Self {
 		Self {
+			value,
 			as_subject: BTreeSet::new(),
 			as_predicate: BTreeSet::new(),
 			as_object: std::iter::once(i).collect(),
