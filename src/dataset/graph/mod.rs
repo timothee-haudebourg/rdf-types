@@ -149,3 +149,9 @@ pub trait GraphMut: Graph {
 
 	fn remove(&mut self, triple: Triple<&Self::Resource>);
 }
+
+/// Graph view focusing on a given resource.
+pub struct GraphView<'a, G: Graph> {
+	pub graph: &'a G,
+	pub resource: &'a G::Resource,
+}

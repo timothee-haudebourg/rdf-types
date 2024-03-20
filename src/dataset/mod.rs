@@ -229,3 +229,16 @@ pub trait DatasetMut: Dataset {
 	/// Removes the given quad from the dataset.
 	fn remove(&mut self, quad: Quad<&Self::Resource>);
 }
+
+/// Dataset view focusing on a given resource.
+pub struct DatasetView<'a, D: Dataset> {
+	pub dataset: &'a D,
+	pub resource: &'a D::Resource,
+}
+
+/// Dataset view focusing on a given resource and restricted to the given graph.
+pub struct DatasetGraphView<'a, D: Dataset> {
+	pub dataset: &'a D,
+	pub graph: Option<&'a D::Resource>,
+	pub resource: &'a D::Resource,
+}
