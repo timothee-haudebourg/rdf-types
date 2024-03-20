@@ -148,7 +148,10 @@ where
 {
 	fn fmt_with(&self, vocabulary: &V, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		use crate::RdfDisplayWithContext;
-		vocabulary.literal(self).unwrap().rdf_fmt_with(vocabulary, f)
+		vocabulary
+			.literal(self)
+			.unwrap()
+			.rdf_fmt_with(vocabulary, f)
 	}
 }
 

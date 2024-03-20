@@ -1,7 +1,5 @@
 [package]
 name = "rdf-types"
-version = "0.20.0"
-edition = "2021"
 authors = ["Timothée Haudebourg <author@haudebourg.net>"]
 description = "Data-structures and traits definitions for RDF."
 categories = ["data-structures"]
@@ -10,6 +8,9 @@ repository = "https://github.com/timothee-haudebourg/rdf-types"
 documentation = "https://docs.rs/rdf-types"
 license = "MIT/Apache-2.0"
 readme = "README.md"
+edition = "2021"
+rust-version = "1.70.0"
+version = "0.20.0"
 
 [features]
 default = []

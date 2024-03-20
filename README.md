@@ -1,7 +1,8 @@
 # RDF Types
 
-[![CI](https://github.com/timothee-haudebourg/rdf-types/workflows/CI/badge.svg)](https://github.com/timothee-haudebourg/rdf-types/actions)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/timothee-haudebourg/rdf-types/ci.yml?style=flat-square&logo=github)](https://github.com/timothee-haudebourg/rdf-types/actions)
 [![Crate informations](https://img.shields.io/crates/v/rdf-types.svg?style=flat-square)](https://crates.io/crates/rdf-types)
+[![Crates.io MSRV](https://img.shields.io/crates/msrv/rdf-types?style=flat-square)](https://crates.io/crates/rdf-types)
 [![License](https://img.shields.io/crates/l/rdf-types.svg?style=flat-square)](https://github.com/timothee-haudebourg/rdf-types#license)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square)](https://docs.rs/rdf-types)
 
