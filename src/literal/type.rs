@@ -89,6 +89,16 @@ impl LiteralType {
 	}
 }
 
+impl<'a, I: PartialEq> PartialEq<LiteralTypeRef<'a, I>> for LiteralType<I> {
+	fn eq(&self, other: &LiteralTypeRef<'a, I>) -> bool {
+		match (self, *other) {
+			(Self::Any(a), LiteralTypeRef::Any(b)) => a == b,
+			(Self::LangString(a), LiteralTypeRef::LangString(b)) => a == b,
+			_ => false,
+		}
+	}
+}
+
 impl<V, I: EmbedIntoVocabulary<V>> EmbedIntoVocabulary<V> for LiteralType<I> {
 	type Embedded = LiteralType<I::Embedded>;
 
@@ -252,6 +262,16 @@ impl<'a> LiteralTypeRef<'a> {
 		match self {
 			Self::Any(i) => LexicalLiteralTypeRef::Any(i),
 			Self::LangString(l) => LexicalLiteralTypeRef::LangString(l),
+		}
+	}
+}
+
+impl<'a, I: PartialEq> PartialEq<LiteralType<I>> for LiteralTypeRef<'a, I> {
+	fn eq(&self, other: &LiteralType<I>) -> bool {
+		match (*self, other) {
+			(Self::Any(a), LiteralType::Any(b)) => a == b,
+			(Self::LangString(a), LiteralType::LangString(b)) => a == b.as_lang_tag(),
+			_ => false,
 		}
 	}
 }

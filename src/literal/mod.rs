@@ -1,6 +1,6 @@
 use crate::vocabulary::{
 	EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary, ExtractedFromVocabulary,
-	IriVocabulary, LiteralVocabularyMut,
+	IriVocabulary, IriVocabularyMut, LiteralVocabularyMut,
 };
 use crate::{IsXsdStringIri, RdfDisplay};
 use educe::Educe;
@@ -100,22 +100,27 @@ impl<I> Literal<I> {
 	}
 }
 
-impl<V: LiteralVocabularyMut> EmbedIntoVocabulary<V> for Literal<V::Iri> {
-	type Embedded = V::Literal;
-
-	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
-		vocabulary.insert_owned_literal(self)
+impl<'a, I: PartialEq> PartialEq<LiteralRef<'a, I>> for Literal<I> {
+	fn eq(&self, other: &LiteralRef<'a, I>) -> bool {
+		self.type_ == other.type_ && self.value == other.value
 	}
 }
 
-impl<V: LiteralVocabularyMut> EmbeddedIntoVocabulary<V> for Literal<V::Iri>
-where
-	V::Iri: Clone,
-{
+impl<V: IriVocabularyMut + LiteralVocabularyMut> EmbedIntoVocabulary<V> for Literal {
+	type Embedded = V::Literal;
+
+	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
+		let l = self.insert_type_into_vocabulary(vocabulary);
+		vocabulary.insert_owned_literal(l)
+	}
+}
+
+impl<V: IriVocabularyMut + LiteralVocabularyMut> EmbeddedIntoVocabulary<V> for Literal {
 	type Embedded = V::Literal;
 
 	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
-		vocabulary.insert_literal(self.as_ref())
+		let l = self.inserted_type_into_vocabulary(vocabulary);
+		vocabulary.insert_owned_literal(l)
 	}
 }
 
@@ -294,6 +299,12 @@ impl<'a, I> LiteralRef<'a, I> {
 		&'a I: Into<J>,
 	{
 		Literal::new(self.value.to_owned(), self.type_.cast_into_owned())
+	}
+}
+
+impl<'a, I: PartialEq> PartialEq<Literal<I>> for LiteralRef<'a, I> {
+	fn eq(&self, other: &Literal<I>) -> bool {
+		self.type_ == other.type_ && self.value == other.value
 	}
 }
 
