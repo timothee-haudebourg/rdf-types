@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2024-03-22
+
+### Added
+
+- [1b087bb] Add `Quad::map_all`.
+- [75473a9] Add `SubjectTraversableDataset`/`SubjectTraversableGraph`.
+- [75473a9] Add `PredicateTraversableDataset`/`PridecateTraversableGraph`.
+- [75473a9] Add `ObjectTraversableDataset`/`ObjectTraversableGraph`.
+- [5122dd0] Add `VocabularyInterpretation` type.
+- [b4f45d7] Impl `PartialEq<Literal>` for `LiteralRef`.
+- [b4f45d7] Impl `PartialEq<LiteralRef>` for `Literal`.
+- [b4f45d7] Impl `PartialEq<LiteralType>` for `LiteralTypeRef`.
+- [b4f45d7] Impl `PartialEq<LiteralTypeRef>` for `LiteralType`.
+- [8305661] Add `IndexedBTreeGraph` type.
+- [8305661] Add `IndexedBTreeDataset` type.
+- [8305661] Impl `PatternMatchingGraph` for `IndexedBTreeGraph`.
+- [8305661] Impl `PatternMatchingDataset` for `IndexedBTreeDataset`.
+
+### Changed
+
+- [b4f45d7] Change constraints to `Literal: EmbedIntoVocabulary`.
+
+### Fixed
+
+- [8305661] Fix graph/dataset indexing bug.
+- [8305661] Fix pattern matching bug.
+- [797fa16] Fix pattern matching bug.
+
+### Removed
+
+- [8305661] Remove `BTreeGraph: PatternMatchingGraph` implementation.
+- [8305661] Remove `BTreeDataset: PatternMatchingDataset` implementation.
+
 ## [0.21.1] - 2024-03-20
 
 ### Added
