@@ -695,27 +695,20 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.quads.capacity() {
-			match self.subject.next(self.i) {
-				Some(i) => {
-					let quad = self.quads[i];
-					match self.predicate.next(i, quad) {
-						Ok(()) => match self.object.next(i, quad) {
-							Ok(()) => match self.graph.next(i, quad) {
-								Ok(()) => {
-									self.i = i + 1;
-									return Some(quad_with_resources(self.resources, quad));
-								}
-								Err(Some(j)) => self.i = j,
-								Err(None) => return None,
-							},
-							Err(Some(j)) => self.i = j,
-							Err(None) => return None,
-						},
-						Err(Some(j)) => self.i = j,
-						Err(None) => return None,
-					}
-				}
-				None => return None,
+			let i = self.subject.next(self.i)?;
+			let quad = *self.quads.get(i)?;
+			match self.predicate.next(i, quad) {
+				Ok(()) => match self.object.next(i, quad) {
+					Ok(()) => match self.graph.next(i, quad) {
+						Ok(()) => {
+							self.i = i + 1;
+							return Some(quad_with_resources(self.resources, quad));
+						}
+						Err(j) => self.i = j?,
+					},
+					Err(j) => self.i = j?,
+				},
+				Err(j) => self.i = j?,
 			}
 		}
 

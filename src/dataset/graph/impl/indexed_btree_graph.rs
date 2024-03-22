@@ -599,23 +599,17 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.triples.capacity() {
-			match self.subject.next(self.i) {
-				Some(i) => {
-					let triple = self.triples[i];
-					match self.predicate.next(i, triple) {
-						Ok(()) => match self.object.next(i, triple) {
-							Ok(()) => {
-								self.i = i + 1;
-								return Some(triple_with_resources(self.resources, triple));
-							}
-							Err(Some(j)) => self.i = j,
-							Err(None) => return None,
-						},
-						Err(Some(j)) => self.i = j,
-						Err(None) => return None,
+			let i = self.subject.next(self.i)?;
+			let triple = *self.triples.get(i)?;
+			match self.predicate.next(i, triple) {
+				Ok(()) => match self.object.next(i, triple) {
+					Ok(()) => {
+						self.i = i + 1;
+						return Some(triple_with_resources(self.resources, triple));
 					}
-				}
-				None => return None,
+					Err(j) => self.i = j?,
+				},
+				Err(j) => self.i = j?,
 			}
 		}
 
