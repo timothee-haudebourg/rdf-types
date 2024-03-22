@@ -264,6 +264,18 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	pub fn map_graph<U>(self, f: impl FnOnce(Option<G>) -> Option<U>) -> Quad<S, P, O, U> {
 		Quad(self.0, self.1, self.2, f(self.3))
 	}
+
+	/// Maps every quad component with the given functions, one for each
+	/// component.
+	pub fn map_all<S2, P2, O2, G2>(
+		self,
+		s: impl FnOnce(S) -> S2,
+		p: impl FnOnce(P) -> P2,
+		o: impl FnOnce(O) -> O2,
+		g: impl FnOnce(Option<G>) -> Option<G2>,
+	) -> Quad<S2, P2, O2, G2> {
+		Quad(s(self.0), p(self.1), o(self.2), g(self.3))
+	}
 }
 
 impl<T> Quad<T, T, T, T> {
