@@ -87,6 +87,7 @@ impl<R> IndexedBTreeGraph<R> {
 		Self::default()
 	}
 
+	/// Creates a new indexed graph from a non-indexed one.
 	pub fn from_non_indexed(graph: BTreeGraph<R>) -> Self {
 		let mut resources: Slab<Resource<R>> = graph
 			.resources

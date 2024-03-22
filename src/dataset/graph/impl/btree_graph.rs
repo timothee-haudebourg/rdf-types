@@ -101,6 +101,10 @@ impl<R> BTreeGraph<R> {
 		}
 	}
 
+	/// Indexes the triples to allow more operation on this graph, such as
+	/// pattern matching using the [`PatternMatchingGraph`] trait.
+	///
+	/// [`PatternMatchingGraph`]: super::super::PatternMatchingGraph
 	pub fn into_indexed(self) -> IndexedBTreeGraph<R> {
 		IndexedBTreeGraph::from_non_indexed(self)
 	}

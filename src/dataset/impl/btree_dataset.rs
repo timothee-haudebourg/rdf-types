@@ -6,7 +6,7 @@ use slab::Slab;
 
 use super::super::Dataset;
 use crate::{
-	dataset::{DatasetMut, ResourceTraversableDataset, TraversableDataset},
+	dataset::{DatasetMut, IndexedBTreeDataset, ResourceTraversableDataset, TraversableDataset},
 	Quad, RdfDisplay, Term,
 };
 
@@ -97,6 +97,14 @@ impl<R> BTreeDataset<R> {
 			resources: &self.resources,
 			indexes: self.resources_indexes.iter(),
 		}
+	}
+
+	/// Indexes the quads to allow more operation on this dataset, such as
+	/// pattern matching using the [`PatternMatchingDataset`] trait.
+	///
+	/// [`PatternMatchingDataset`]: super::super::PatternMatchingDataset
+	pub fn into_indexed(self) -> IndexedBTreeDataset<R> {
+		IndexedBTreeDataset::from_non_indexed(self)
 	}
 }
 

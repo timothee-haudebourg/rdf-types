@@ -93,6 +93,7 @@ impl<R> IndexedBTreeDataset<R> {
 		Self::default()
 	}
 
+	/// Creates a new indexed dataset from a non-indexed one.
 	pub fn from_non_indexed(dataset: BTreeDataset<R>) -> Self {
 		let mut resources: Slab<Resource<R>> = dataset
 			.resources
