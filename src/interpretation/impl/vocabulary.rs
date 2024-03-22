@@ -1,17 +1,15 @@
 use educe::Educe;
-use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::iter::once;
+use std::marker::PhantomData;
 
-use crate::interpretation::{ReverseBlankIdInterpretation, ReverseBlankIdInterpretationMut};
+use crate::interpretation::{
+	BlankIdInterpretation, IriInterpretation, LiteralInterpretation, ReverseBlankIdInterpretation,
+};
 use crate::{
-	interpretation::{
-		ReverseIriInterpretation, ReverseIriInterpretationMut, ReverseLiteralInterpretation,
-		ReverseLiteralInterpretationMut,
-	},
+	interpretation::{ReverseIriInterpretation, ReverseLiteralInterpretation},
 	vocabulary::{BlankIdVocabulary, IriVocabulary, LiteralVocabulary},
-	Id, Interpretation, InterpretationMut, Term, Vocabulary,
+	Id, Interpretation, Term, Vocabulary,
 };
 
 type VocabTerm<V> = Term<
@@ -19,170 +17,34 @@ type VocabTerm<V> = Term<
 	<V as LiteralVocabulary>::Literal,
 >;
 
-pub struct VocabularyInterpretationSubstitution<V: Vocabulary>(Vec<VocabTerm<V>>);
-
-/// Mutable vocabulary interpretation.
+/// Vocabulary interpretation.
 ///
 /// This type is a special sort of interpretation where every term is
-/// interpreted as itself, while allowing anonymous resources to be added to
-/// the interpretation without using a blank id generator. In particular, it
-/// implements the `InterpretationMut` trait, which is not implemented by the
-/// unit `()` interpretation.
-///
-/// It is possible to remove anonymous nodes by building
-/// [`VocabularyInterpretationSubstitution`] with [`Self::into_substitution`] or
-/// [`Self::as_substitution`], and using it to substitute resources back into
-/// terms.
-pub struct VocabularyInterpretation<V: Vocabulary> {
-	map: HashMap<Resource<V>, HashSet<VocabTerm<V>>>,
-	anonymous_count: usize,
-}
+/// interpreted as itself.
+pub struct VocabularyInterpretation<V: Vocabulary>(PhantomData<V>);
 
 impl<V: Vocabulary> Default for VocabularyInterpretation<V> {
 	fn default() -> Self {
-		Self::new()
+		Self(PhantomData)
 	}
 }
 
 impl<V: Vocabulary> VocabularyInterpretation<V> {
 	pub fn new() -> Self {
-		Self {
-			map: HashMap::new(),
-			anonymous_count: 0,
-		}
+		Self::default()
 	}
-}
-
-impl<V: Vocabulary> VocabularyInterpretation<V>
-where
-	V::Iri: PartialEq,
-	V::BlankId: PartialEq,
-	V::Literal: PartialEq,
-{
-	/// Try to build a substitution from resources to terms.
-	///
-	/// In a `VocabularyInterpretation` most-resources are already interpreted
-	/// as terms. This function will return an error if not **all** resources
-	/// are associated to a term, or if there is a term ambiguity.
-	pub fn into_substitution(
-		self,
-	) -> Result<VocabularyInterpretationSubstitution<V>, VocabularyInterpretationError<V>> {
-		let mut opt_list = Vec::new();
-		opt_list.resize_with(self.anonymous_count, || None);
-
-		for (r, terms) in self.map {
-			match r {
-				Resource::Anonymous(i) => {
-					let mut terms = terms.into_iter();
-					match terms.next() {
-						Some(term) => {
-							for u in terms {
-								if term != u {
-									return Err(VocabularyInterpretationError::Ambiguity(term, u));
-								}
-							}
-
-							opt_list[i] = Some(term)
-						}
-						None => return Err(VocabularyInterpretationError::MissingTerm(i)),
-					}
-				}
-				Resource::Term(t) => {
-					for u in terms {
-						if t != u {
-							return Err(VocabularyInterpretationError::Ambiguity(t, u));
-						}
-					}
-				}
-			}
-		}
-
-		let mut list = Vec::with_capacity(opt_list.len());
-		for opt in opt_list {
-			match opt {
-				Some(term) => list.push(term),
-				None => return Err(VocabularyInterpretationError::MissingTerm(list.len())),
-			}
-		}
-
-		Ok(VocabularyInterpretationSubstitution(list))
-	}
-
-	/// Try to build a substitution from resources to terms.
-	///
-	/// In a `VocabularyInterpretation` most-resources are already interpreted
-	/// as terms. This function will return an error if not **all** resources
-	/// are associated to a term, or if there is a term ambiguity.
-	pub fn as_substitution(
-		&self,
-	) -> Result<VocabularyInterpretationSubstitution<V>, VocabularyInterpretationError<V>>
-	where
-		V::Iri: Clone,
-		V::BlankId: Clone,
-		V::Literal: Clone,
-	{
-		let mut opt_list = Vec::new();
-		opt_list.resize_with(self.anonymous_count, || None);
-
-		for (r, terms) in &self.map {
-			match r {
-				Resource::Anonymous(i) => {
-					let mut terms = terms.iter();
-					match terms.next().cloned() {
-						Some(term) => {
-							for u in terms {
-								if term != *u {
-									return Err(VocabularyInterpretationError::Ambiguity(
-										term,
-										u.clone(),
-									));
-								}
-							}
-
-							opt_list[*i] = Some(term)
-						}
-						None => return Err(VocabularyInterpretationError::MissingTerm(*i)),
-					}
-				}
-				Resource::Term(t) => {
-					for u in terms {
-						if t != u {
-							return Err(VocabularyInterpretationError::Ambiguity(
-								t.clone(),
-								u.clone(),
-							));
-						}
-					}
-				}
-			}
-		}
-
-		let mut list = Vec::with_capacity(opt_list.len());
-		for opt in opt_list {
-			match opt {
-				Some(term) => list.push(term),
-				None => return Err(VocabularyInterpretationError::MissingTerm(list.len())),
-			}
-		}
-
-		Ok(VocabularyInterpretationSubstitution(list))
-	}
-}
-
-pub enum VocabularyInterpretationError<V: Vocabulary> {
-	MissingTerm(usize),
-	Ambiguity(VocabTerm<V>, VocabTerm<V>),
 }
 
 impl<V: Vocabulary> Interpretation for VocabularyInterpretation<V> {
-	type Resource = Resource<V>;
+	type Resource = VocabTerm<V>;
 }
 
-impl<V: Vocabulary> InterpretationMut<V> for VocabularyInterpretation<V> {
-	fn new_resource(&mut self, _vocabulary: &mut V) -> Self::Resource {
-		let i = self.anonymous_count;
-		self.anonymous_count += 1;
-		Resource::Anonymous(i)
+impl<V: Vocabulary> IriInterpretation<V::Iri> for VocabularyInterpretation<V>
+where
+	V::Iri: Clone,
+{
+	fn iri_interpretation(&self, iri: &V::Iri) -> Option<Self::Resource> {
+		Some(Term::iri(iri.clone()))
 	}
 }
 
@@ -196,27 +58,16 @@ where
 	type Iris<'a> = IrisOf<'a, V> where V: 'a, V::Iri: 'a, V::BlankId: 'a, V::Literal: 'a;
 
 	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a> {
-		IrisOf {
-			term: id.as_term(),
-			additional_terms: self.map.get(id).map(|t| t.iter()),
-		}
+		IrisOf(id.as_iri())
 	}
 }
 
-impl<V: Vocabulary> ReverseIriInterpretationMut for VocabularyInterpretation<V>
+impl<V: Vocabulary> BlankIdInterpretation<V::BlankId> for VocabularyInterpretation<V>
 where
-	V::Iri: Clone + Eq + Hash,
-	V::BlankId: Clone + Eq + Hash,
-	V::Literal: Clone + Eq + Hash,
+	V::BlankId: Clone,
 {
-	fn assign_iri(&mut self, id: &Self::Resource, iri: Self::Iri) -> bool {
-		match self.map.get_mut(id) {
-			Some(l) => l.insert(Term::iri(iri)),
-			None => {
-				self.map.insert(id.clone(), once(Term::iri(iri)).collect());
-				true
-			}
-		}
+	fn blank_id_interpretation(&self, blank_id: &V::BlankId) -> Option<Self::Resource> {
+		Some(Term::blank(blank_id.clone()))
 	}
 }
 
@@ -230,27 +81,16 @@ where
 	type BlankIds<'a> = BlankIdsOf<'a, V> where V: 'a, V::Iri: 'a, V::BlankId: 'a, V::Literal: 'a;
 
 	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a> {
-		BlankIdsOf {
-			term: id.as_term(),
-			additional_terms: self.map.get(id).map(|t| t.iter()),
-		}
+		BlankIdsOf(id.as_blank())
 	}
 }
 
-impl<V: Vocabulary> ReverseBlankIdInterpretationMut for VocabularyInterpretation<V>
+impl<V: Vocabulary> LiteralInterpretation<V::Literal> for VocabularyInterpretation<V>
 where
-	V::Iri: Clone + Eq + Hash,
-	V::BlankId: Clone + Eq + Hash,
-	V::Literal: Clone + Eq + Hash,
+	V::Literal: Clone,
 {
-	fn assign_blank_id(&mut self, id: &Self::Resource, b: Self::BlankId) -> bool {
-		match self.map.get_mut(id) {
-			Some(l) => l.insert(Term::blank(b)),
-			None => {
-				self.map.insert(id.clone(), once(Term::blank(b)).collect());
-				true
-			}
-		}
+	fn literal_interpretation(&self, literal: &V::Literal) -> Option<Self::Resource> {
+		Some(Term::Literal(literal.clone()))
 	}
 }
 
@@ -264,28 +104,7 @@ where
 	type Literals<'a> = LiteralsOf<'a, V> where V: 'a, V::Iri: 'a, V::BlankId: 'a, V::Literal: 'a;
 
 	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a> {
-		LiteralsOf {
-			term: id.as_term(),
-			additional_terms: self.map.get(id).map(|t| t.iter()),
-		}
-	}
-}
-
-impl<V: Vocabulary> ReverseLiteralInterpretationMut for VocabularyInterpretation<V>
-where
-	V::Iri: Clone + Eq + Hash,
-	V::BlankId: Clone + Eq + Hash,
-	V::Literal: Clone + Eq + Hash,
-{
-	fn assign_literal(&mut self, id: &Self::Resource, literal: Self::Literal) -> bool {
-		match self.map.get_mut(id) {
-			Some(l) => l.insert(Term::Literal(literal)),
-			None => {
-				self.map
-					.insert(id.clone(), once(Term::Literal(literal)).collect());
-				true
-			}
-		}
+		LiteralsOf(id.as_literal())
 	}
 }
 
@@ -409,102 +228,61 @@ where
 }
 
 #[derive(Educe)]
-#[educe(Clone)]
-pub struct IrisOf<'a, V: Vocabulary> {
-	term: Option<&'a VocabTerm<V>>,
-	additional_terms: Option<std::collections::hash_set::Iter<'a, VocabTerm<V>>>,
-}
+#[educe(Debug(bound(V::Iri: Debug)))]
+pub struct IrisOf<'a, V: IriVocabulary>(Option<&'a V::Iri>);
 
 impl<'a, V: Vocabulary> Iterator for IrisOf<'a, V> {
 	type Item = &'a V::Iri;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		match self.term.take() {
-			Some(Term::Id(Id::Iri(iri))) => Some(iri),
-			_ => match self.additional_terms.as_mut() {
-				Some(terms) => {
-					for term in terms {
-						if let Term::Id(Id::Iri(iri)) = term {
-							return Some(iri);
-						}
-					}
-
-					None
-				}
-				None => None,
-			},
-		}
+		self.0.take()
 	}
 }
 
-#[derive(Educe)]
-#[educe(Clone)]
-pub struct BlankIdsOf<'a, V: Vocabulary> {
-	term: Option<&'a VocabTerm<V>>,
-	additional_terms: Option<std::collections::hash_set::Iter<'a, VocabTerm<V>>>,
+impl<'a, V: Vocabulary> Clone for IrisOf<'a, V> {
+	fn clone(&self) -> Self {
+		*self
+	}
 }
+
+impl<'a, V: Vocabulary> Copy for IrisOf<'a, V> {}
+
+#[derive(Educe)]
+#[educe(Debug(bound(V::BlankId: Debug)))]
+pub struct BlankIdsOf<'a, V: Vocabulary>(Option<&'a V::BlankId>);
 
 impl<'a, V: Vocabulary> Iterator for BlankIdsOf<'a, V> {
 	type Item = &'a V::BlankId;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		match self.term.take() {
-			Some(Term::Id(Id::Blank(b))) => Some(b),
-			_ => match self.additional_terms.as_mut() {
-				Some(terms) => {
-					for term in terms {
-						if let Term::Id(Id::Blank(b)) = term {
-							return Some(b);
-						}
-					}
-
-					None
-				}
-				None => None,
-			},
-		}
+		self.0.take()
 	}
 }
+
+impl<'a, V: Vocabulary> Clone for BlankIdsOf<'a, V> {
+	fn clone(&self) -> Self {
+		*self
+	}
+}
+
+impl<'a, V: Vocabulary> Copy for BlankIdsOf<'a, V> {}
 
 #[derive(Educe)]
-#[educe(Debug(bound(V::Iri: Debug, V::BlankId: Debug, V::Literal: Debug)))]
-pub struct LiteralsOf<'a, V: Vocabulary> {
-	term: Option<&'a VocabTerm<V>>,
-	additional_terms: Option<std::collections::hash_set::Iter<'a, VocabTerm<V>>>,
-}
+#[educe(Debug(bound(V::Literal: Debug)))]
+pub struct LiteralsOf<'a, V: Vocabulary>(Option<&'a V::Literal>);
 
-impl<'a, V: Vocabulary> Clone for LiteralsOf<'a, V>
-where
-	V::Iri: Clone,
-	V::BlankId: Clone,
-	V::Literal: Clone,
-{
+impl<'a, V: Vocabulary> Clone for LiteralsOf<'a, V> {
 	fn clone(&self) -> Self {
-		Self {
-			term: self.term,
-			additional_terms: self.additional_terms.clone(),
-		}
+		*self
 	}
 }
+
+impl<'a, V: Vocabulary> Copy for LiteralsOf<'a, V> {}
 
 impl<'a, V: Vocabulary> Iterator for LiteralsOf<'a, V> {
 	type Item = &'a V::Literal;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		match self.term.take() {
-			Some(Term::Literal(l)) => Some(l),
-			_ => match self.additional_terms.as_mut() {
-				Some(terms) => {
-					for term in terms {
-						if let Term::Literal(l) = term {
-							return Some(l);
-						}
-					}
-
-					None
-				}
-				None => None,
-			},
-		}
+		self.0.take()
 	}
 }
