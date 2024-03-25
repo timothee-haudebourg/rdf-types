@@ -49,10 +49,10 @@ where
 {
 	type Extracted = Literal;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		let literal = vocabulary.literal(self).unwrap();
 		let value = literal.value.to_owned();
-		let type_ = literal.type_.exported_from_vocabulary(vocabulary);
+		let type_ = literal.type_.extracted_from_vocabulary(vocabulary);
 		Literal::new(value, type_)
 	}
 }

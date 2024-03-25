@@ -5,7 +5,7 @@ use iref::{Iri, IriBuf};
 use crate::{
 	interpretation::Interpret,
 	vocabulary::{
-		EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
+		ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
 		ExtractedFromVocabulary, TryExtractFromVocabulary,
 	},
 	GraphLabel, Id, Interpretation, LexicalGraphLabelRef, LexicalObjectRef, LexicalSubjectRef,
@@ -320,6 +320,30 @@ impl<
 	}
 }
 
+impl<V, S, P, O, G> ExtractFromVocabulary<V> for ByRef<Quad<S, P, O, G>>
+where
+	ByRef<S>: ExtractFromVocabulary<V>,
+	ByRef<P>: ExtractFromVocabulary<V>,
+	ByRef<O>: ExtractFromVocabulary<V>,
+	ByRef<G>: ExtractFromVocabulary<V>,
+{
+	type Extracted = Quad<
+		<ByRef<S> as ExtractFromVocabulary<V>>::Extracted,
+		<ByRef<P> as ExtractFromVocabulary<V>>::Extracted,
+		<ByRef<O> as ExtractFromVocabulary<V>>::Extracted,
+		<ByRef<G> as ExtractFromVocabulary<V>>::Extracted,
+	>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		Quad(
+			ByRef(self.0 .0).extract_from_vocabulary(vocabulary),
+			ByRef(self.0 .1).extract_from_vocabulary(vocabulary),
+			ByRef(self.0 .2).extract_from_vocabulary(vocabulary),
+			ByRef(self.0 .3).extract_from_vocabulary(vocabulary),
+		)
+	}
+}
+
 impl<
 		V,
 		S: ExtractedFromVocabulary<V>,
@@ -330,12 +354,12 @@ impl<
 {
 	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		Quad(
-			self.0.exported_from_vocabulary(vocabulary),
-			self.1.exported_from_vocabulary(vocabulary),
-			self.2.exported_from_vocabulary(vocabulary),
-			self.3.exported_from_vocabulary(vocabulary),
+			self.0.extracted_from_vocabulary(vocabulary),
+			self.1.extracted_from_vocabulary(vocabulary),
+			self.2.extracted_from_vocabulary(vocabulary),
+			self.3.extracted_from_vocabulary(vocabulary),
 		)
 	}
 }

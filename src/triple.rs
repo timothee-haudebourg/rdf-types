@@ -3,7 +3,10 @@ use std::{cmp::Ordering, fmt};
 use iref::{Iri, IriBuf};
 
 use crate::{
-	vocabulary::{EmbedIntoVocabulary, EmbeddedIntoVocabulary},
+	vocabulary::{
+		ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
+		ExtractedFromVocabulary,
+	},
 	Id, LexicalObjectRef, LexicalSubjectRef, Object, Quad, RdfDisplay, Term,
 };
 
@@ -197,6 +200,59 @@ impl LexicalTriple {
 impl<'a> LexicalTripleRef<'a> {
 	pub fn into_owned(self) -> LexicalTriple {
 		Triple(self.0.into_owned(), self.1.to_owned(), self.2.into_owned())
+	}
+}
+
+impl<V, S: ExtractFromVocabulary<V>, P: ExtractFromVocabulary<V>, O: ExtractFromVocabulary<V>>
+	ExtractFromVocabulary<V> for Triple<S, P, O>
+{
+	type Extracted = Triple<S::Extracted, P::Extracted, O::Extracted>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		Triple(
+			self.0.extract_from_vocabulary(vocabulary),
+			self.1.extract_from_vocabulary(vocabulary),
+			self.2.extract_from_vocabulary(vocabulary),
+		)
+	}
+}
+
+impl<V, S, P, O> ExtractFromVocabulary<V> for ByRef<Triple<S, P, O>>
+where
+	ByRef<S>: ExtractFromVocabulary<V>,
+	ByRef<P>: ExtractFromVocabulary<V>,
+	ByRef<O>: ExtractFromVocabulary<V>,
+{
+	type Extracted = Triple<
+		<ByRef<S> as ExtractFromVocabulary<V>>::Extracted,
+		<ByRef<P> as ExtractFromVocabulary<V>>::Extracted,
+		<ByRef<O> as ExtractFromVocabulary<V>>::Extracted,
+	>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		Triple(
+			ByRef(self.0 .0).extract_from_vocabulary(vocabulary),
+			ByRef(self.0 .1).extract_from_vocabulary(vocabulary),
+			ByRef(self.0 .2).extract_from_vocabulary(vocabulary),
+		)
+	}
+}
+
+impl<
+		V,
+		S: ExtractedFromVocabulary<V>,
+		P: ExtractedFromVocabulary<V>,
+		O: ExtractedFromVocabulary<V>,
+	> ExtractedFromVocabulary<V> for Triple<S, P, O>
+{
+	type Extracted = Triple<S::Extracted, P::Extracted, O::Extracted>;
+
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+		Triple(
+			self.0.extracted_from_vocabulary(vocabulary),
+			self.1.extracted_from_vocabulary(vocabulary),
+			self.2.extracted_from_vocabulary(vocabulary),
+		)
 	}
 }
 

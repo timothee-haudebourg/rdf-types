@@ -1,7 +1,7 @@
 use crate::interpretation::{Interpret, LiteralInterpretationMut};
 use crate::vocabulary::{
-	EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary, ExtractedFromVocabulary,
-	LiteralVocabulary, TryExtractFromVocabulary,
+	ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
+	ExtractedFromVocabulary, LiteralVocabulary, TryExtractFromVocabulary,
 };
 use crate::{BlankIdBuf, Literal, RdfDisplay};
 use iref::IriBuf;
@@ -234,30 +234,56 @@ impl<I: LiteralInterpretationMut<L>, T: Interpret<I, Interpreted = I::Resource>,
 
 impl<V: LiteralVocabulary, I: ExtractedFromVocabulary<V>> ExtractedFromVocabulary<V>
 	for Term<I, V::Literal>
-where
-	V::Literal: ExtractedFromVocabulary<V>,
 {
-	type Extracted = Term<I::Extracted, <V::Literal as ExtractedFromVocabulary<V>>::Extracted>;
+	type Extracted = Term<I::Extracted, Literal>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match self {
-			Self::Id(i) => Term::Id(i.exported_from_vocabulary(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.exported_from_vocabulary(vocabulary)),
+			Self::Id(i) => Term::Id(i.extracted_from_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(
+				vocabulary
+					.literal(l)
+					.unwrap()
+					.extract_from_vocabulary(vocabulary),
+			),
 		}
 	}
 }
 
 impl<V: LiteralVocabulary, I: ExtractFromVocabulary<V>> ExtractFromVocabulary<V>
 	for Term<I, V::Literal>
-where
-	V::Literal: ExtractedFromVocabulary<V>,
 {
-	type Extracted = Term<I::Extracted, <V::Literal as ExtractedFromVocabulary<V>>::Extracted>;
+	type Extracted = Term<I::Extracted, Literal>;
 
 	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Id(i) => Term::Id(i.extract_from_vocabulary(vocabulary)),
-			Self::Literal(l) => Term::Literal(l.exported_from_vocabulary(vocabulary)),
+			Self::Literal(l) => Term::Literal(
+				vocabulary
+					.owned_literal(l)
+					.ok()
+					.unwrap()
+					.extract_from_vocabulary(vocabulary),
+			),
+		}
+	}
+}
+
+impl<'a, V: LiteralVocabulary, I> ExtractFromVocabulary<V> for ByRef<Term<I, &'a V::Literal>>
+where
+	ByRef<I>: ExtractFromVocabulary<V>,
+{
+	type Extracted = Term<<ByRef<I> as ExtractFromVocabulary<V>>::Extracted, Literal>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		match self.0 {
+			Term::Id(i) => Term::Id(ByRef(i).extract_from_vocabulary(vocabulary)),
+			Term::Literal(l) => Term::Literal(
+				vocabulary
+					.literal(l)
+					.unwrap()
+					.extract_from_vocabulary(vocabulary),
+			),
 		}
 	}
 }

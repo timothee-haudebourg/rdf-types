@@ -136,10 +136,10 @@ impl<V: IriVocabulary> ExtractFromVocabulary<V> for Literal<V::Iri> {
 impl<V: IriVocabulary> ExtractedFromVocabulary<V> for Literal<V::Iri> {
 	type Extracted = Literal;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		Literal::new(
 			self.value.clone(),
-			self.type_.exported_from_vocabulary(vocabulary),
+			self.type_.extracted_from_vocabulary(vocabulary),
 		)
 	}
 }
@@ -342,10 +342,10 @@ impl<'a, V: IriVocabulary> ExtractFromVocabulary<V> for LiteralRef<'a, V::Iri> {
 impl<'a, V: IriVocabulary> ExtractedFromVocabulary<V> for LiteralRef<'a, V::Iri> {
 	type Extracted = Literal;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		Literal::new(
 			self.value.to_owned(),
-			self.type_.exported_from_vocabulary(vocabulary),
+			self.type_.extracted_from_vocabulary(vocabulary),
 		)
 	}
 }

@@ -6,8 +6,8 @@ use locspan_derive::*;
 
 use crate::{
 	vocabulary::{
-		BlankIdVocabulary, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
-		ExtractedFromVocabulary, IriVocabulary,
+		BlankIdVocabulary, ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary,
+		ExtractFromVocabulary, ExtractedFromVocabulary, IriVocabulary,
 	},
 	BlankId, BlankIdBuf, LexicalGraphLabelRef, LexicalSubjectRef, MaybeBlankId, MaybeIri,
 	RdfDisplay, Term, TryAsBlankId, TryAsIri, TryIntoBlankId, TryIntoIri, Vocabulary,
@@ -144,7 +144,7 @@ impl<V, I: EmbeddedIntoVocabulary<V>, B: EmbeddedIntoVocabulary<V>> EmbeddedInto
 impl<V: IriVocabulary + BlankIdVocabulary> ExtractedFromVocabulary<V> for Id<V::Iri, V::BlankId> {
 	type Extracted = Id<IriBuf, BlankIdBuf>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
 			Self::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
@@ -159,6 +159,19 @@ impl<V: IriVocabulary + BlankIdVocabulary> ExtractFromVocabulary<V> for Id<V::Ir
 		match self {
 			Self::Iri(i) => Id::Iri(vocabulary.owned_iri(i).ok().unwrap()),
 			Self::Blank(b) => Id::Blank(vocabulary.owned_blank_id(b).ok().unwrap()),
+		}
+	}
+}
+
+impl<'a, V: IriVocabulary + BlankIdVocabulary> ExtractFromVocabulary<V>
+	for ByRef<Id<&'a V::Iri, &'a V::BlankId>>
+{
+	type Extracted = Id<IriBuf, BlankIdBuf>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		match self.0 {
+			Id::Iri(i) => Id::Iri(vocabulary.iri(i).unwrap().to_owned()),
+			Id::Blank(b) => Id::Blank(vocabulary.blank_id(b).unwrap().to_owned()),
 		}
 	}
 }

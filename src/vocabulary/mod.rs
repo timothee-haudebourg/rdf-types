@@ -12,6 +12,7 @@ mod iri;
 mod literal;
 
 pub use blank_id::*;
+use iref::IriBuf;
 pub use iri::*;
 pub use literal::*;
 
@@ -90,6 +91,92 @@ impl<V, T: EmbeddedIntoVocabulary<V>> EmbeddedIntoVocabulary<V> for Option<T> {
 	}
 }
 
+/// Wrapper type to allow
+/// `Term<Id<&V::Iri, &V::BlankId>, &V::Literal>` to be extracted into `Term`
+/// using the `ExtractFromVocabulary<V>` trait.
+///
+/// There is a limitation in Rust's trait solver forbidding the implementation
+/// of `ExtractFromVocabulary<V>` for both
+/// `Term<Id<V::Iri, V::BlankId>, V::Literal>` and
+/// `Term<Id<&V::Iri, &V::BlankId>, &V::Literal>`.
+/// It is detected as a conflicting implementation although an associated type
+/// `T::Assoc` can never be equal to its reference `&T::Assoc`.
+///
+/// As a workaround, `ExtractFromVocabulary` is implemented for
+/// `ExtractFromVocabulary<V>` is implemented for
+/// `ByRef<Term<Id<&V::Iri, &V::BlankId>, &V::Literal>>` instead.
+///
+/// # Example
+///
+/// ```
+/// use rdf_types::{Id, Term, vocabulary::{IndexVocabulary, IriVocabularyMut, IriIndex, BlankIdIndex, LiteralIndex, ExtractFromVocabulary, ByRef}};
+/// use static_iref::iri;
+///
+/// let mut vocabulary = IndexVocabulary::new();
+///
+/// let iri = vocabulary.insert(iri!("http://example.org/"));
+/// let term: Term<Id<&IriIndex, &BlankIdIndex>, &LiteralIndex> = Term::iri(&iri);
+///
+/// let _: Term = ByRef(term).extract_from_vocabulary(&vocabulary);
+/// ```
+pub struct ByRef<T>(pub T);
+
+/// Wrapper type to allow an arbitrary type to be recognized as an RDF
+/// IRI predicate.
+///
+/// # Example
+///
+/// ```
+/// use rdf_types::{Id, Term, Quad, LexicalQuad, vocabulary::{IndexVocabulary, IriVocabularyMut, IriIndex, BlankIdIndex, LiteralIndex, ExtractFromVocabulary, Predicate, ByRef}};
+/// use static_iref::iri;
+///
+/// let mut vocabulary = IndexVocabulary::new();
+///
+/// type IdRef<'a> = Id<&'a IriIndex, &'a BlankIdIndex>;
+/// type TermRef<'a> = Term<IdRef<'a>, &'a LiteralIndex>;
+/// type QuadRef<'a> = Quad<IdRef<'a>, &'a IriIndex, TermRef<'a>, IdRef<'a>>;
+///
+/// let subject = vocabulary.insert(iri!("http://example.org/#subject"));
+/// let predicate = vocabulary.insert(iri!("http://example.org/#property"));
+/// let object = vocabulary.insert(iri!("http://example.org/#object"));
+///
+/// let quad: QuadRef = Quad(
+///   Id::Iri(&subject),
+///   &predicate,
+///   Term::iri(&object),
+///   None
+/// );
+///
+/// let _: LexicalQuad = ByRef(
+///     quad.map_predicate(Predicate) // ensures the `&IriIndex` type is interpreted as a predicate.
+/// ).extract_from_vocabulary(&vocabulary);
+/// ```
+pub struct Predicate<T>(pub T);
+
+impl<V: IriVocabulary> ExtractedFromVocabulary<V> for Predicate<V::Iri> {
+	type Extracted = IriBuf;
+
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+		vocabulary.iri(&self.0).unwrap().to_owned()
+	}
+}
+
+impl<V: IriVocabulary> ExtractFromVocabulary<V> for Predicate<V::Iri> {
+	type Extracted = IriBuf;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		vocabulary.owned_iri(self.0).ok().unwrap()
+	}
+}
+
+impl<'a, V: IriVocabulary> ExtractFromVocabulary<V> for ByRef<Predicate<&'a V::Iri>> {
+	type Extracted = IriBuf;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		vocabulary.iri(self.0 .0).unwrap().to_owned()
+	}
+}
+
 /// Extract the RDF component values (IRIs, blank node identifiers, etc.)
 /// embedded into the vocabulary `V`.
 ///
@@ -109,6 +196,17 @@ impl<T: ExtractFromVocabulary<V>, V> ExtractFromVocabulary<V> for Option<T> {
 	}
 }
 
+impl<T, V> ExtractFromVocabulary<V> for ByRef<Option<T>>
+where
+	ByRef<T>: ExtractFromVocabulary<V>,
+{
+	type Extracted = Option<<ByRef<T> as ExtractFromVocabulary<V>>::Extracted>;
+
+	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
+		self.0.map(|t| ByRef(t).extract_from_vocabulary(vocabulary))
+	}
+}
+
 /// Exports the RDF component values (IRIs, blank node identifiers, etc.)
 /// embedded into the vocabulary `V`.
 ///
@@ -122,15 +220,15 @@ pub trait ExtractedFromVocabulary<V> {
 	///
 	/// For `V::Iri` the output will be `IriBuf`, for `V::BlankId` it will be
 	/// `BlankIdBuf`, etc.
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted;
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted;
 }
 
 impl<T: ExtractedFromVocabulary<V>, V> ExtractedFromVocabulary<V> for Option<T> {
 	type Extracted = Option<T::Extracted>;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		self.as_ref()
-			.map(|t| t.exported_from_vocabulary(vocabulary))
+			.map(|t| t.extracted_from_vocabulary(vocabulary))
 	}
 }
 

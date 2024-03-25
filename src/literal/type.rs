@@ -135,7 +135,7 @@ impl<V: IriVocabulary> ExtractFromVocabulary<V> for LiteralType<V::Iri> {
 impl<V: IriVocabulary> ExtractedFromVocabulary<V> for LiteralType<V::Iri> {
 	type Extracted = LiteralType;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match self {
 			Self::Any(t) => LiteralType::Any(vocabulary.iri(t).unwrap().to_owned()),
 			Self::LangString(t) => LiteralType::LangString(t.clone()),
@@ -312,7 +312,7 @@ impl<'a, V: IriVocabulary> ExtractFromVocabulary<V> for LiteralTypeRef<'a, V::Ir
 impl<'a, V: IriVocabulary> ExtractedFromVocabulary<V> for LiteralTypeRef<'a, V::Iri> {
 	type Extracted = LiteralType;
 
-	fn exported_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
+	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
 		match *self {
 			Self::Any(t) => LiteralType::Any(vocabulary.iri(t).unwrap().to_owned()),
 			Self::LangString(t) => LiteralType::LangString(t.to_owned()),

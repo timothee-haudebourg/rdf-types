@@ -1,3 +1,5 @@
+use std::ptr::addr_of_mut;
+
 use crate::{
 	vocabulary::{
 		BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut,
@@ -18,13 +20,13 @@ static mut NO_VOCABULARY: NoVocabulary = ();
 /// Returns a static reference to unit (no vocabulary).
 #[inline(always)]
 pub fn no_vocabulary() -> &'static NoVocabulary {
-	unsafe { &NO_VOCABULARY }
+	&()
 }
 
 /// Returns a static mutable reference to unit (no vocabulary).
 #[inline(always)]
 pub fn no_vocabulary_mut() -> &'static mut NoVocabulary {
-	unsafe { &mut NO_VOCABULARY }
+	unsafe { &mut *addr_of_mut!(NO_VOCABULARY) }
 }
 
 impl IriVocabulary for NoVocabulary {
