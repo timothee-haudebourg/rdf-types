@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1] - 2024-03-25
+
+### Added
+
+- [1dc4940] Add `vocabulary::ByRef`.
+- [1dc4940] Add `vocabulary::Predicate`.
+- [1dc4940] Impl `ExtractFromVocabulary` for `Triple`.
+- [1dc4940] Impl `ExtractedFromVocabulary` for `Triple`.
+
 ## [0.22.0] - 2024-03-22
 
 ### Added
