@@ -301,7 +301,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 
 			let g_i = match g_i {
 				Some((_, Some(g_i))) => {
-					self.resources[g_i].as_object.insert(i);
+					self.resources[g_i].as_graph.insert(i);
 					Some(g_i)
 				}
 				Some((g, None)) => {
@@ -342,7 +342,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 			.remove(quad_cmp(&self.resources, &self.quads), &quad)
 		{
 			Some(i) => {
-				self.remove_by_index(i);
+				self.remove_by_index(i, false);
 				true
 			}
 			None => false,
@@ -369,14 +369,19 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 		let mut graph = BTreeGraph::new();
 		for i in indexes {
 			let quad = quad_with_resources(&self.resources, self.quads[i]).cloned();
-			self.remove_by_index(i);
+			self.remove_by_index(i, true);
 			graph.insert(quad.into_triple().0); // TODO: could be optimized
 		}
 
 		Some(graph)
 	}
 
-	fn remove_by_index(&mut self, i: usize) {
+	fn remove_by_index(&mut self, i: usize, remove_index: bool) {
+		if remove_index {
+			self.quads_indexes
+				.remove(quad_index_cmp(&self.resources, &self.quads), &i);
+		}
+
 		let Quad(s_i, p_i, o_i, g_i) = self.quads.remove(i);
 
 		self.subjects.remove(&s_i);
@@ -790,7 +795,7 @@ impl<'a, R: Clone + Ord> Iterator for ExtractPatternMatching<'a, R> {
 					Ok(()) => match self.graph.next(i, quad) {
 						Ok(()) => {
 							let value = quad_with_resources(&self.dataset.resources, quad).cloned();
-							self.dataset.remove_by_index(i);
+							self.dataset.remove_by_index(i, true);
 							self.i = i + 1;
 							return Some(value);
 						}
