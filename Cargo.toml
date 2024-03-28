@@ -21,18 +21,21 @@ uuid-generator-v4 = ["uuid", "uuid/v4"]
 uuid-generator-v5 = ["uuid", "uuid/v5"]
 
 [dependencies]
+# Major dependencies (major version must be synchronized).
 iref = "3.1.4"
 static-iref = "3.0"
 langtag = "0.4.0"
-indexmap = "2.2.5"
 thiserror = "1.0.57"
-educe = "0.5.11"
-slab = "0.4.9"
-replace_with = "0.1.7"
-raw-btree = "0.1.4"
 contextual = { version = "0.1.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 uuid = { version = "0.8", optional = true }
+
+# Minor dependencies.
+indexmap = "2.2.5"
+educe = "0.5.11"
+slab = "0.4.9"
+replace_with = "0.1.7"
+raw-btree = "0.2.0"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }
