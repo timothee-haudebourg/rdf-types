@@ -10,7 +10,7 @@ use crate::{
 impl Interpretation for () {
 	type Resource = LocalTerm;
 
-	fn iri<'a>(&self, iri: &'a Iri) -> Option<LocalTerm> {
+	fn iri(&self, iri: &Iri) -> Option<LocalTerm> {
 		Some(LocalTerm::iri(iri.to_owned()))
 	}
 

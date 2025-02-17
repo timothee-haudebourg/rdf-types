@@ -11,7 +11,7 @@ pub enum LocalTermRef<'a> {
 	Named(TermRef<'a>),
 }
 
-impl<'a> LocalTermRef<'a> {
+impl LocalTermRef<'_> {
 	pub fn to_owned(self) -> LocalTerm {
 		match self {
 			Self::Anonymous(blank_id) => LocalTerm::Anonymous(blank_id.to_owned()),
@@ -20,7 +20,7 @@ impl<'a> LocalTermRef<'a> {
 	}
 }
 
-impl<'a> PartialEq<LocalTerm> for LocalTermRef<'a> {
+impl PartialEq<LocalTerm> for LocalTermRef<'_> {
 	fn eq(&self, other: &LocalTerm) -> bool {
 		match (self, other) {
 			(Self::Anonymous(a), LocalTerm::Anonymous(b)) => *a == b,
@@ -30,7 +30,7 @@ impl<'a> PartialEq<LocalTerm> for LocalTermRef<'a> {
 	}
 }
 
-impl<'a> PartialOrd<LocalTerm> for LocalTermRef<'a> {
+impl PartialOrd<LocalTerm> for LocalTermRef<'_> {
 	fn partial_cmp(&self, other: &LocalTerm) -> Option<Ordering> {
 		match (self, other) {
 			(Self::Anonymous(a), LocalTerm::Anonymous(b)) => (*a).partial_cmp(b),

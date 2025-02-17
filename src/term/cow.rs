@@ -12,7 +12,7 @@ pub enum CowTerm<'a> {
 	Literal(CowLiteral<'a>),
 }
 
-impl<'a> CowTerm<'a> {
+impl CowTerm<'_> {
 	pub fn into_owned(self) -> Term {
 		match self {
 			Self::Iri(iri) => Term::Iri(iri.into_owned()),
@@ -21,7 +21,7 @@ impl<'a> CowTerm<'a> {
 	}
 }
 
-impl<'a> From<Term> for CowTerm<'a> {
+impl From<Term> for CowTerm<'_> {
 	fn from(value: Term) -> Self {
 		value.into_cow()
 	}

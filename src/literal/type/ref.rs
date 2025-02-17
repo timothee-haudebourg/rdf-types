@@ -45,7 +45,7 @@ impl<'a> LiteralTypeRef<'a> {
 	}
 }
 
-impl<'a> LiteralTypeRef<'a> {
+impl LiteralTypeRef<'_> {
 	pub fn into_owned(self) -> LiteralType {
 		match self {
 			Self::Any(i) => LiteralType::Any(i.to_owned()),
@@ -54,7 +54,7 @@ impl<'a> LiteralTypeRef<'a> {
 	}
 }
 
-impl<'a> PartialEq<LiteralType> for LiteralTypeRef<'a> {
+impl PartialEq<LiteralType> for LiteralTypeRef<'_> {
 	fn eq(&self, other: &LiteralType) -> bool {
 		match (*self, other) {
 			(Self::Any(a), LiteralType::Any(b)) => a == b,
@@ -74,7 +74,7 @@ impl<'a> PartialEq<LiteralTypeRef<'a>> for LiteralType {
 	}
 }
 
-impl<'a> PartialOrd<LiteralType> for LiteralTypeRef<'a> {
+impl PartialOrd<LiteralType> for LiteralTypeRef<'_> {
 	fn partial_cmp(&self, other: &LiteralType) -> Option<Ordering> {
 		match (self, other) {
 			(Self::Any(a), LiteralType::Any(b)) => (*a).partial_cmp(b),
@@ -96,7 +96,7 @@ impl<'a> PartialOrd<LiteralTypeRef<'a>> for LiteralType {
 	}
 }
 
-impl<'a> RdfDisplay for LiteralTypeRef<'a> {
+impl RdfDisplay for LiteralTypeRef<'_> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Any(ty) => {

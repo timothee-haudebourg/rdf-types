@@ -127,7 +127,7 @@ impl<C: ?Sized> RdfDisplayWithContext<C> for LangTagBuf {
 	}
 }
 
-impl<'a, T: RdfDisplay + ?Sized> RdfDisplay for &'a T {
+impl<T: RdfDisplay + ?Sized> RdfDisplay for &T {
 	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		T::rdf_fmt(*self, f)

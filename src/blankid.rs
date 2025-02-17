@@ -287,7 +287,7 @@ impl<'a> PartialEq<&'a BlankId> for BlankIdBuf {
 	}
 }
 
-impl<'a> PartialEq<BlankIdBuf> for &'a BlankId {
+impl PartialEq<BlankIdBuf> for &BlankId {
 	fn eq(&self, other: &BlankIdBuf) -> bool {
 		*self == other.as_blank_id_ref()
 	}

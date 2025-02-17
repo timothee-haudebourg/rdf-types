@@ -254,7 +254,7 @@ pub struct BTreeBijection<'a, 'b, R = LocalTerm> {
 	pub backward: BTreeMap<&'b R, &'a R>,
 }
 
-impl<'a, 'b, R> BTreeBijection<'a, 'b, R> {
+impl<R> BTreeBijection<'_, '_, R> {
 	fn new() -> Self {
 		Self {
 			forward: BTreeMap::new(),
@@ -393,7 +393,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 #[allow(clippy::type_complexity)]
 struct BlankSignature<'a, R>(Vec<Quad<&'a R>>);
 
-impl<'a, R> Default for BlankSignature<'a, R> {
+impl<R> Default for BlankSignature<'_, R> {
 	fn default() -> Self {
 		Self(Vec::new())
 	}

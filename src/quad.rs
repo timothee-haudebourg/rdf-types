@@ -27,7 +27,7 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	}
 }
 
-impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
+impl<S, P, O, G> Quad<&S, &P, &O, &G> {
 	pub fn cloned(&self) -> Quad<S, P, O, G>
 	where
 		S: Clone,
@@ -59,7 +59,7 @@ impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
 	}
 }
 
-impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
+impl<S, P, O, G> Quad<&S, &P, &O, &G> {
 	pub fn copied(&self) -> Quad<S, P, O, G>
 	where
 		S: Copy,
@@ -92,7 +92,7 @@ impl RdfQuad {
 	}
 }
 
-impl<'a> RdfQuadRef<'a> {
+impl RdfQuadRef<'_> {
 	pub fn into_owned(self) -> RdfQuad {
 		Quad(
 			self.0.to_owned(),

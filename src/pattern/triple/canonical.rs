@@ -380,7 +380,7 @@ impl<T> PatternSubject<T> {
 	}
 }
 
-impl<'a, T> PatternSubject<&'a T> {
+impl<T> PatternSubject<&T> {
 	pub fn cloned(self) -> PatternSubject<T>
 	where
 		T: Clone,
@@ -417,7 +417,7 @@ impl<T> PatternPredicate<T> {
 	}
 }
 
-impl<'a, T> PatternPredicate<&'a T> {
+impl<T> PatternPredicate<&T> {
 	pub fn cloned(self) -> PatternPredicate<T>
 	where
 		T: Clone,
@@ -454,7 +454,7 @@ impl<T> PatternObject<T> {
 	}
 }
 
-impl<'a, T> PatternObject<&'a T> {
+impl<T> PatternObject<&T> {
 	pub fn cloned(self) -> PatternObject<T>
 	where
 		T: Clone,

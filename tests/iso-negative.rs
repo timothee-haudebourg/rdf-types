@@ -1,11 +1,8 @@
 use rdf_types::{dataset::BTreeDataset, iri, BlankIdBuf, LocalTerm, Quad};
 
 fn test(a: BTreeDataset, b: BTreeDataset) {
-	match rdf_types::dataset::isomorphism::find_bijection(&a, &b) {
-		Some(_) => {
-			panic!("bijection found!")
-		}
-		None => (), // success!
+	if let Some(_) = rdf_types::dataset::isomorphism::find_bijection(&a, &b) {
+		panic!("bijection found!")
 	}
 }
 #[test]

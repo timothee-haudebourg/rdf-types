@@ -9,7 +9,7 @@ pub enum CowLocalTerm<'a> {
 	Named(CowTerm<'a>),
 }
 
-impl<'a> From<LocalTerm> for CowLocalTerm<'a> {
+impl From<LocalTerm> for CowLocalTerm<'_> {
 	fn from(value: LocalTerm) -> Self {
 		value.into_cow()
 	}

@@ -884,7 +884,7 @@ pub struct ExtractPatternMatching<'a, R> {
 	i: usize,
 }
 
-impl<'a, R: Clone + Ord> Iterator for ExtractPatternMatching<'a, R> {
+impl<R: Clone + Ord> Iterator for ExtractPatternMatching<'_, R> {
 	type Item = Quad<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -952,10 +952,10 @@ impl SubjectConstraints<OwnedTripleIndexes> {
 		}
 	}
 
-	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, s: PatternSubject<P>) -> Self
+	fn new_multi<'p, R, P>(dataset: &IndexedBTreeDataset<R>, s: PatternSubject<P>) -> Self
 	where
 		P: IntoIterator<Item = &'p R>,
-		R: 'p,
+		R: 'p + Ord,
 	{
 		match s {
 			PatternSubject::Any => Self::Any,
@@ -1038,10 +1038,10 @@ impl PredicateConstraints<OwnedTripleIndexes> {
 		}
 	}
 
-	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, p: PatternPredicate<P>) -> Self
+	fn new_multi<'p, R, P>(dataset: &IndexedBTreeDataset<R>, p: PatternPredicate<P>) -> Self
 	where
 		P: IntoIterator<Item = &'p R>,
-		R: 'p,
+		R: 'p + Ord,
 	{
 		match p {
 			PatternPredicate::Any => Self::Any,
@@ -1137,10 +1137,10 @@ impl ObjectConstraints<OwnedTripleIndexes> {
 		}
 	}
 
-	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, o: PatternObject<P>) -> Self
+	fn new_multi<'p, R, P>(dataset: &IndexedBTreeDataset<R>, o: PatternObject<P>) -> Self
 	where
 		P: IntoIterator<Item = &'p R>,
-		R: 'p,
+		R: 'p + Ord,
 	{
 		match o {
 			PatternObject::Any => Self::Any,
@@ -1259,10 +1259,10 @@ impl GraphConstraints<OwnedTripleIndexes> {
 		}
 	}
 
-	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, g: PatternGraph<P>) -> Self
+	fn new_multi<'p, R, P>(dataset: &IndexedBTreeDataset<R>, g: PatternGraph<P>) -> Self
 	where
 		P: IntoIterator<Item = &'p R>,
-		R: 'p,
+		R: 'p + Ord,
 	{
 		match g {
 			PatternGraph::Any => Self::Any,

@@ -15,7 +15,7 @@ pub trait Generator {
 	fn next_term(&mut self) -> Term;
 }
 
-impl<'a, G: Generator> Generator for &'a mut G {
+impl<G: Generator> Generator for &mut G {
 	fn next_term(&mut self) -> Term {
 		(*self).next_term()
 	}
@@ -25,7 +25,7 @@ pub trait LocalGenerator {
 	fn next_local_term(&mut self) -> LocalTerm;
 }
 
-impl<'a, G: LocalGenerator> LocalGenerator for &'a mut G {
+impl<G: LocalGenerator> LocalGenerator for &mut G {
 	fn next_local_term(&mut self) -> LocalTerm {
 		(*self).next_local_term()
 	}

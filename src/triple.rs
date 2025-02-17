@@ -126,7 +126,7 @@ impl<S, P, O> Triple<S, P, O> {
 	}
 }
 
-impl<'s, 'p, 'o, S, P, O> Triple<&'s S, &'p P, &'o O> {
+impl<S, P, O> Triple<&S, &P, &O> {
 	pub fn cloned(&self) -> Triple<S, P, O>
 	where
 		S: Clone,
@@ -146,7 +146,7 @@ impl<'s, 'p, 'o, S, P, O> Triple<&'s S, &'p P, &'o O> {
 	}
 }
 
-impl<'s, 'p, 'o, S, P, O> Triple<&'s S, &'p P, &'o O> {
+impl<S, P, O> Triple<&S, &P, &O> {
 	pub fn copied(&self) -> Triple<S, P, O>
 	where
 		S: Copy,
@@ -179,7 +179,7 @@ impl LexicalTriple {
 	}
 }
 
-impl<'a> LexicalTripleRef<'a> {
+impl LexicalTripleRef<'_> {
 	pub fn into_owned(self) -> LexicalTriple {
 		Triple(self.0.into_owned(), self.1.to_owned(), self.2.to_owned())
 	}

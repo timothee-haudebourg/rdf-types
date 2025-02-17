@@ -18,7 +18,7 @@ pub enum CowLiteralType<'a> {
 	LangString(Cow<'a, LangTag>),
 }
 
-impl<'a> CowLiteralType<'a> {
+impl CowLiteralType<'_> {
 	pub fn as_ref(&self) -> LiteralTypeRef {
 		match self {
 			Self::Any(i) => LiteralTypeRef::Any(i),

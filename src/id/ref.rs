@@ -10,7 +10,7 @@ pub enum IdRef<'a> {
 	Iri(&'a Iri),
 }
 
-impl<'a> IdRef<'a> {
+impl IdRef<'_> {
 	pub fn to_owned(&self) -> Id {
 		self.into_owned()
 	}

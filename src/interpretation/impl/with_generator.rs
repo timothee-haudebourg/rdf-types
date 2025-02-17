@@ -165,7 +165,7 @@ impl<G, I> WithLocalGenerator<G, I> {
 impl<I: Interpretation, G> Interpretation for WithLocalGenerator<G, I> {
 	type Resource = I::Resource;
 
-	fn iri<'a>(&self, iri: &'a Iri) -> Option<Self::Resource> {
+	fn iri(&self, iri: &Iri) -> Option<Self::Resource> {
 		self.interpretation.iri(iri)
 	}
 

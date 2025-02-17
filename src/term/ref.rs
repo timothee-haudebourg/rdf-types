@@ -13,7 +13,7 @@ pub enum TermRef<'a> {
 	Literal(LiteralRef<'a>),
 }
 
-impl<'a> TermRef<'a> {
+impl TermRef<'_> {
 	pub fn to_owned(self) -> Term {
 		match self {
 			Self::Iri(iri) => Term::Iri(iri.to_owned()),
@@ -22,7 +22,7 @@ impl<'a> TermRef<'a> {
 	}
 }
 
-impl<'a> PartialEq<Term> for TermRef<'a> {
+impl PartialEq<Term> for TermRef<'_> {
 	fn eq(&self, other: &Term) -> bool {
 		match (self, other) {
 			(Self::Iri(a), Term::Iri(b)) => *a == b,
@@ -32,7 +32,7 @@ impl<'a> PartialEq<Term> for TermRef<'a> {
 	}
 }
 
-impl<'a> PartialOrd<Term> for TermRef<'a> {
+impl PartialOrd<Term> for TermRef<'_> {
 	fn partial_cmp(&self, other: &Term) -> Option<Ordering> {
 		match (self, other) {
 			(Self::Iri(a), Term::Iri(b)) => (*a).partial_cmp(b),

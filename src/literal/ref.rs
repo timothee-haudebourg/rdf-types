@@ -70,7 +70,7 @@ impl<'a> LiteralRef<'a> {
 	}
 }
 
-impl<'a> LiteralRef<'a> {
+impl LiteralRef<'_> {
 	pub fn to_owned(self) -> Literal {
 		Literal::new(self.value.to_owned(), self.type_.into_owned())
 	}
@@ -86,13 +86,13 @@ impl<'a> PartialEq<LiteralRef<'a>> for Literal {
 	}
 }
 
-impl<'a> PartialEq<Literal> for LiteralRef<'a> {
+impl PartialEq<Literal> for LiteralRef<'_> {
 	fn eq(&self, other: &Literal) -> bool {
 		self.type_ == other.type_ && self.value == other.value
 	}
 }
 
-impl<'a> equivalent::Equivalent<Literal> for LiteralRef<'a> {
+impl equivalent::Equivalent<Literal> for LiteralRef<'_> {
 	fn equivalent(&self, key: &Literal) -> bool {
 		self == key
 	}
@@ -109,7 +109,7 @@ impl<'a> PartialOrd<LiteralRef<'a>> for Literal {
 	}
 }
 
-impl<'a> PartialOrd<Literal> for LiteralRef<'a> {
+impl PartialOrd<Literal> for LiteralRef<'_> {
 	fn partial_cmp(&self, other: &Literal) -> Option<Ordering> {
 		Some(
 			self.value
@@ -119,19 +119,19 @@ impl<'a> PartialOrd<Literal> for LiteralRef<'a> {
 	}
 }
 
-impl<'a> Borrow<str> for LiteralRef<'a> {
+impl Borrow<str> for LiteralRef<'_> {
 	fn borrow(&self) -> &str {
 		self.as_str()
 	}
 }
 
-impl<'a> AsRef<str> for LiteralRef<'a> {
+impl AsRef<str> for LiteralRef<'_> {
 	fn as_ref(&self) -> &str {
 		self.as_str()
 	}
 }
 
-impl<'a> fmt::Display for LiteralRef<'a> {
+impl fmt::Display for LiteralRef<'_> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
 		if self.type_.is_xsd_string() {
@@ -142,7 +142,7 @@ impl<'a> fmt::Display for LiteralRef<'a> {
 	}
 }
 
-impl<'a> RdfDisplay for LiteralRef<'a> {
+impl RdfDisplay for LiteralRef<'_> {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.value.rdf_fmt(f)?;
 		if self.type_.is_xsd_string() {
