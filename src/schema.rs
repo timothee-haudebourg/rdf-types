@@ -1,5 +1,4 @@
-use iref::Iri;
-use static_iref::iri;
+use iref::{iri, Iri};
 
 pub const RDFS_RESOURCE: &Iri = iri!("http://www.w3.org/2000/01/rdf-schema#Resource");
 pub const RDFS_CLASS: &Iri = iri!("http://www.w3.org/2000/01/rdf-schema#Class");

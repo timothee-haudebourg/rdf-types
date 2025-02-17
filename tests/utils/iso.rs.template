@@ -1,5 +1,4 @@
-use rdf_types::{BlankIdBuf, Quad, Term, dataset::BTreeDataset};
-use static_iref::iri;
+use rdf_types::{BlankIdBuf, Quad, LocalTerm, dataset::BTreeDataset, iri};
 use std::collections::BTreeMap;
 
 fn test(a: BTreeDataset, b: BTreeDataset) {
@@ -10,13 +9,17 @@ fn test(a: BTreeDataset, b: BTreeDataset) {
 				.into_iter()
 				.map(|(a, b)| (a.to_owned(), b))
 				.collect();
-			let c: BtreeDataset = a
+			let c: BTreeDataset = a
 				.into_iter()
-				.map(|q| q.map(|t| if t.is_blank() {
-					substitution.get(&t).unwrap().clone()
-				} else {
-					t
-				}))
+				.map(|q| {
+					q.map(|t| {
+						if t.is_blank_id() {
+							(*substitution.get(&t).unwrap()).clone()
+						} else {
+							t
+						}
+					})
+				})
 				.collect();
 			assert_eq!(c, b)
 		}

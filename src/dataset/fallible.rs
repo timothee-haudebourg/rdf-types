@@ -27,7 +27,10 @@ pub trait FallibleTraversableDataset: FallibleDataset {
 }
 
 impl<D: TraversableDataset> FallibleTraversableDataset for D {
-	type TryQuads<'a> = InfallibleIterator<D::Quads<'a>> where Self: 'a;
+	type TryQuads<'a>
+		= InfallibleIterator<D::Quads<'a>>
+	where
+		Self: 'a;
 
 	fn try_quads(&self) -> Self::TryQuads<'_> {
 		InfallibleIterator(self.quads())
@@ -38,7 +41,8 @@ impl<D: TraversableDataset> FallibleTraversableDataset for D {
 pub trait FalliblePatternMatchingDataset: FallibleDataset {
 	type TryQuadPatternMatching<'a, 'p>: Iterator<
 		Item = Result<Quad<&'a Self::Resource>, Self::Error>,
-	> where
+	>
+	where
 		Self: 'a,
 		Self::Resource: 'p;
 
@@ -57,7 +61,11 @@ pub trait FalliblePatternMatchingDataset: FallibleDataset {
 }
 
 impl<D: PatternMatchingDataset> FalliblePatternMatchingDataset for D {
-	type TryQuadPatternMatching<'a, 'p> = InfallibleIterator<D::QuadPatternMatching<'a, 'p>> where Self: 'a, Self::Resource: 'p;
+	type TryQuadPatternMatching<'a, 'p>
+		= InfallibleIterator<D::QuadPatternMatching<'a, 'p>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
 
 	fn try_quad_pattern_matching<'p>(
 		&self,

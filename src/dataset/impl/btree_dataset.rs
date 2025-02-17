@@ -7,7 +7,7 @@ use slab::Slab;
 use super::super::Dataset;
 use crate::{
 	dataset::{DatasetMut, IndexedBTreeDataset, ResourceTraversableDataset, TraversableDataset},
-	Quad, RdfDisplay, Term,
+	LocalTerm, Quad, RdfDisplay,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -48,7 +48,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// BTree-based RDF dataset.
 #[derive(Clone)]
-pub struct BTreeDataset<R = Term> {
+pub struct BTreeDataset<R = LocalTerm> {
 	pub(crate) resources: Slab<Resource<R>>,
 	pub(crate) quads: Slab<Quad<usize>>,
 	pub(crate) resources_indexes: RawBTree<usize>,
@@ -287,7 +287,10 @@ impl<R> Dataset for BTreeDataset<R> {
 }
 
 impl<R> TraversableDataset for BTreeDataset<R> {
-	type Quads<'a> = Quads<'a, R> where R: 'a;
+	type Quads<'a>
+		= Quads<'a, R>
+	where
+		R: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
 		self.iter()
@@ -295,7 +298,10 @@ impl<R> TraversableDataset for BTreeDataset<R> {
 }
 
 impl<R> ResourceTraversableDataset for BTreeDataset<R> {
-	type Resources<'a> = Resources<'a, R> where R: 'a;
+	type Resources<'a>
+		= Resources<'a, R>
+	where
+		R: 'a;
 
 	fn resources(&self) -> Self::Resources<'_> {
 		self.resources()
@@ -383,8 +389,8 @@ impl<'a, R> Iterator for Resources<'a, R> {
 	}
 }
 
-impl<R: PartialEq> PartialEq for BTreeDataset<R> {
-	fn eq(&self, other: &Self) -> bool {
+impl<A: PartialEq<B>, B> PartialEq<BTreeDataset<B>> for BTreeDataset<A> {
+	fn eq(&self, other: &BTreeDataset<B>) -> bool {
 		self.len() == other.len() && self.iter().zip(other).all(|(a, b)| a == b)
 	}
 }

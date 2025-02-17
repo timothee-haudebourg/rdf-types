@@ -9,7 +9,7 @@ pub mod fallible;
 pub use fallible::FallibleDataset;
 
 mod graph;
-pub use graph::*;
+pub use graph::{fallible as fallible_graph, *};
 
 mod r#impl;
 pub use r#impl::*;
@@ -42,7 +42,10 @@ pub trait TraversableDataset: Dataset {
 }
 
 impl<G: TraversableGraph> TraversableDataset for G {
-	type Quads<'a> = TripleToQuadIterator<G::Triples<'a>, &'a G::Resource> where Self: 'a;
+	type Quads<'a>
+		= TripleToQuadIterator<G::Triples<'a>, &'a G::Resource>
+	where
+		Self: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
 		TripleToQuadIterator::new(self.triples())
@@ -66,7 +69,10 @@ pub trait ResourceTraversableDataset: Dataset {
 }
 
 impl<G: ResourceTraversableGraph> ResourceTraversableDataset for G {
-	type Resources<'a> = G::GraphResources<'a> where Self: 'a;
+	type Resources<'a>
+		= G::GraphResources<'a>
+	where
+		Self: 'a;
 
 	fn resources(&self) -> Self::Resources<'_> {
 		self.graph_resources()
@@ -90,7 +96,10 @@ pub trait SubjectTraversableDataset: Dataset {
 }
 
 impl<G: SubjectTraversableGraph> SubjectTraversableDataset for G {
-	type Subjects<'a> = G::GraphSubjects<'a> where Self: 'a;
+	type Subjects<'a>
+		= G::GraphSubjects<'a>
+	where
+		Self: 'a;
 
 	fn subjects(&self) -> Self::Subjects<'_> {
 		self.graph_subjects()
@@ -114,7 +123,10 @@ pub trait PredicateTraversableDataset: Dataset {
 }
 
 impl<G: PredicateTraversableGraph> PredicateTraversableDataset for G {
-	type Predicates<'a> = G::GraphPredicates<'a> where Self: 'a;
+	type Predicates<'a>
+		= G::GraphPredicates<'a>
+	where
+		Self: 'a;
 
 	fn predicates(&self) -> Self::Predicates<'_> {
 		self.graph_predicates()
@@ -138,7 +150,10 @@ pub trait ObjectTraversableDataset: Dataset {
 }
 
 impl<G: ObjectTraversableGraph> ObjectTraversableDataset for G {
-	type Objects<'a> = G::GraphObjects<'a> where Self: 'a;
+	type Objects<'a>
+		= G::GraphObjects<'a>
+	where
+		Self: 'a;
 
 	fn objects(&self) -> Self::Objects<'_> {
 		self.graph_objects()
@@ -162,7 +177,10 @@ pub trait NamedGraphTraversableDataset: Dataset {
 }
 
 impl<G: Graph> NamedGraphTraversableDataset for G {
-	type NamedGraphs<'a> = std::iter::Empty<&'a Self::Resource> where Self: 'a;
+	type NamedGraphs<'a>
+		= std::iter::Empty<&'a Self::Resource>
+	where
+		Self: 'a;
 
 	fn named_graphs(&self) -> Self::NamedGraphs<'_> {
 		std::iter::empty()
@@ -171,6 +189,21 @@ impl<G: Graph> NamedGraphTraversableDataset for G {
 	fn named_graph_count(&self) -> usize {
 		0
 	}
+}
+
+pub trait MultiPatternMatchingDataset: Dataset {
+	/// Pattern-matching iterator.
+	type QuadMultiPatternMatching<'a, 'p>: Iterator<Item = Quad<&'a Self::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
+
+	/// Returns an iterator over all the quads of the dataset matching the given
+	/// pattern.
+	fn quad_multi_pattern_matching<'p, P: IntoIterator<Item = &'p Self::Resource>>(
+		&self,
+		pattern: CanonicalQuadPattern<P>,
+	) -> Self::QuadMultiPatternMatching<'_, 'p>;
 }
 
 /// Pattern-matching-capable dataset.
@@ -290,7 +323,11 @@ pub trait PatternMatchingDataset: Dataset {
 }
 
 impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
-	type QuadPatternMatching<'a, 'p> = OptionIterator<TripleToQuadIterator<G::TriplePatternMatching<'a, 'p>, &'a G::Resource>> where Self: 'a, Self::Resource: 'p;
+	type QuadPatternMatching<'a, 'p>
+		= OptionIterator<TripleToQuadIterator<G::TriplePatternMatching<'a, 'p>, &'a G::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
 
 	fn quad_pattern_matching<'p>(
 		&self,

@@ -173,6 +173,26 @@ impl<T> CanonicalQuadPattern<T> {
 		}
 	}
 
+	pub fn into_parts(
+		self,
+	) -> (
+		PatternSubject<T>,
+		PatternPredicate<T>,
+		PatternObject<T>,
+		PatternGraph<T>,
+	) {
+		match self {
+			Self::AnySubject(pog) => {
+				let (p, o, g) = pog.into_parts();
+				(PatternSubject::Any, p, o, g)
+			}
+			Self::GivenSubject(s, pog) => {
+				let (p, o, g) = pog.into_parts();
+				(PatternSubject::Given(s), p, o, g)
+			}
+		}
+	}
+
 	pub fn into_triple(self) -> (CanonicalTriplePattern<T>, PatternGraph<T>) {
 		match self {
 			Self::AnySubject(t) => {
@@ -182,6 +202,43 @@ impl<T> CanonicalQuadPattern<T> {
 			Self::GivenSubject(id, t) => {
 				let (u, g) = t.into_triple();
 				(CanonicalTriplePattern::GivenSubject(id, u), g)
+			}
+		}
+	}
+
+	pub fn as_ref(&self) -> CanonicalQuadPattern<&T> {
+		match self {
+			Self::AnySubject(pog) => CanonicalQuadPattern::AnySubject(pog.as_ref()),
+			Self::GivenSubject(s, pog) => CanonicalQuadPattern::GivenSubject(s, pog.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> CanonicalQuadPattern<U> {
+		match self {
+			Self::AnySubject(pog) => CanonicalQuadPattern::AnySubject(pog.map(f)),
+			Self::GivenSubject(s, pog) => CanonicalQuadPattern::GivenSubject(f(s), pog.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (CanonicalQuadPattern<U>, CanonicalQuadPattern<V>) {
+		match self {
+			Self::AnySubject(pog) => {
+				let (pog_u, pog_v) = pog.map2(f);
+				(
+					CanonicalQuadPattern::AnySubject(pog_u),
+					CanonicalQuadPattern::AnySubject(pog_v),
+				)
+			}
+			Self::GivenSubject(s, pog) => {
+				let (u, v) = f(s);
+				let (pog_u, pog_v) = pog.map2(f);
+				(
+					CanonicalQuadPattern::GivenSubject(u, pog_u),
+					CanonicalQuadPattern::GivenSubject(v, pog_v),
+				)
 			}
 		}
 	}
@@ -391,6 +448,49 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> AnySubject<&T> {
+		match self {
+			Self::AnyPredicate(og) => AnySubject::AnyPredicate(og.as_ref()),
+			Self::SameAsSubject(og) => AnySubject::SameAsSubject(og.as_ref()),
+			Self::GivenPredicate(p, og) => AnySubject::GivenPredicate(p, og.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubject<U> {
+		match self {
+			Self::AnyPredicate(og) => AnySubject::AnyPredicate(og.map(f)),
+			Self::SameAsSubject(og) => AnySubject::SameAsSubject(og.map(f)),
+			Self::GivenPredicate(p, og) => AnySubject::GivenPredicate(f(p), og.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(self, mut f: impl FnMut(T) -> (U, V)) -> (AnySubject<U>, AnySubject<V>) {
+		match self {
+			Self::AnyPredicate(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubject::AnyPredicate(og_u),
+					AnySubject::AnyPredicate(og_v),
+				)
+			}
+			Self::SameAsSubject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubject::SameAsSubject(og_u),
+					AnySubject::SameAsSubject(og_v),
+				)
+			}
+			Self::GivenPredicate(p, og) => {
+				let (u, v) = f(p);
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubject::GivenPredicate(u, og_u),
+					AnySubject::GivenPredicate(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(self) -> (triple::canonical::AnySubject<T>, PatternGraph<T>) {
 		match self {
 			Self::AnyPredicate(t) => {
@@ -404,6 +504,23 @@ impl<T> AnySubject<T> {
 			Self::GivenPredicate(id, t) => {
 				let (u, g) = t.into_triple();
 				(triple::canonical::AnySubject::GivenPredicate(id, u), g)
+			}
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternPredicate<T>, PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyPredicate(og) => {
+				let (o, g) = og.into_parts();
+				(PatternPredicate::Any, o, g)
+			}
+			Self::SameAsSubject(og) => {
+				let (o, g) = og.into_parts();
+				(PatternPredicate::SameAsSubject, o, g)
+			}
+			Self::GivenPredicate(p, og) => {
+				let (o, g) = og.into_parts();
+				(PatternPredicate::Given(p), o, g)
 			}
 		}
 	}
@@ -483,6 +600,61 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> AnySubjectAnyPredicate<&T> {
+		match self {
+			Self::AnyObject(g) => AnySubjectAnyPredicate::AnyObject(g.as_ref()),
+			Self::SameAsSubject(g) => AnySubjectAnyPredicate::SameAsSubject(g.as_ref()),
+			Self::SameAsPredicate(g) => AnySubjectAnyPredicate::SameAsPredicate(g.as_ref()),
+			Self::GivenObject(o, g) => AnySubjectAnyPredicate::GivenObject(o, g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubjectAnyPredicate<U> {
+		match self {
+			Self::AnyObject(g) => AnySubjectAnyPredicate::AnyObject(g.map(f)),
+			Self::SameAsSubject(g) => AnySubjectAnyPredicate::SameAsSubject(g.map(f)),
+			Self::SameAsPredicate(g) => AnySubjectAnyPredicate::SameAsPredicate(g.map(f)),
+			Self::GivenObject(o, g) => AnySubjectAnyPredicate::GivenObject(f(o), g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (AnySubjectAnyPredicate<U>, AnySubjectAnyPredicate<V>) {
+		match self {
+			Self::AnyObject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectAnyPredicate::AnyObject(og_u),
+					AnySubjectAnyPredicate::AnyObject(og_v),
+				)
+			}
+			Self::SameAsSubject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectAnyPredicate::SameAsSubject(og_u),
+					AnySubjectAnyPredicate::SameAsSubject(og_v),
+				)
+			}
+			Self::SameAsPredicate(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectAnyPredicate::SameAsPredicate(og_u),
+					AnySubjectAnyPredicate::SameAsPredicate(og_v),
+				)
+			}
+			Self::GivenObject(o, og) => {
+				let (u, v) = f(o);
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectAnyPredicate::GivenObject(u, og_u),
+					AnySubjectAnyPredicate::GivenObject(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(
 		self,
 	) -> (
@@ -506,6 +678,15 @@ impl<T> AnySubjectAnyPredicate<T> {
 				triple::canonical::AnySubjectAnyPredicate::GivenObject(id),
 				t.into_graph(),
 			),
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
+			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, g.into_graph()),
+			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, g.into_graph()),
+			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
 		}
 	}
 }
@@ -576,6 +757,52 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> AnySubjectGivenPredicate<&T> {
+		match self {
+			Self::AnyObject(g) => AnySubjectGivenPredicate::AnyObject(g.as_ref()),
+			Self::SameAsSubject(g) => AnySubjectGivenPredicate::SameAsSubject(g.as_ref()),
+			Self::GivenObject(o, g) => AnySubjectGivenPredicate::GivenObject(o, g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubjectGivenPredicate<U> {
+		match self {
+			Self::AnyObject(g) => AnySubjectGivenPredicate::AnyObject(g.map(f)),
+			Self::SameAsSubject(g) => AnySubjectGivenPredicate::SameAsSubject(g.map(f)),
+			Self::GivenObject(o, g) => AnySubjectGivenPredicate::GivenObject(f(o), g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (AnySubjectGivenPredicate<U>, AnySubjectGivenPredicate<V>) {
+		match self {
+			Self::AnyObject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectGivenPredicate::AnyObject(og_u),
+					AnySubjectGivenPredicate::AnyObject(og_v),
+				)
+			}
+			Self::SameAsSubject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectGivenPredicate::SameAsSubject(og_u),
+					AnySubjectGivenPredicate::SameAsSubject(og_v),
+				)
+			}
+			Self::GivenObject(o, og) => {
+				let (u, v) = f(o);
+				let (og_u, og_v) = og.map2(f);
+				(
+					AnySubjectGivenPredicate::GivenObject(u, og_u),
+					AnySubjectGivenPredicate::GivenObject(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(
 		self,
 	) -> (
@@ -595,6 +822,14 @@ impl<T> AnySubjectGivenPredicate<T> {
 				triple::canonical::AnySubjectGivenPredicate::GivenObject(id),
 				t.into_graph(),
 			),
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
+			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, g.into_graph()),
+			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
 		}
 	}
 }
@@ -670,6 +905,40 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> GivenSubject<&T> {
+		match self {
+			Self::AnyPredicate(og) => GivenSubject::AnyPredicate(og.as_ref()),
+			Self::GivenPredicate(p, og) => GivenSubject::GivenPredicate(p, og.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubject<U> {
+		match self {
+			Self::AnyPredicate(og) => GivenSubject::AnyPredicate(og.map(f)),
+			Self::GivenPredicate(p, og) => GivenSubject::GivenPredicate(f(p), og.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(self, mut f: impl FnMut(T) -> (U, V)) -> (GivenSubject<U>, GivenSubject<V>) {
+		match self {
+			Self::AnyPredicate(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubject::AnyPredicate(og_u),
+					GivenSubject::AnyPredicate(og_v),
+				)
+			}
+			Self::GivenPredicate(p, og) => {
+				let (u, v) = f(p);
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubject::GivenPredicate(u, og_u),
+					GivenSubject::GivenPredicate(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(self) -> (triple::canonical::GivenSubject<T>, PatternGraph<T>) {
 		match self {
 			Self::AnyPredicate(t) => {
@@ -679,6 +948,19 @@ impl<T> GivenSubject<T> {
 			Self::GivenPredicate(id, t) => {
 				let (u, g) = t.into_triple();
 				(triple::canonical::GivenSubject::GivenPredicate(id, u), g)
+			}
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternPredicate<T>, PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyPredicate(og) => {
+				let (o, g) = og.into_parts();
+				(PatternPredicate::Any, o, g)
+			}
+			Self::GivenPredicate(p, og) => {
+				let (o, g) = og.into_parts();
+				(PatternPredicate::Given(p), o, g)
 			}
 		}
 	}
@@ -750,6 +1032,52 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> GivenSubjectAnyPredicate<&T> {
+		match self {
+			Self::AnyObject(g) => GivenSubjectAnyPredicate::AnyObject(g.as_ref()),
+			Self::SameAsPredicate(g) => GivenSubjectAnyPredicate::SameAsPredicate(g.as_ref()),
+			Self::GivenObject(o, g) => GivenSubjectAnyPredicate::GivenObject(o, g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubjectAnyPredicate<U> {
+		match self {
+			Self::AnyObject(g) => GivenSubjectAnyPredicate::AnyObject(g.map(f)),
+			Self::SameAsPredicate(g) => GivenSubjectAnyPredicate::SameAsPredicate(g.map(f)),
+			Self::GivenObject(o, g) => GivenSubjectAnyPredicate::GivenObject(f(o), g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (GivenSubjectAnyPredicate<U>, GivenSubjectAnyPredicate<V>) {
+		match self {
+			Self::AnyObject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubjectAnyPredicate::AnyObject(og_u),
+					GivenSubjectAnyPredicate::AnyObject(og_v),
+				)
+			}
+			Self::SameAsPredicate(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubjectAnyPredicate::SameAsPredicate(og_u),
+					GivenSubjectAnyPredicate::SameAsPredicate(og_v),
+				)
+			}
+			Self::GivenObject(o, og) => {
+				let (u, v) = f(o);
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubjectAnyPredicate::GivenObject(u, og_u),
+					GivenSubjectAnyPredicate::GivenObject(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(
 		self,
 	) -> (
@@ -769,6 +1097,14 @@ impl<T> GivenSubjectAnyPredicate<T> {
 				triple::canonical::GivenSubjectAnyPredicate::GivenObject(id),
 				t.into_graph(),
 			),
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
+			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, g.into_graph()),
+			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
 		}
 	}
 }
@@ -829,6 +1165,43 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
+	pub fn as_ref(&self) -> GivenSubjectGivenPredicate<&T> {
+		match self {
+			Self::AnyObject(g) => GivenSubjectGivenPredicate::AnyObject(g.as_ref()),
+			Self::GivenObject(o, g) => GivenSubjectGivenPredicate::GivenObject(o, g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubjectGivenPredicate<U> {
+		match self {
+			Self::AnyObject(g) => GivenSubjectGivenPredicate::AnyObject(g.map(f)),
+			Self::GivenObject(o, g) => GivenSubjectGivenPredicate::GivenObject(f(o), g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (GivenSubjectGivenPredicate<U>, GivenSubjectGivenPredicate<V>) {
+		match self {
+			Self::AnyObject(og) => {
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubjectGivenPredicate::AnyObject(og_u),
+					GivenSubjectGivenPredicate::AnyObject(og_v),
+				)
+			}
+			Self::GivenObject(o, og) => {
+				let (u, v) = f(o);
+				let (og_u, og_v) = og.map2(f);
+				(
+					GivenSubjectGivenPredicate::GivenObject(u, og_u),
+					GivenSubjectGivenPredicate::GivenObject(v, og_v),
+				)
+			}
+		}
+	}
+
 	pub fn into_triple(
 		self,
 	) -> (
@@ -844,6 +1217,13 @@ impl<T> GivenSubjectGivenPredicate<T> {
 				triple::canonical::GivenSubjectGivenPredicate::GivenObject(id),
 				t.into_graph(),
 			),
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternObject<T>, PatternGraph<T>) {
+		match self {
+			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
+			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
 		}
 	}
 }
@@ -911,6 +1291,66 @@ impl<T> AnySubjectAnyPredicateAnyObject<T> {
 			Self::GivenGraph(g) => PatternGraph::Given(g),
 		}
 	}
+
+	pub fn as_ref(&self) -> AnySubjectAnyPredicateAnyObject<&T> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateAnyObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => AnySubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectAnyPredicateAnyObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> AnySubjectAnyPredicateAnyObject<U> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateAnyObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => AnySubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectAnyPredicateAnyObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		AnySubjectAnyPredicateAnyObject<U>,
+		AnySubjectAnyPredicateAnyObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				AnySubjectAnyPredicateAnyObject::AnyGraph,
+				AnySubjectAnyPredicateAnyObject::AnyGraph,
+			),
+			Self::SameAsSubject => (
+				AnySubjectAnyPredicateAnyObject::SameAsSubject,
+				AnySubjectAnyPredicateAnyObject::SameAsSubject,
+			),
+			Self::SameAsPredicate => (
+				AnySubjectAnyPredicateAnyObject::SameAsPredicate,
+				AnySubjectAnyPredicateAnyObject::SameAsPredicate,
+			),
+			Self::SameAsObject => (
+				AnySubjectAnyPredicateAnyObject::SameAsObject,
+				AnySubjectAnyPredicateAnyObject::SameAsObject,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					AnySubjectAnyPredicateAnyObject::GivenGraph(g_u),
+					AnySubjectAnyPredicateAnyObject::GivenGraph(g_v),
+				)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -960,6 +1400,60 @@ impl<T> GivenSubjectAnyPredicateAnyObject<T> {
 			Self::SameAsPredicate => PatternGraph::SameAsPredicate,
 			Self::SameAsObject => PatternGraph::SameAsObject,
 			Self::GivenGraph(g) => PatternGraph::Given(g),
+		}
+	}
+
+	pub fn as_ref(&self) -> GivenSubjectAnyPredicateAnyObject<&T> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => GivenSubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateAnyObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> GivenSubjectAnyPredicateAnyObject<U> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => GivenSubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateAnyObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		GivenSubjectAnyPredicateAnyObject<U>,
+		GivenSubjectAnyPredicateAnyObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				GivenSubjectAnyPredicateAnyObject::AnyGraph,
+				GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			),
+			Self::SameAsPredicate => (
+				GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+				GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+			),
+			Self::SameAsObject => (
+				GivenSubjectAnyPredicateAnyObject::SameAsObject,
+				GivenSubjectAnyPredicateAnyObject::SameAsObject,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					GivenSubjectAnyPredicateAnyObject::GivenGraph(g_u),
+					GivenSubjectAnyPredicateAnyObject::GivenGraph(g_v),
+				)
+			}
 		}
 	}
 }
@@ -1013,6 +1507,60 @@ impl<T> AnySubjectGivenPredicateAnyObject<T> {
 			Self::GivenGraph(g) => PatternGraph::Given(g),
 		}
 	}
+
+	pub fn as_ref(&self) -> AnySubjectGivenPredicateAnyObject<&T> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateAnyObject::SameAsSubject,
+			Self::SameAsObject => AnySubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectGivenPredicateAnyObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> AnySubjectGivenPredicateAnyObject<U> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateAnyObject::SameAsSubject,
+			Self::SameAsObject => AnySubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectGivenPredicateAnyObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		AnySubjectGivenPredicateAnyObject<U>,
+		AnySubjectGivenPredicateAnyObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				AnySubjectGivenPredicateAnyObject::AnyGraph,
+				AnySubjectGivenPredicateAnyObject::AnyGraph,
+			),
+			Self::SameAsSubject => (
+				AnySubjectGivenPredicateAnyObject::SameAsSubject,
+				AnySubjectGivenPredicateAnyObject::SameAsSubject,
+			),
+			Self::SameAsObject => (
+				AnySubjectGivenPredicateAnyObject::SameAsObject,
+				AnySubjectGivenPredicateAnyObject::SameAsObject,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					AnySubjectGivenPredicateAnyObject::GivenGraph(g_u),
+					AnySubjectGivenPredicateAnyObject::GivenGraph(g_v),
+				)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1064,6 +1612,60 @@ impl<T> AnySubjectAnyPredicateGivenObject<T> {
 			Self::GivenGraph(g) => PatternGraph::Given(g),
 		}
 	}
+
+	pub fn as_ref(&self) -> AnySubjectAnyPredicateGivenObject<&T> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateGivenObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => AnySubjectAnyPredicateGivenObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> AnySubjectAnyPredicateGivenObject<U> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateGivenObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => AnySubjectAnyPredicateGivenObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		AnySubjectAnyPredicateGivenObject<U>,
+		AnySubjectAnyPredicateGivenObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				AnySubjectAnyPredicateGivenObject::AnyGraph,
+				AnySubjectAnyPredicateGivenObject::AnyGraph,
+			),
+			Self::SameAsSubject => (
+				AnySubjectAnyPredicateGivenObject::SameAsSubject,
+				AnySubjectAnyPredicateGivenObject::SameAsSubject,
+			),
+			Self::SameAsPredicate => (
+				AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+				AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					AnySubjectAnyPredicateGivenObject::GivenGraph(g_u),
+					AnySubjectAnyPredicateGivenObject::GivenGraph(g_v),
+				)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1108,6 +1710,54 @@ impl<T> AnySubjectGivenPredicateGivenObject<T> {
 			Self::AnyGraph => PatternGraph::Any,
 			Self::SameAsSubject => PatternGraph::SameAsSubject,
 			Self::GivenGraph(g) => PatternGraph::Given(g),
+		}
+	}
+
+	pub fn as_ref(&self) -> AnySubjectGivenPredicateGivenObject<&T> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			Self::GivenGraph(g) => AnySubjectGivenPredicateGivenObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> AnySubjectGivenPredicateGivenObject<U> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			Self::GivenGraph(g) => AnySubjectGivenPredicateGivenObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		AnySubjectGivenPredicateGivenObject<U>,
+		AnySubjectGivenPredicateGivenObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				AnySubjectGivenPredicateGivenObject::AnyGraph,
+				AnySubjectGivenPredicateGivenObject::AnyGraph,
+			),
+			Self::SameAsSubject => (
+				AnySubjectGivenPredicateGivenObject::SameAsSubject,
+				AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					AnySubjectGivenPredicateGivenObject::GivenGraph(g_u),
+					AnySubjectGivenPredicateGivenObject::GivenGraph(g_v),
+				)
+			}
 		}
 	}
 }
@@ -1156,6 +1806,54 @@ impl<T> GivenSubjectAnyPredicateGivenObject<T> {
 			Self::GivenGraph(g) => PatternGraph::Given(g),
 		}
 	}
+
+	pub fn as_ref(&self) -> GivenSubjectAnyPredicateGivenObject<&T> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateGivenObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> GivenSubjectAnyPredicateGivenObject<U> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateGivenObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		GivenSubjectAnyPredicateGivenObject<U>,
+		GivenSubjectAnyPredicateGivenObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				GivenSubjectAnyPredicateGivenObject::AnyGraph,
+				GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			),
+			Self::SameAsPredicate => (
+				GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+				GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					GivenSubjectAnyPredicateGivenObject::GivenGraph(g_u),
+					GivenSubjectAnyPredicateGivenObject::GivenGraph(g_v),
+				)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1202,6 +1900,54 @@ impl<T> GivenSubjectGivenPredicateAnyObject<T> {
 			Self::GivenGraph(g) => PatternGraph::Given(g),
 		}
 	}
+
+	pub fn as_ref(&self) -> GivenSubjectGivenPredicateAnyObject<&T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsObject => GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateAnyObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> GivenSubjectGivenPredicateAnyObject<U> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsObject => GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateAnyObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		GivenSubjectGivenPredicateAnyObject<U>,
+		GivenSubjectGivenPredicateAnyObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				GivenSubjectGivenPredicateAnyObject::AnyGraph,
+				GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			),
+			Self::SameAsObject => (
+				GivenSubjectGivenPredicateAnyObject::SameAsObject,
+				GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					GivenSubjectGivenPredicateAnyObject::GivenGraph(g_u),
+					GivenSubjectGivenPredicateAnyObject::GivenGraph(g_v),
+				)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1237,6 +1983,48 @@ impl<T> GivenSubjectGivenPredicateGivenObject<T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
 			Self::GivenGraph(g) => PatternGraph::Given(g),
+		}
+	}
+
+	pub fn as_ref(&self) -> GivenSubjectGivenPredicateGivenObject<&T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateGivenObject::GivenGraph(g.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, f: impl FnMut(T) -> U) -> GivenSubjectGivenPredicateGivenObject<U> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateGivenObject::GivenGraph(g.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (
+		GivenSubjectGivenPredicateGivenObject<U>,
+		GivenSubjectGivenPredicateGivenObject<V>,
+	) {
+		match self {
+			Self::AnyGraph => (
+				GivenSubjectGivenPredicateGivenObject::AnyGraph,
+				GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			),
+			Self::GivenGraph(g) => {
+				let (g_u, g_v) = match g {
+					Some(g) => {
+						let (g_u, g_v) = f(g);
+						(Some(g_u), Some(g_v))
+					}
+					None => (None, None),
+				};
+				(
+					GivenSubjectGivenPredicateGivenObject::GivenGraph(g_u),
+					GivenSubjectGivenPredicateGivenObject::GivenGraph(g_v),
+				)
+			}
 		}
 	}
 }

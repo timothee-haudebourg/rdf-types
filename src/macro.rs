@@ -11,32 +11,32 @@ macro_rules! grdf_triple {
 	{
 		@from ($($acc:tt)*) $id:ident $($rest:tt)*
 	} => {
-		$crate::grdf_triple!(@from ($($acc)* $id,) $($rest)*)
+		$crate::grdf_triple!(@from ($($acc)* ($crate::LocalTerm::from($id)),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) < $iri:literal > $($rest:tt)*
 	} => {
-		$crate::grdf_triple!(@from ($($acc)* <$crate::Term>::iri($crate::static_iref::iri!($iri).to_owned()),) $($rest)*)
+		$crate::grdf_triple!(@from ($($acc)* $crate::LocalTerm::iri($crate::iri!($iri).to_owned()),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) _ : $id:literal $($rest:tt)*
 	} => {
-		$crate::grdf_triple!(@from ($($acc)* <$crate::Term>::blank($crate::BlankIdBuf::from_suffix($id).unwrap()),) $($rest)*)
+		$crate::grdf_triple!(@from ($($acc)* $crate::LocalTerm::Anonymous($crate::BlankIdBuf::from_suffix($id).unwrap()),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) $value:literal ^^ $ty:literal $($rest:tt)*
 	} => {
-		$crate::grdf_triple!(@from ($($acc)* <$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_triple!(@from ($($acc)* $crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
-				$crate::static_iref::iri!($ty).to_owned()
+				$crate::iri!($ty).to_owned()
 			)
 		)),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) $value:literal $($rest:tt)*
 	} => {
-		$crate::grdf_triple!(@from ($($acc)* <$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_triple!(@from ($($acc)* $crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
 				$crate::XSD_STRING.to_owned()
@@ -142,32 +142,32 @@ macro_rules! grdf_quad {
 	{
 		@from ($($acc:tt)*) $id:ident $($rest:tt)*
 	} => {
-		$crate::grdf_quad!(@from ($($acc)* $id,) $($rest)*)
+		$crate::grdf_quad!(@from ($($acc)* ($crate::LocalTerm::from($id)),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) < $iri:literal > $($rest:tt)*
 	} => {
-		$crate::grdf_quad!(@from ($($acc)* <$crate::Term>::iri($crate::static_iref::iri!($iri).to_owned()),) $($rest)*)
+		$crate::grdf_quad!(@from ($($acc)* $crate::LocalTerm::iri($crate::iri!($iri).to_owned()),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) _ : $id:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad!(@from ($($acc)* <$crate::Term>::blank($crate::BlankIdBuf::from_suffix($id).unwrap()),) $($rest)*)
+		$crate::grdf_quad!(@from ($($acc)* $crate::LocalTerm::Anonymous($crate::BlankIdBuf::from_suffix($id).unwrap()),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) $value:literal ^^ $ty:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad!(@from ($($acc)* <$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_quad!(@from ($($acc)* $crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
-				$crate::static_iref::iri!($ty).to_owned()
+				$crate::iri!($ty).to_owned()
 			)
 		)),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) $value:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad!(@from ($($acc)* <$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_quad!(@from ($($acc)* $crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
 				$crate::XSD_STRING.to_owned()
@@ -220,17 +220,17 @@ macro_rules! grdf_quad_pattern {
 	{
 		@from ($($acc:tt)*) < $iri:literal > $($rest:tt)*
 	} => {
-		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource(<$crate::Term>::iri($crate::static_iref::iri!($iri).to_owned())),) $($rest)*)
+		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource($crate::LocalTerm::iri($crate::static_iref::iri!($iri).to_owned())),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) _ : $id:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource(<$crate::Term>::blank($crate::BlankIdBuf::from_suffix($id).unwrap())),) $($rest)*)
+		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource($crate::LocalTerm::Anonymous($crate::BlankIdBuf::from_suffix($id).unwrap())),) $($rest)*)
 	};
 	{
 		@from ($($acc:tt)*) $value:literal ^^ $ty:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource(<$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource($crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
 				$crate::static_iref::iri!($ty).to_owned()
@@ -240,7 +240,7 @@ macro_rules! grdf_quad_pattern {
 	{
 		@from ($($acc:tt)*) $value:literal $($rest:tt)*
 	} => {
-		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource(<$crate::Term>::Literal($crate::Literal::new(
+		$crate::grdf_quad_pattern!(@from ($($acc)* $crate::pattern::ResourceOrVar::Resource($crate::LocalTerm::literal($crate::Literal::new(
 			$value.to_owned(),
 			$crate::LiteralType::Any(
 				$crate::XSD_STRING.to_owned()
@@ -346,7 +346,7 @@ macro_rules! grdf_quads {
 
 #[cfg(test)]
 mod tests {
-	use static_iref::iri;
+	use iref::iri;
 
 	#[test]
 	fn grdf_triple_macro() {
@@ -357,7 +357,7 @@ mod tests {
 
 	#[test]
 	fn grdf_triples_macro() {
-		let term = <crate::Term>::iri(iri!("https://example.org/#iri").to_owned());
+		let term = iri!("https://example.org/#iri").to_owned();
 		let _ = grdf_triples! [
 			_:"foo" <"https://example.org/#foo"> "foo" .
 			<"https://example.org/#bar"> _:"bar" "bar"^^"https://example.org/#datatype" .
@@ -374,7 +374,7 @@ mod tests {
 
 	#[test]
 	fn grdf_quads_macro() {
-		let term = <crate::Term>::iri(iri!("https://example.org/#iri").to_owned());
+		let term = iri!("https://example.org/#iri").to_owned();
 		let _ = grdf_quads! [
 			_:"foo" <"https://example.org/#foo"> "foo" .
 			<"https://example.org/#bar"> _:"bar" "bar"^^"https://example.org/#datatype" .

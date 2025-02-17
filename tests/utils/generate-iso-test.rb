@@ -30,7 +30,7 @@ class BlankNode
 	end
 
 	def to_rust
-		"Term::blank(BlankIdBuf::new(\"#{self.to_s}\".to_string()).unwrap())"
+		"LocalTerm::Anonymous(BlankIdBuf::new(\"#{self.to_s}\".to_string()).unwrap())"
 	end
 
 	def substituted
@@ -65,7 +65,7 @@ class Iri
 	end
 
 	def to_rust
-		"Term::iri(iri!(\"#{self.to_s}\").to_owned())"
+		"LocalTerm::iri(iri!(\"#{self.to_s}\").to_owned())"
 	end
 
 	def substituted

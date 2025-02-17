@@ -20,12 +20,9 @@
 #[doc(hidden)]
 pub use iref;
 
-#[doc(hidden)]
-pub use static_iref;
-
 mod blankid;
 mod display;
-mod grdf;
+mod id;
 mod literal;
 mod r#macro;
 mod quad;
@@ -35,7 +32,7 @@ mod triple;
 
 pub use blankid::*;
 pub use display::*;
-pub use grdf::*;
+pub use id::*;
 pub use literal::*;
 pub use quad::*;
 pub use schema::*;
@@ -43,37 +40,12 @@ pub use term::*;
 pub use triple::*;
 
 pub mod dataset;
-pub mod generator;
 pub mod interpretation;
 pub mod pattern;
 pub mod utils;
-pub mod vocabulary;
 
 pub use dataset::Dataset;
-pub use generator::Generator;
 pub use interpretation::{Interpretation, InterpretationMut};
-pub use iref::{Iri, IriBuf};
-pub use vocabulary::{Vocabulary, VocabularyMut};
+pub use iref::{iri, Iri, IriBuf};
 
-pub const XSD_STRING: &Iri = static_iref::iri!("http://www.w3.org/2001/XMLSchema#string");
-
-/// IRI type that may be <http://www.w3.org/2001/XMLSchema#string>.
-///
-/// This is used upon formatting RDF literals to omit the type when it is not
-/// required (because it is implicitly `xsd:string`).
-pub trait IsXsdStringIri {
-	/// Checks if this IRI is <http://www.w3.org/2001/XMLSchema#string>.
-	fn is_xsd_string_iri(&self) -> bool;
-}
-
-impl IsXsdStringIri for IriBuf {
-	fn is_xsd_string_iri(&self) -> bool {
-		self == XSD_STRING
-	}
-}
-
-impl IsXsdStringIri for Iri {
-	fn is_xsd_string_iri(&self) -> bool {
-		self == XSD_STRING
-	}
-}
+pub const XSD_STRING: &Iri = iri!("http://www.w3.org/2001/XMLSchema#string");

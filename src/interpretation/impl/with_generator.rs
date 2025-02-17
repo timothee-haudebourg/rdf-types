@@ -1,12 +1,13 @@
+use std::borrow::Cow;
+
+use iref::Iri;
+
 use crate::{
 	interpretation::{
-		BlankIdInterpretation, BlankIdInterpretationMut, IriInterpretation, IriInterpretationMut,
-		LiteralInterpretation, LiteralInterpretationMut, ReverseBlankIdInterpretation,
-		ReverseBlankIdInterpretationMut, ReverseIriInterpretation, ReverseIriInterpretationMut,
-		ReverseLiteralInterpretation, ReverseLiteralInterpretationMut,
+		GenerativeInterpretation, LocalInterpretation, LocalInterpretationMut,
+		ReverseInterpretation, ReverseLocalInterpretation,
 	},
-	vocabulary::{BlankIdVocabulary, IriVocabulary},
-	Generator, Id, Interpretation, InterpretationMut,
+	BlankId, CowLiteral, Generator, Interpretation, InterpretationMut, LiteralRef, LocalGenerator,
 };
 
 /// Combines any RDF interpretation with a node id generator to make it
@@ -73,102 +74,163 @@ impl<G, I> WithGenerator<G, I> {
 
 impl<I: Interpretation, G> Interpretation for WithGenerator<G, I> {
 	type Resource = I::Resource;
+
+	fn iri(&self, iri: &Iri) -> Option<Self::Resource> {
+		self.interpretation.iri(iri)
+	}
+
+	fn literal<'a>(&self, literal: impl Into<LiteralRef<'a>>) -> Option<Self::Resource> {
+		self.interpretation.literal(literal)
+	}
 }
 
-impl<V: IriVocabulary + BlankIdVocabulary, I, G: Generator<V>> InterpretationMut<V>
-	for WithGenerator<G, I>
-where
-	I: IriInterpretationMut<V::Iri> + BlankIdInterpretationMut<V::BlankId>,
-{
-	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource {
-		match self.generator.next(vocabulary) {
-			Id::Iri(i) => self.interpretation.interpret_iri(i),
-			Id::Blank(b) => self.interpretation.interpret_blank_id(b),
+impl<I: InterpretationMut, G> InterpretationMut for WithGenerator<G, I> {
+	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
+		self.interpretation.insert_iri(iri)
+	}
+
+	fn insert_literal<'a>(&mut self, literal: impl Into<CowLiteral<'a>>) -> Self::Resource {
+		self.interpretation.insert_literal(literal)
+	}
+}
+
+impl<I: ReverseInterpretation, G> ReverseInterpretation for WithGenerator<G, I> {
+	type Iris<'a>
+		= I::Iris<'a>
+	where
+		Self: 'a;
+	type Literals<'a>
+		= I::Literals<'a>
+	where
+		Self: 'a;
+
+	fn iris_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Iris<'a> {
+		self.interpretation.iris_of(resource)
+	}
+
+	fn literals_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Literals<'a> {
+		self.interpretation.literals_of(resource)
+	}
+}
+
+impl<I: InterpretationMut, G: Generator> GenerativeInterpretation for WithGenerator<G, I> {
+	fn new_resource(&mut self) -> Self::Resource {
+		let term = self.generator.next_term();
+		self.interpretation.insert_term(term)
+	}
+}
+
+pub struct WithLocalGenerator<G, I = ()> {
+	interpretation: I,
+	generator: G,
+}
+
+impl<G, I> WithLocalGenerator<G, I> {
+	pub fn new(interpretation: I, generator: G) -> Self {
+		Self {
+			interpretation,
+			generator,
 		}
 	}
-}
 
-impl<Iri, I: IriInterpretation<Iri>, G> IriInterpretation<Iri> for WithGenerator<G, I> {
-	fn iri_interpretation(&self, iri: &Iri) -> Option<Self::Resource> {
-		self.interpretation.iri_interpretation(iri)
+	pub fn into_parts(self) -> (I, G) {
+		(self.interpretation, self.generator)
+	}
+
+	pub fn inner_interpretation(&self) -> &I {
+		&self.interpretation
+	}
+
+	pub fn inner_interpretation_mut(&mut self) -> &mut I {
+		&mut self.interpretation
+	}
+
+	pub fn generator(&self) -> &G {
+		&self.generator
+	}
+
+	pub fn generator_mut(&mut self) -> &mut G {
+		&mut self.generator
+	}
+
+	pub fn into_inner_interpretation(self) -> I {
+		self.interpretation
+	}
+
+	pub fn into_generator(self) -> G {
+		self.generator
 	}
 }
 
-impl<Iri, I: IriInterpretationMut<Iri>, G> IriInterpretationMut<Iri> for WithGenerator<G, I> {
-	fn interpret_iri(&mut self, iri: Iri) -> Self::Resource {
-		self.interpretation.interpret_iri(iri)
+impl<I: Interpretation, G> Interpretation for WithLocalGenerator<G, I> {
+	type Resource = I::Resource;
+
+	fn iri<'a>(&self, iri: &'a Iri) -> Option<Self::Resource> {
+		self.interpretation.iri(iri)
+	}
+
+	fn literal<'a>(&self, literal: impl Into<LiteralRef<'a>>) -> Option<Self::Resource> {
+		self.interpretation.literal(literal)
 	}
 }
 
-impl<I: ReverseIriInterpretation, G> ReverseIriInterpretation for WithGenerator<G, I> {
-	type Iri = I::Iri;
-	type Iris<'a> = I::Iris<'a> where Self: 'a;
-
-	fn iris_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Iris<'a> {
-		self.interpretation.iris_of(id)
+impl<I: LocalInterpretation, G> LocalInterpretation for WithLocalGenerator<G, I> {
+	fn blank_id<'a>(&'a self, blank_id: &'a crate::BlankId) -> Option<Self::Resource> {
+		self.interpretation.blank_id(blank_id)
 	}
 }
 
-impl<I: ReverseIriInterpretationMut, G> ReverseIriInterpretationMut for WithGenerator<G, I> {
-	fn assign_iri(&mut self, id: &Self::Resource, iri: Self::Iri) -> bool {
-		self.interpretation.assign_iri(id, iri)
+impl<I: InterpretationMut, G> InterpretationMut for WithLocalGenerator<G, I> {
+	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
+		self.interpretation.insert_iri(iri)
+	}
+
+	fn insert_literal<'a>(&mut self, literal: impl Into<CowLiteral<'a>>) -> Self::Resource {
+		self.interpretation.insert_literal(literal)
 	}
 }
 
-impl<B, I: BlankIdInterpretation<B>, G> BlankIdInterpretation<B> for WithGenerator<G, I> {
-	fn blank_id_interpretation(&self, blank_id: &B) -> Option<Self::Resource> {
-		self.interpretation.blank_id_interpretation(blank_id)
+impl<I: LocalInterpretationMut, G> LocalInterpretationMut for WithLocalGenerator<G, I> {
+	fn insert_blank_id<'a>(&mut self, blank_id: impl Into<Cow<'a, BlankId>>) -> Self::Resource {
+		self.interpretation.insert_blank_id(blank_id)
 	}
 }
 
-impl<B, I: BlankIdInterpretationMut<B>, G> BlankIdInterpretationMut<B> for WithGenerator<G, I> {
-	fn interpret_blank_id(&mut self, blank_id: B) -> Self::Resource {
-		self.interpretation.interpret_blank_id(blank_id)
+impl<I: ReverseInterpretation, G> ReverseInterpretation for WithLocalGenerator<G, I> {
+	type Iris<'a>
+		= I::Iris<'a>
+	where
+		Self: 'a;
+	type Literals<'a>
+		= I::Literals<'a>
+	where
+		Self: 'a;
+
+	fn iris_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Iris<'a> {
+		self.interpretation.iris_of(resource)
+	}
+
+	fn literals_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Literals<'a> {
+		self.interpretation.literals_of(resource)
 	}
 }
 
-impl<I: ReverseBlankIdInterpretation, G> ReverseBlankIdInterpretation for WithGenerator<G, I> {
-	type BlankId = I::BlankId;
-	type BlankIds<'a> = I::BlankIds<'a> where Self: 'a;
+impl<I: ReverseLocalInterpretation, G> ReverseLocalInterpretation for WithLocalGenerator<G, I> {
+	type BlankIds<'a>
+		= I::BlankIds<'a>
+	where
+		Self: 'a;
 
-	fn blank_ids_of<'a>(&'a self, id: &'a Self::Resource) -> Self::BlankIds<'a> {
-		self.interpretation.blank_ids_of(id)
+	fn blank_ids_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::BlankIds<'a> {
+		self.interpretation.blank_ids_of(resource)
 	}
 }
 
-impl<I: ReverseBlankIdInterpretationMut, G> ReverseBlankIdInterpretationMut
-	for WithGenerator<G, I>
+impl<I: LocalInterpretationMut, G: LocalGenerator> GenerativeInterpretation
+	for WithLocalGenerator<G, I>
 {
-	fn assign_blank_id(&mut self, id: &Self::Resource, blank_id: Self::BlankId) -> bool {
-		self.interpretation.assign_blank_id(id, blank_id)
-	}
-}
-
-impl<L, I: LiteralInterpretation<L>, G> LiteralInterpretation<L> for WithGenerator<G, I> {
-	fn literal_interpretation(&self, literal: &L) -> Option<Self::Resource> {
-		self.interpretation.literal_interpretation(literal)
-	}
-}
-
-impl<L, I: LiteralInterpretationMut<L>, G> LiteralInterpretationMut<L> for WithGenerator<G, I> {
-	fn interpret_literal(&mut self, literal: L) -> Self::Resource {
-		self.interpretation.interpret_literal(literal)
-	}
-}
-
-impl<I: ReverseLiteralInterpretation, G> ReverseLiteralInterpretation for WithGenerator<G, I> {
-	type Literal = I::Literal;
-	type Literals<'a> = I::Literals<'a> where Self: 'a;
-
-	fn literals_of<'a>(&'a self, id: &'a Self::Resource) -> Self::Literals<'a> {
-		self.interpretation.literals_of(id)
-	}
-}
-
-impl<I: ReverseLiteralInterpretationMut, G> ReverseLiteralInterpretationMut
-	for WithGenerator<G, I>
-{
-	fn assign_literal(&mut self, resource: &Self::Resource, literal: Self::Literal) -> bool {
-		self.interpretation.assign_literal(resource, literal)
+	fn new_resource(&mut self) -> Self::Resource {
+		let term = self.generator.next_local_term();
+		self.interpretation.insert_local_term(term)
 	}
 }

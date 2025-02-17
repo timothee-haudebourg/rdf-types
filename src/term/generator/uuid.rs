@@ -1,114 +1,3 @@
-//! Resource identifier generators.
-use crate::{
-	vocabulary::{BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary},
-	BlankIdBuf, Id, Vocabulary,
-};
-
-/// Subject identifier generator.
-pub trait Generator<V: IriVocabulary + BlankIdVocabulary = ()> {
-	/// Generates the next fresh node identifier in the given vocabulary.
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId>;
-}
-
-impl<'a, V: IriVocabulary + BlankIdVocabulary, G: Generator<V>> Generator<V> for &'a mut G {
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		(*self).next(vocabulary)
-	}
-}
-
-/// Generates numbered blank node identifiers,
-/// with an optional prefix.
-///
-/// This generator can create `usize::MAX` unique blank node identifiers.
-/// If [`Generator::next`] is called `usize::MAX + 1` times, it will panic.
-#[derive(Default)]
-pub struct Blank {
-	/// Prefix string.
-	prefix: String,
-
-	/// Number of already generated identifiers.
-	count: usize,
-}
-
-impl Blank {
-	/// Creates a new numbered generator with no prefix.
-	pub fn new() -> Self {
-		Self::new_full(String::new(), 0)
-	}
-
-	/// Creates a new numbered generator with no prefix,
-	/// starting with the given `offset` number.
-	///
-	/// The returned generator can create `usize::MAX - offset` unique blank node identifiers
-	/// before panicking.
-	pub fn new_with_offset(offset: usize) -> Self {
-		Self::new_full(String::new(), offset)
-	}
-
-	/// Creates a new numbered generator with the given prefix.
-	pub fn new_with_prefix(prefix: String) -> Self {
-		Self::new_full(prefix, 0)
-	}
-
-	/// Creates a new numbered generator with the given prefix,
-	/// starting with the given `offset` number.
-	///
-	/// The returned generator can create `usize::MAX - offset` unique blank node identifiers
-	/// before panicking.
-	pub fn new_full(prefix: String, offset: usize) -> Self {
-		Self {
-			prefix,
-			count: offset,
-		}
-	}
-
-	#[cfg(feature = "meta")]
-	/// Generates identifiers annotated with the given metadata.
-	pub fn with_metadata<M>(self, metadata: M) -> WithMetadata<Self, M>
-	where
-		Self: Sized,
-	{
-		WithMetadata {
-			metadata,
-			generator: self,
-		}
-	}
-
-	#[cfg(feature = "meta")]
-	/// Generates identifiers annotated with the default value of type `M`.
-	pub fn with_default_metadata<M: Default>(self) -> WithMetadata<Self, M>
-	where
-		Self: Sized,
-	{
-		WithMetadata {
-			metadata: M::default(),
-			generator: self,
-		}
-	}
-
-	/// Returns the prefix of this generator.
-	pub fn prefix(&self) -> &str {
-		&self.prefix
-	}
-
-	/// Returns the number of already generated identifiers.
-	pub fn count(&self) -> usize {
-		self.count
-	}
-
-	pub fn next_blank_id(&mut self) -> BlankIdBuf {
-		let id = unsafe { BlankIdBuf::new_unchecked(format!("_:{}{}", self.prefix, self.count)) };
-		self.count += 1;
-		id
-	}
-}
-
-impl<V: Vocabulary + BlankIdVocabularyMut> Generator<V> for Blank {
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
-		Id::Blank(vocabulary.insert_blank_id(&self.next_blank_id()))
-	}
-}
-
 /// Generates UUID blank node identifiers based on the [`uuid`](https://crates.io/crates/uuid) crate.
 ///
 /// This is an enum type with different UUID versions supported
@@ -189,16 +78,13 @@ impl Uuid {
 	feature = "uuid-generator-v4",
 	feature = "uuid-generator-v5"
 ))]
-impl<V: crate::Vocabulary + crate::vocabulary::IriVocabularyMut> Generator<V> for Uuid {
-	fn next(&mut self, vocabulary: &mut V) -> Id<V::Iri, V::BlankId> {
+impl Generator for Uuid {
+	fn next(&mut self) -> Term {
 		let mut buffer: Vec<u8> = vec![0; uuid::adapter::Urn::LENGTH];
 		let uuid = self.next_uuid();
 		let len = uuid.to_urn().encode_lower(buffer.as_mut()).len();
 		buffer.truncate(len);
-
-		Id::Iri(vocabulary.insert_owned(unsafe {
-			iref::IriBuf::new_unchecked(String::from_utf8_unchecked(buffer))
-		}))
+		Term::Iri(IriBuf::new_unchecked(String::from_utf8_unchecked(buffer)).unwrap())
 	}
 }
 

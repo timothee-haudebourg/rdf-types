@@ -1,31 +1,17 @@
+use crate::{Id, IdRef, LocalTerm, LocalTermRef, Quad, RdfDisplay};
+use iref::{Iri, IriBuf};
 use std::{cmp::Ordering, fmt};
 
-use iref::{Iri, IriBuf};
-
-use crate::{
-	vocabulary::{
-		ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
-		ExtractedFromVocabulary,
-	},
-	Id, LexicalObjectRef, LexicalSubjectRef, Object, Quad, RdfDisplay, Term,
-};
-
-#[cfg(feature = "contextual")]
-use contextual::{DisplayWithContext, WithContext};
-
-#[cfg(feature = "contextual")]
-use crate::RdfDisplayWithContext;
-
 /// Lexical RDF triple.
-pub type LexicalTriple = Triple<Id, IriBuf, Object>;
+pub type LexicalTriple = Triple<Id, IriBuf, LocalTerm>;
 
 /// Lexical RDF triple reference.
-pub type LexicalTripleRef<'a> = Triple<LexicalSubjectRef<'a>, &'a Iri, LexicalObjectRef<'a>>;
+pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, LocalTermRef<'a>>;
 
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Triple<S = Term, P = S, O = S>(pub S, pub P, pub O);
+pub struct Triple<S = LocalTerm, P = S, O = S>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
@@ -189,102 +175,13 @@ impl<T> Triple<T, T, T> {
 
 impl LexicalTriple {
 	pub fn as_lexical_triple_ref(&self) -> LexicalTripleRef {
-		Triple(
-			self.0.as_lexical_subject_ref(),
-			self.1.as_iri(),
-			self.2.as_lexical_object_ref(),
-		)
+		Triple(self.0.as_ref(), self.1.as_iri(), self.2.as_ref())
 	}
 }
 
 impl<'a> LexicalTripleRef<'a> {
 	pub fn into_owned(self) -> LexicalTriple {
-		Triple(self.0.into_owned(), self.1.to_owned(), self.2.into_owned())
-	}
-}
-
-impl<V, S: ExtractFromVocabulary<V>, P: ExtractFromVocabulary<V>, O: ExtractFromVocabulary<V>>
-	ExtractFromVocabulary<V> for Triple<S, P, O>
-{
-	type Extracted = Triple<S::Extracted, P::Extracted, O::Extracted>;
-
-	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
-		Triple(
-			self.0.extract_from_vocabulary(vocabulary),
-			self.1.extract_from_vocabulary(vocabulary),
-			self.2.extract_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<V, S, P, O> ExtractFromVocabulary<V> for ByRef<Triple<S, P, O>>
-where
-	ByRef<S>: ExtractFromVocabulary<V>,
-	ByRef<P>: ExtractFromVocabulary<V>,
-	ByRef<O>: ExtractFromVocabulary<V>,
-{
-	type Extracted = Triple<
-		<ByRef<S> as ExtractFromVocabulary<V>>::Extracted,
-		<ByRef<P> as ExtractFromVocabulary<V>>::Extracted,
-		<ByRef<O> as ExtractFromVocabulary<V>>::Extracted,
-	>;
-
-	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
-		Triple(
-			ByRef(self.0 .0).extract_from_vocabulary(vocabulary),
-			ByRef(self.0 .1).extract_from_vocabulary(vocabulary),
-			ByRef(self.0 .2).extract_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<
-		V,
-		S: ExtractedFromVocabulary<V>,
-		P: ExtractedFromVocabulary<V>,
-		O: ExtractedFromVocabulary<V>,
-	> ExtractedFromVocabulary<V> for Triple<S, P, O>
-{
-	type Extracted = Triple<S::Extracted, P::Extracted, O::Extracted>;
-
-	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
-		Triple(
-			self.0.extracted_from_vocabulary(vocabulary),
-			self.1.extracted_from_vocabulary(vocabulary),
-			self.2.extracted_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<V, S: EmbedIntoVocabulary<V>, P: EmbedIntoVocabulary<V>, O: EmbedIntoVocabulary<V>>
-	EmbedIntoVocabulary<V> for Triple<S, P, O>
-{
-	type Embedded = Triple<S::Embedded, P::Embedded, O::Embedded>;
-
-	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
-		Triple(
-			self.0.embed_into_vocabulary(vocabulary),
-			self.1.embed_into_vocabulary(vocabulary),
-			self.2.embed_into_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<
-		V,
-		S: EmbeddedIntoVocabulary<V>,
-		P: EmbeddedIntoVocabulary<V>,
-		O: EmbeddedIntoVocabulary<V>,
-	> EmbeddedIntoVocabulary<V> for Triple<S, P, O>
-{
-	type Embedded = Triple<S::Embedded, P::Embedded, O::Embedded>;
-
-	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
-		Triple(
-			self.0.embedded_into_vocabulary(vocabulary),
-			self.1.embedded_into_vocabulary(vocabulary),
-			self.2.embedded_into_vocabulary(vocabulary),
-		)
+		Triple(self.0.into_owned(), self.1.to_owned(), self.2.to_owned())
 	}
 }
 
@@ -308,36 +205,6 @@ impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> RdfDisplay for Triple<S, P, O>
 			self.0.rdf_display(),
 			self.1.rdf_display(),
 			self.2.rdf_display()
-		)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWithContext<V>, V>
-	DisplayWithContext<V> for Triple<S, P, O>
-{
-	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(
-			f,
-			"{} {} {}",
-			self.0.with(vocabulary).rdf_display(),
-			self.1.with(vocabulary).rdf_display(),
-			self.2.with(vocabulary).rdf_display()
-		)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<S: RdfDisplayWithContext<V>, P: RdfDisplayWithContext<V>, O: RdfDisplayWithContext<V>, V>
-	RdfDisplayWithContext<V> for Triple<S, P, O>
-{
-	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(
-			f,
-			"{} {} {}",
-			self.0.with(vocabulary).rdf_display(),
-			self.1.with(vocabulary).rdf_display(),
-			self.2.with(vocabulary).rdf_display()
 		)
 	}
 }

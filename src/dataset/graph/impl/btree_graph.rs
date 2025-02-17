@@ -7,7 +7,7 @@ use slab::Slab;
 use super::{super::Graph, IndexedBTreeGraph};
 use crate::{
 	dataset::{GraphMut, ResourceTraversableGraph, TraversableGraph},
-	RdfDisplay, Term, Triple,
+	LocalTerm, RdfDisplay, Triple,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -50,7 +50,7 @@ fn triple_index_cmp<'a, R: Ord>(
 
 /// BTree-based RDF graph.
 #[derive(Clone)]
-pub struct BTreeGraph<R = Term> {
+pub struct BTreeGraph<R = LocalTerm> {
 	pub(crate) resources: Slab<Resource<R>>,
 	pub(crate) triples: Slab<Triple<usize>>,
 	pub(crate) resources_indexes: RawBTree<usize>,
@@ -261,7 +261,10 @@ impl<R> Graph for BTreeGraph<R> {
 }
 
 impl<R> TraversableGraph for BTreeGraph<R> {
-	type Triples<'a> = Triples<'a, R> where R: 'a;
+	type Triples<'a>
+		= Triples<'a, R>
+	where
+		R: 'a;
 
 	fn triples(&self) -> Self::Triples<'_> {
 		self.iter()
@@ -269,7 +272,10 @@ impl<R> TraversableGraph for BTreeGraph<R> {
 }
 
 impl<R> ResourceTraversableGraph for BTreeGraph<R> {
-	type GraphResources<'a> = Resources<'a, R> where R: 'a;
+	type GraphResources<'a>
+		= Resources<'a, R>
+	where
+		R: 'a;
 
 	fn graph_resources(&self) -> Self::GraphResources<'_> {
 		self.resources()

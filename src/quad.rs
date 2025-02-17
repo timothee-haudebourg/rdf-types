@@ -2,33 +2,18 @@ use std::{cmp::Ordering, fmt};
 
 use iref::{Iri, IriBuf};
 
-use crate::{
-	interpretation::Interpret,
-	vocabulary::{
-		ByRef, EmbedIntoVocabulary, EmbeddedIntoVocabulary, ExtractFromVocabulary,
-		ExtractedFromVocabulary, TryExtractFromVocabulary,
-	},
-	GraphLabel, Id, Interpretation, LexicalGraphLabelRef, LexicalObjectRef, LexicalSubjectRef,
-	Object, RdfDisplay, Term, Triple,
-};
-
-#[cfg(feature = "contextual")]
-use contextual::{DisplayWithContext, WithContext};
-
-#[cfg(feature = "contextual")]
-use crate::RdfDisplayWithContext;
+use crate::{Id, IdRef, LocalTerm, LocalTermRef, RdfDisplay, Triple};
 
 /// Lexical RDF quad.
-pub type LexicalQuad = Quad<Id, IriBuf, Object, GraphLabel>;
+pub type RdfQuad = Quad<Id, IriBuf, LocalTerm, Id>;
 
 /// Lexical RDF quad reference.
-pub type LexicalQuadRef<'a> =
-	Quad<LexicalSubjectRef<'a>, &'a Iri, LexicalObjectRef<'a>, LexicalGraphLabelRef<'a>>;
+pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, LocalTermRef<'a>, IdRef<'a>>;
 
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Quad<S = Term, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
+pub struct Quad<S = LocalTerm, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]
@@ -96,64 +81,24 @@ impl<'s, 'p, 'o, 'g, S, P, O, G> Quad<&'s S, &'p P, &'o O, &'g G> {
 	}
 }
 
-impl LexicalQuad {
-	pub fn as_lexical_quad_ref(&self) -> LexicalQuadRef {
+impl RdfQuad {
+	pub fn as_lexical_quad_ref(&self) -> RdfQuadRef {
 		Quad(
-			self.0.as_lexical_subject_ref(),
+			self.0.as_ref(),
 			self.1.as_iri(),
-			self.2.as_lexical_object_ref(),
-			self.3.as_ref().map(GraphLabel::as_graph_label_ref),
+			self.2.as_ref(),
+			self.3.as_ref().map(Id::as_ref),
 		)
 	}
 }
 
-impl<'a> LexicalQuadRef<'a> {
-	pub fn into_owned(self) -> LexicalQuad {
+impl<'a> RdfQuadRef<'a> {
+	pub fn into_owned(self) -> RdfQuad {
 		Quad(
-			self.0.into_owned(),
+			self.0.to_owned(),
 			self.1.to_owned(),
-			self.2.into_owned(),
-			self.3.map(LexicalGraphLabelRef::into_owned),
-		)
-	}
-}
-
-impl<
-		V,
-		S: EmbedIntoVocabulary<V>,
-		P: EmbedIntoVocabulary<V>,
-		O: EmbedIntoVocabulary<V>,
-		G: EmbedIntoVocabulary<V>,
-	> EmbedIntoVocabulary<V> for Quad<S, P, O, G>
-{
-	type Embedded = Quad<S::Embedded, P::Embedded, O::Embedded, G::Embedded>;
-
-	fn embed_into_vocabulary(self, vocabulary: &mut V) -> Self::Embedded {
-		Quad(
-			self.0.embed_into_vocabulary(vocabulary),
-			self.1.embed_into_vocabulary(vocabulary),
-			self.2.embed_into_vocabulary(vocabulary),
-			self.3.embed_into_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<
-		V,
-		S: EmbeddedIntoVocabulary<V>,
-		P: EmbeddedIntoVocabulary<V>,
-		O: EmbeddedIntoVocabulary<V>,
-		G: EmbeddedIntoVocabulary<V>,
-	> EmbeddedIntoVocabulary<V> for Quad<S, P, O, G>
-{
-	type Embedded = Quad<S::Embedded, P::Embedded, O::Embedded, G::Embedded>;
-
-	fn embedded_into_vocabulary(&self, vocabulary: &mut V) -> Self::Embedded {
-		Quad(
-			self.0.embedded_into_vocabulary(vocabulary),
-			self.1.embedded_into_vocabulary(vocabulary),
-			self.2.embedded_into_vocabulary(vocabulary),
-			self.3.embedded_into_vocabulary(vocabulary),
+			self.2.to_owned(),
+			self.3.map(IdRef::into_owned),
 		)
 	}
 }
@@ -265,6 +210,10 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		Quad(self.0, self.1, self.2, f(self.3))
 	}
 
+	pub fn with_graph(self, g: Option<G>) -> Self {
+		Self(self.0, self.1, self.2, g)
+	}
+
 	/// Maps every quad component with the given functions, one for each
 	/// component.
 	pub fn map_all<S2, P2, O2, G2>(
@@ -285,90 +234,11 @@ impl<T> Quad<T, T, T, T> {
 	}
 }
 
-impl<S: Interpret<I>, P: Interpret<I>, O: Interpret<I>, G: Interpret<I>, I: Interpretation>
-	Interpret<I> for Quad<S, P, O, G>
-{
-	type Interpreted = Quad<S::Interpreted, P::Interpreted, O::Interpreted, G::Interpreted>;
-
-	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
-		Quad(
-			self.0.interpret(interpretation),
-			self.1.interpret(interpretation),
-			self.2.interpret(interpretation),
-			self.3.interpret(interpretation),
-		)
-	}
-}
-
-impl<
-		V,
-		S: ExtractFromVocabulary<V>,
-		P: ExtractFromVocabulary<V>,
-		O: ExtractFromVocabulary<V>,
-		G: ExtractFromVocabulary<V>,
-	> ExtractFromVocabulary<V> for Quad<S, P, O, G>
-{
-	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
-
-	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
-		Quad(
-			self.0.extract_from_vocabulary(vocabulary),
-			self.1.extract_from_vocabulary(vocabulary),
-			self.2.extract_from_vocabulary(vocabulary),
-			self.3.extract_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<V, S, P, O, G> ExtractFromVocabulary<V> for ByRef<Quad<S, P, O, G>>
-where
-	ByRef<S>: ExtractFromVocabulary<V>,
-	ByRef<P>: ExtractFromVocabulary<V>,
-	ByRef<O>: ExtractFromVocabulary<V>,
-	ByRef<G>: ExtractFromVocabulary<V>,
-{
-	type Extracted = Quad<
-		<ByRef<S> as ExtractFromVocabulary<V>>::Extracted,
-		<ByRef<P> as ExtractFromVocabulary<V>>::Extracted,
-		<ByRef<O> as ExtractFromVocabulary<V>>::Extracted,
-		<ByRef<G> as ExtractFromVocabulary<V>>::Extracted,
-	>;
-
-	fn extract_from_vocabulary(self, vocabulary: &V) -> Self::Extracted {
-		Quad(
-			ByRef(self.0 .0).extract_from_vocabulary(vocabulary),
-			ByRef(self.0 .1).extract_from_vocabulary(vocabulary),
-			ByRef(self.0 .2).extract_from_vocabulary(vocabulary),
-			ByRef(self.0 .3).extract_from_vocabulary(vocabulary),
-		)
-	}
-}
-
-impl<
-		V,
-		S: ExtractedFromVocabulary<V>,
-		P: ExtractedFromVocabulary<V>,
-		O: ExtractedFromVocabulary<V>,
-		G: ExtractedFromVocabulary<V>,
-	> ExtractedFromVocabulary<V> for Quad<S, P, O, G>
-{
-	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
-
-	fn extracted_from_vocabulary(&self, vocabulary: &V) -> Self::Extracted {
-		Quad(
-			self.0.extracted_from_vocabulary(vocabulary),
-			self.1.extracted_from_vocabulary(vocabulary),
-			self.2.extracted_from_vocabulary(vocabulary),
-			self.3.extracted_from_vocabulary(vocabulary),
-		)
-	}
-}
-
 /// Type that can turn a `Quad<S, P, O, G>` into a `Quad`.
 pub trait TryExportQuad<S, P, O, G> {
 	type Error;
 
-	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<LexicalQuad, Self::Error>;
+	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<RdfQuad, Self::Error>;
 }
 
 /// Error returned when calling [`try_extract_from_vocabulary`][1] on a
@@ -388,35 +258,6 @@ pub enum QuadExportFailed<S, P, O, G> {
 
 	#[error("invalid graph label: {0}")]
 	Graph(G),
-}
-
-impl<
-		V,
-		S: TryExtractFromVocabulary<V>,
-		P: TryExtractFromVocabulary<V>,
-		O: TryExtractFromVocabulary<V>,
-		G: TryExtractFromVocabulary<V>,
-	> TryExtractFromVocabulary<V> for Quad<S, P, O, G>
-{
-	type Extracted = Quad<S::Extracted, P::Extracted, O::Extracted, G::Extracted>;
-	type Error = QuadExportFailed<S::Error, P::Error, O::Error, G::Error>;
-
-	fn try_extract_from_vocabulary(self, vocabulary: &V) -> Result<Self::Extracted, Self::Error> {
-		Ok(Quad(
-			self.0
-				.try_extract_from_vocabulary(vocabulary)
-				.map_err(QuadExportFailed::Subject)?,
-			self.1
-				.try_extract_from_vocabulary(vocabulary)
-				.map_err(QuadExportFailed::Predicate)?,
-			self.2
-				.try_extract_from_vocabulary(vocabulary)
-				.map_err(QuadExportFailed::Object)?,
-			self.3
-				.try_extract_from_vocabulary(vocabulary)
-				.map_err(QuadExportFailed::Graph)?,
-		))
-	}
 }
 
 impl<
@@ -511,66 +352,6 @@ impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> RdfDisplay for 
 				self.0.rdf_display(),
 				self.1.rdf_display(),
 				self.2.rdf_display()
-			),
-		}
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<
-		S: RdfDisplayWithContext<V>,
-		P: RdfDisplayWithContext<V>,
-		O: RdfDisplayWithContext<V>,
-		G: RdfDisplayWithContext<V>,
-		V,
-	> DisplayWithContext<V> for Quad<S, P, O, G>
-{
-	fn fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		match self.graph() {
-			Some(graph) => write!(
-				f,
-				"{} {} {} {}",
-				self.0.with(vocabulary).rdf_display(),
-				self.1.with(vocabulary).rdf_display(),
-				self.2.with(vocabulary).rdf_display(),
-				graph.with(vocabulary).rdf_display()
-			),
-			None => write!(
-				f,
-				"{} {} {}",
-				self.0.with(vocabulary).rdf_display(),
-				self.1.with(vocabulary).rdf_display(),
-				self.2.with(vocabulary).rdf_display()
-			),
-		}
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<
-		S: RdfDisplayWithContext<V>,
-		P: RdfDisplayWithContext<V>,
-		O: RdfDisplayWithContext<V>,
-		G: RdfDisplayWithContext<V>,
-		V,
-	> RdfDisplayWithContext<V> for Quad<S, P, O, G>
-{
-	fn rdf_fmt_with(&self, vocabulary: &V, f: &mut fmt::Formatter) -> fmt::Result {
-		match self.graph() {
-			Some(graph) => write!(
-				f,
-				"{} {} {} {}",
-				self.0.with(vocabulary).rdf_display(),
-				self.1.with(vocabulary).rdf_display(),
-				self.2.with(vocabulary).rdf_display(),
-				graph.with(vocabulary).rdf_display()
-			),
-			None => write!(
-				f,
-				"{} {} {}",
-				self.0.with(vocabulary).rdf_display(),
-				self.1.with(vocabulary).rdf_display(),
-				self.2.with(vocabulary).rdf_display()
 			),
 		}
 	}

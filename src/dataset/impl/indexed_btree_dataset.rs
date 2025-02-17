@@ -10,15 +10,15 @@ use super::{
 };
 use crate::{
 	dataset::{
-		BTreeGraph, DatasetMut, NamedGraphTraversableDataset, ObjectTraversableDataset,
-		PredicateTraversableDataset, ResourceTraversableDataset, SubjectTraversableDataset,
-		TraversableDataset,
+		BTreeGraph, DatasetMut, MultiPatternMatchingDataset, NamedGraphTraversableDataset,
+		ObjectTraversableDataset, PredicateTraversableDataset, ResourceTraversableDataset,
+		SubjectTraversableDataset, TraversableDataset,
 	},
 	pattern::{
 		quad::canonical::{PatternGraph, PatternObject, PatternPredicate, PatternSubject},
 		CanonicalQuadPattern,
 	},
-	Quad, RdfDisplay, Term,
+	LocalTerm, Quad, RdfDisplay,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -59,7 +59,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// Indexed BTree-based RDF dataset, optimized for pattern matching operations.
 #[derive(Clone)]
-pub struct IndexedBTreeDataset<R = Term> {
+pub struct IndexedBTreeDataset<R = LocalTerm> {
 	resources: Slab<Resource<R>>,
 	quads: Slab<Quad<usize>>,
 	resources_indexes: RawBTree<usize>,
@@ -444,6 +444,29 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over all the quads matching the given canonical
+	/// quad pattern.
+	pub fn multi_pattern_matching<'a, P>(
+		&self,
+		pattern: CanonicalQuadPattern<P>,
+	) -> MultiPatternMatching<R>
+	where
+		P: IntoIterator<Item = &'a R>,
+		R: 'a,
+	{
+		let (s, p, o, g) = pattern.into_parts();
+
+		MultiPatternMatching {
+			resources: &self.resources,
+			quads: &self.quads,
+			subject: SubjectConstraints::new_multi(self, s),
+			predicate: PredicateConstraints::new_multi(self, p),
+			object: ObjectConstraints::new_multi(self, o),
+			graph: GraphConstraints::new_multi(self, g),
+			i: 0,
+		}
+	}
+
+	/// Returns an iterator over all the quads matching the given canonical
 	/// quad pattern. The matching quads are removed from the dataset.
 	pub fn extract_pattern_matching(
 		&mut self,
@@ -492,7 +515,10 @@ impl<R> Dataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> TraversableDataset for IndexedBTreeDataset<R> {
-	type Quads<'a> = Quads<'a, R> where R: 'a;
+	type Quads<'a>
+		= Quads<'a, R>
+	where
+		R: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
 		self.iter()
@@ -500,7 +526,10 @@ impl<R> TraversableDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> ResourceTraversableDataset for IndexedBTreeDataset<R> {
-	type Resources<'a> = Resources<'a, R> where R: 'a;
+	type Resources<'a>
+		= Resources<'a, R>
+	where
+		R: 'a;
 
 	fn resources(&self) -> Self::Resources<'_> {
 		self.resources()
@@ -512,7 +541,10 @@ impl<R> ResourceTraversableDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> SubjectTraversableDataset for IndexedBTreeDataset<R> {
-	type Subjects<'a> = Subjects<'a, R> where R: 'a;
+	type Subjects<'a>
+		= Subjects<'a, R>
+	where
+		R: 'a;
 
 	fn subjects(&self) -> Self::Subjects<'_> {
 		self.subjects()
@@ -524,7 +556,10 @@ impl<R> SubjectTraversableDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> PredicateTraversableDataset for IndexedBTreeDataset<R> {
-	type Predicates<'a> = Predicates<'a, R> where R: 'a;
+	type Predicates<'a>
+		= Predicates<'a, R>
+	where
+		R: 'a;
 
 	fn predicates(&self) -> Self::Predicates<'_> {
 		self.predicates()
@@ -536,7 +571,10 @@ impl<R> PredicateTraversableDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> ObjectTraversableDataset for IndexedBTreeDataset<R> {
-	type Objects<'a> = Objects<'a, R> where R: 'a;
+	type Objects<'a>
+		= Objects<'a, R>
+	where
+		R: 'a;
 
 	fn objects(&self) -> Self::Objects<'_> {
 		self.objects()
@@ -548,7 +586,10 @@ impl<R> ObjectTraversableDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R> NamedGraphTraversableDataset for IndexedBTreeDataset<R> {
-	type NamedGraphs<'a> = NamedGraphs<'a, R> where R: 'a;
+	type NamedGraphs<'a>
+		= NamedGraphs<'a, R>
+	where
+		R: 'a;
 
 	fn named_graphs(&self) -> Self::NamedGraphs<'_> {
 		self.named_graphs()
@@ -570,7 +611,11 @@ impl<R: Clone + Ord> DatasetMut for IndexedBTreeDataset<R> {
 }
 
 impl<R: Ord> PatternMatchingDataset for IndexedBTreeDataset<R> {
-	type QuadPatternMatching<'a, 'p> = PatternMatching<'a, R> where R: 'a, Self::Resource: 'p;
+	type QuadPatternMatching<'a, 'p>
+		= PatternMatching<'a, R>
+	where
+		R: 'a,
+		Self::Resource: 'p;
 
 	fn quad_pattern_matching<'p>(
 		&self,
@@ -581,6 +626,25 @@ impl<R: Ord> PatternMatchingDataset for IndexedBTreeDataset<R> {
 
 	fn contains_quad(&self, quad: Quad<&Self::Resource>) -> bool {
 		self.contains(quad)
+	}
+}
+
+impl<R: Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
+	type QuadMultiPatternMatching<'a, 'p>
+		= MultiPatternMatching<'a, R>
+	where
+		R: 'a,
+		Self::Resource: 'p;
+
+	fn quad_multi_pattern_matching<'p, P>(
+		&self,
+		pattern: CanonicalQuadPattern<P>,
+	) -> Self::QuadMultiPatternMatching<'_, 'p>
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		self.multi_pattern_matching(pattern)
 	}
 }
 
@@ -774,6 +838,43 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 }
 
 /// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
+pub struct MultiPatternMatching<'a, R> {
+	resources: &'a Slab<Resource<R>>,
+	quads: &'a Slab<Quad<usize>>,
+	subject: SubjectConstraints<OwnedTripleIndexes>,
+	predicate: PredicateConstraints<OwnedTripleIndexes>,
+	object: ObjectConstraints<OwnedTripleIndexes>,
+	graph: GraphConstraints<OwnedTripleIndexes>,
+	i: usize,
+}
+
+impl<'a, R> Iterator for MultiPatternMatching<'a, R> {
+	type Item = Quad<&'a R>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		while self.i < self.quads.capacity() {
+			let i = self.subject.next(self.i)?;
+			let quad = *self.quads.get(i)?;
+			match self.predicate.next(i, quad) {
+				Ok(()) => match self.object.next(i, quad) {
+					Ok(()) => match self.graph.next(i, quad) {
+						Ok(()) => {
+							self.i = i + 1;
+							return Some(quad_with_resources(self.resources, quad));
+						}
+						Err(j) => self.i = j?,
+					},
+					Err(j) => self.i = j?,
+				},
+				Err(j) => self.i = j?,
+			}
+		}
+
+		None
+	}
+}
+
+/// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
 pub struct ExtractPatternMatching<'a, R> {
 	dataset: &'a mut IndexedBTreeDataset<R>,
 	subject: SubjectConstraints<OwnedTripleIndexes>,
@@ -850,6 +951,31 @@ impl SubjectConstraints<OwnedTripleIndexes> {
 			},
 		}
 	}
+
+	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, s: PatternSubject<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		match s {
+			PatternSubject::Any => Self::Any,
+			PatternSubject::Given(multi_s) => {
+				let mut indexes = Vec::new();
+				for s in multi_s {
+					if let Some(subject) = dataset.get_resource(s) {
+						indexes.extend(subject.as_subject.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
+		}
+	}
 }
 
 impl<I: Iterator<Item = usize>> SubjectConstraints<I> {
@@ -909,6 +1035,32 @@ impl PredicateConstraints<OwnedTripleIndexes> {
 				),
 				None => Self::None,
 			},
+		}
+	}
+
+	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, p: PatternPredicate<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		match p {
+			PatternPredicate::Any => Self::Any,
+			PatternPredicate::SameAsSubject => Self::SameAsSubject,
+			PatternPredicate::Given(multi_p) => {
+				let mut indexes = Vec::new();
+				for p in multi_p {
+					if let Some(predicate) = dataset.get_resource(p) {
+						indexes.extend(predicate.as_predicate.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
 		}
 	}
 }
@@ -982,6 +1134,33 @@ impl ObjectConstraints<OwnedTripleIndexes> {
 				),
 				None => Self::None,
 			},
+		}
+	}
+
+	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, o: PatternObject<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		match o {
+			PatternObject::Any => Self::Any,
+			PatternObject::SameAsSubject => Self::SameAsSubject,
+			PatternObject::SameAsPredicate => Self::SameAsPredicate,
+			PatternObject::Given(multi_o) => {
+				let mut indexes = Vec::new();
+				for o in multi_o {
+					if let Some(predicate) = dataset.get_resource(o) {
+						indexes.extend(predicate.as_object.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
 		}
 	}
 }
@@ -1068,6 +1247,43 @@ impl GraphConstraints<OwnedTripleIndexes> {
 				),
 				None => Self::None,
 			},
+			PatternGraph::Given(None) => Self::Fixed(
+				dataset
+					.default_graph
+					.iter()
+					.copied()
+					.collect::<Vec<_>>()
+					.into_iter()
+					.peekable(),
+			),
+		}
+	}
+
+	fn new_multi<'p, R: Ord, P>(dataset: &IndexedBTreeDataset<R>, g: PatternGraph<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		match g {
+			PatternGraph::Any => Self::Any,
+			PatternGraph::SameAsSubject => Self::SameAsSubject,
+			PatternGraph::SameAsPredicate => Self::SameAsPredicate,
+			PatternGraph::SameAsObject => Self::SameAsObject,
+			PatternGraph::Given(Some(multi_g)) => {
+				let mut indexes = Vec::new();
+				for g in multi_g {
+					if let Some(predicate) = dataset.get_resource(g) {
+						indexes.extend(predicate.as_graph.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
 			PatternGraph::Given(None) => Self::Fixed(
 				dataset
 					.default_graph

@@ -22,7 +22,10 @@ pub trait FallibleTraversableGraph: FallibleGraph {
 }
 
 impl<D: TraversableGraph> FallibleTraversableGraph for D {
-	type TryTriples<'a> = InfallibleIterator<D::Triples<'a>> where Self: 'a;
+	type TryTriples<'a>
+		= InfallibleIterator<D::Triples<'a>>
+	where
+		Self: 'a;
 
 	fn try_triples(&self) -> Self::TryTriples<'_> {
 		InfallibleIterator(self.triples())
@@ -33,7 +36,8 @@ impl<D: TraversableGraph> FallibleTraversableGraph for D {
 pub trait FalliblePatternMatchingGraph: FallibleGraph {
 	type TryTriplePatternMatching<'a, 'p>: Iterator<
 		Item = Result<Triple<&'a Self::Resource>, Self::Error>,
-	> where
+	>
+	where
 		Self: 'a,
 		Self::Resource: 'p;
 
@@ -52,7 +56,11 @@ pub trait FalliblePatternMatchingGraph: FallibleGraph {
 }
 
 impl<D: PatternMatchingGraph> FalliblePatternMatchingGraph for D {
-	type TryTriplePatternMatching<'a, 'p> = InfallibleIterator<D::TriplePatternMatching<'a, 'p>> where Self: 'a, Self::Resource: 'p;
+	type TryTriplePatternMatching<'a, 'p>
+		= InfallibleIterator<D::TriplePatternMatching<'a, 'p>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
 
 	fn try_triple_pattern_matching<'p>(
 		&self,

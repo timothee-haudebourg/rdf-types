@@ -1,128 +1,179 @@
 //! Resource interpretations.
-use crate::{Id, Literal, Quad, Term};
+use std::borrow::Cow;
+
+use crate::{
+	BlankId, CowId, CowLiteral, CowLocalTerm, CowTerm, IdRef, LiteralRef, LocalTermRef, TermRef,
+};
 
 mod r#impl;
 pub use r#impl::*;
 
-mod iri;
-pub use iri::*;
-
-mod blank_id;
-pub use blank_id::*;
-
-mod literal;
-pub use literal::*;
-
-mod id;
-pub use id::*;
-
-mod term;
-pub use term::*;
-
 pub mod fallible;
 pub use fallible::FallibleInterpretation;
 
+use iref::Iri;
+
 /// RDF resource interpretation.
 pub trait Interpretation {
-	/// Resource identifier type.
 	type Resource;
+
+	fn iri(&self, iri: &Iri) -> Option<Self::Resource>;
+
+	fn literal<'a>(&self, literal: impl Into<LiteralRef<'a>>) -> Option<Self::Resource>;
+
+	fn term<'a>(&self, term: impl Into<TermRef<'a>>) -> Option<Self::Resource> {
+		match term.into() {
+			TermRef::Iri(iri) => self.iri(iri),
+			TermRef::Literal(l) => self.literal(l),
+		}
+	}
 }
 
-impl<'a, I: Interpretation> Interpretation for &'a I {
-	type Resource = I::Resource;
-}
-
-impl<'a, I: Interpretation> Interpretation for &'a mut I {
-	type Resource = I::Resource;
-}
-
+/// Interpretation that can return an iterator over the known RDF resources.
 pub trait TraversableInterpretation: Interpretation {
-	/// Interpreted resource iterator.
 	type Resources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
-	/// Returns an iterator over the interpreted resources.
 	fn resources(&self) -> Self::Resources<'_>;
 }
 
-impl<'i, I: TraversableInterpretation> TraversableInterpretation for &'i I {
-	type Resources<'a> = I::Resources<'a> where Self: 'a;
+/// Interpretation that can spawn fresh new resources.
+pub trait GenerativeInterpretation: Interpretation {
+	/// Create a new resource.
+	fn new_resource(&mut self) -> Self::Resource;
+}
 
-	fn resources(&self) -> Self::Resources<'_> {
-		I::resources(*self)
+/// Interpretation that can spawn fresh new resources.
+pub trait ConstGenerativeInterpretation: Interpretation {
+	/// Create a new resource.
+	fn new_resource(&self) -> Self::Resource;
+}
+
+impl<I: ConstGenerativeInterpretation> GenerativeInterpretation for I {
+	fn new_resource(&mut self) -> Self::Resource {
+		ConstGenerativeInterpretation::new_resource(self)
 	}
 }
 
-impl<'i, I: TraversableInterpretation> TraversableInterpretation for &'i mut I {
-	type Resources<'a> = I::Resources<'a> where Self: 'a;
+/// Mutable interpretation.
+pub trait InterpretationMut: Interpretation {
+	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource;
 
-	fn resources(&self) -> Self::Resources<'_> {
-		I::resources(*self)
+	fn insert_literal<'a>(&mut self, literal: impl Into<CowLiteral<'a>>) -> Self::Resource;
+
+	fn insert_term<'a>(&mut self, term: impl Into<CowTerm<'a>>) -> Self::Resource {
+		match term.into() {
+			CowTerm::Iri(iri) => self.insert_iri(iri),
+			CowTerm::Literal(literal) => self.insert_literal(literal),
+		}
 	}
 }
 
-/// Mutable RDF resource interpretation.
-pub trait InterpretationMut<V>: Interpretation {
-	/// Creates a new resource.
-	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource;
-}
+/// Reverse interpretation.
+pub trait ReverseInterpretation: Interpretation {
+	type Iris<'a>: Iterator<Item = Cow<'a, Iri>>
+	where
+		Self: 'a;
+	type Literals<'a>: Iterator<Item = CowLiteral<'a>>
+	where
+		Self: 'a;
 
-impl<'t, V, T: InterpretationMut<V>> InterpretationMut<V> for &'t mut T {
-	fn new_resource(&mut self, vocabulary: &mut V) -> Self::Resource {
-		T::new_resource(*self, vocabulary)
+	fn iris_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Iris<'a>;
+
+	fn literals_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::Literals<'a>;
+
+	fn terms_of<'a>(&'a self, resource: &'a Self::Resource) -> TermsOf<'a, Self> {
+		TermsOf {
+			iris: self.iris_of(resource),
+			literals: self.literals_of(resource),
+		}
+	}
+
+	fn is_anonymous(&self, resource: &Self::Resource) -> bool {
+		self.terms_of(resource).next().is_none()
 	}
 }
 
-pub type UninterpretedIdRef<'a, I> =
-	Id<&'a <I as ReverseIriInterpretation>::Iri, &'a <I as ReverseBlankIdInterpretation>::BlankId>;
-
-pub type UninterpretedTermRef<'a, I> =
-	Term<UninterpretedIdRef<'a, I>, &'a <I as ReverseLiteralInterpretation>::Literal>;
-
-pub type UninterpretedQuadRef<'a, I> = Quad<
-	UninterpretedIdRef<'a, I>,
-	&'a <I as ReverseIriInterpretation>::Iri,
-	UninterpretedTermRef<'a, I>,
-	UninterpretedIdRef<'a, I>,
->;
-
-pub type UninterpretedGrdfQuadRef<'a, I> = Quad<
-	UninterpretedTermRef<'a, I>,
-	UninterpretedTermRef<'a, I>,
-	UninterpretedTermRef<'a, I>,
-	UninterpretedTermRef<'a, I>,
->;
-
-/// RDF interpretation function.
-pub trait Interpret<I: Interpretation> {
-	/// Interpreted form.
-	type Interpreted;
-
-	/// Interpret the given resource.
-	fn interpret(self, interpretation: &mut I) -> Self::Interpreted;
+pub struct TermsOf<'a, I: 'a + ?Sized + ReverseInterpretation> {
+	iris: I::Iris<'a>,
+	literals: I::Literals<'a>,
 }
 
-impl<I: Interpretation, T: Interpret<I>> Interpret<I> for Option<T> {
-	type Interpreted = Option<T::Interpreted>;
+impl<'a, I: 'a + ?Sized + ReverseInterpretation> Iterator for TermsOf<'a, I> {
+	type Item = CowTerm<'a>;
 
-	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
-		self.map(|t| t.interpret(interpretation))
+	fn next(&mut self) -> Option<Self::Item> {
+		self.iris
+			.next()
+			.map(CowTerm::Iri)
+			.or_else(|| self.literals.next().map(CowTerm::Literal))
 	}
 }
 
-impl<I, B, T: IdInterpretationMut<I, B>> Interpret<T> for Id<I, B> {
-	type Interpreted = T::Resource;
+pub trait LocalInterpretation: Interpretation {
+	fn blank_id(&self, blank_id: &BlankId) -> Option<Self::Resource>;
 
-	fn interpret(self, interpretation: &mut T) -> Self::Interpreted {
-		interpretation.interpret_id(self)
+	fn local_term<'a>(&self, term: impl Into<LocalTermRef<'a>>) -> Option<Self::Resource> {
+		match term.into() {
+			LocalTermRef::Anonymous(blank_id) => self.blank_id(blank_id),
+			LocalTermRef::Named(term) => self.term(term),
+		}
+	}
+
+	fn id<'a>(&self, id: impl Into<IdRef<'a>>) -> Option<Self::Resource> {
+		match id.into() {
+			IdRef::BlankId(blank_id) => self.blank_id(blank_id),
+			IdRef::Iri(iri) => self.iri(iri),
+		}
 	}
 }
 
-impl<T, I: LiteralInterpretationMut<Self>> Interpret<I> for Literal<T> {
-	type Interpreted = I::Resource;
+pub trait LocalInterpretationMut: InterpretationMut {
+	fn insert_blank_id<'a>(&mut self, blank_id: impl Into<Cow<'a, BlankId>>) -> Self::Resource;
 
-	fn interpret(self, interpretation: &mut I) -> Self::Interpreted {
-		interpretation.interpret_literal(self)
+	fn insert_local_term<'a>(&mut self, term: impl Into<CowLocalTerm<'a>>) -> Self::Resource {
+		match term.into() {
+			CowLocalTerm::Anonymous(blank_id) => self.insert_blank_id(blank_id),
+			CowLocalTerm::Named(term) => self.insert_term(term),
+		}
+	}
+
+	fn insert_id<'a>(&mut self, term: impl Into<CowId<'a>>) -> Self::Resource {
+		match term.into() {
+			CowId::BlankId(blank_id) => self.insert_blank_id(blank_id),
+			CowId::Iri(iri) => self.insert_iri(iri),
+		}
+	}
+}
+
+pub trait ReverseLocalInterpretation: ReverseInterpretation {
+	type BlankIds<'a>: Iterator<Item = Cow<'a, BlankId>>
+	where
+		Self: 'a;
+
+	fn blank_ids_of<'a>(&'a self, resource: &'a Self::Resource) -> Self::BlankIds<'a>;
+
+	fn local_terms_of<'a>(&'a self, resource: &'a Self::Resource) -> LocalTermsOf<'a, Self> {
+		LocalTermsOf {
+			terms: self.terms_of(resource),
+			blank_ids: self.blank_ids_of(resource),
+		}
+	}
+}
+
+pub struct LocalTermsOf<'a, I: 'a + ?Sized + ReverseLocalInterpretation> {
+	terms: TermsOf<'a, I>,
+	blank_ids: I::BlankIds<'a>,
+}
+
+impl<'a, I: 'a + ?Sized + ReverseLocalInterpretation> Iterator for LocalTermsOf<'a, I> {
+	type Item = CowLocalTerm<'a>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.terms
+			.next()
+			.map(CowLocalTerm::Named)
+			.or_else(|| self.blank_ids.next().map(CowLocalTerm::Anonymous))
 	}
 }

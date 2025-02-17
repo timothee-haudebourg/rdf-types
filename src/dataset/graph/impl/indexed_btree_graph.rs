@@ -14,7 +14,7 @@ use crate::{
 		triple::canonical::{PatternObject, PatternPredicate, PatternSubject},
 		CanonicalTriplePattern,
 	},
-	RdfDisplay, Term, Triple,
+	LocalTerm, RdfDisplay, Triple,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -57,7 +57,7 @@ fn triple_index_cmp<'a, R: Ord>(
 
 /// Indexed BTree-based RDF graph, optimized for pattern matching operations.
 #[derive(Clone)]
-pub struct IndexedBTreeGraph<R = Term> {
+pub struct IndexedBTreeGraph<R = LocalTerm> {
 	resources: Slab<Resource<R>>,
 	triples: Slab<Triple<usize>>,
 	resources_indexes: RawBTree<usize>,
@@ -366,7 +366,10 @@ impl<R> Graph for IndexedBTreeGraph<R> {
 }
 
 impl<R> TraversableGraph for IndexedBTreeGraph<R> {
-	type Triples<'a> = Triples<'a, R> where R: 'a;
+	type Triples<'a>
+		= Triples<'a, R>
+	where
+		R: 'a;
 
 	fn triples(&self) -> Self::Triples<'_> {
 		self.iter()
@@ -374,7 +377,10 @@ impl<R> TraversableGraph for IndexedBTreeGraph<R> {
 }
 
 impl<R> ResourceTraversableGraph for IndexedBTreeGraph<R> {
-	type GraphResources<'a> = Resources<'a, R> where R: 'a;
+	type GraphResources<'a>
+		= Resources<'a, R>
+	where
+		R: 'a;
 
 	fn graph_resources(&self) -> Self::GraphResources<'_> {
 		self.resources()
@@ -386,7 +392,10 @@ impl<R> ResourceTraversableGraph for IndexedBTreeGraph<R> {
 }
 
 impl<R> SubjectTraversableGraph for IndexedBTreeGraph<R> {
-	type GraphSubjects<'a> = Subjects<'a, R> where R: 'a;
+	type GraphSubjects<'a>
+		= Subjects<'a, R>
+	where
+		R: 'a;
 
 	fn graph_subjects(&self) -> Self::GraphSubjects<'_> {
 		self.subjects()
@@ -398,7 +407,10 @@ impl<R> SubjectTraversableGraph for IndexedBTreeGraph<R> {
 }
 
 impl<R> PredicateTraversableGraph for IndexedBTreeGraph<R> {
-	type GraphPredicates<'a> = Predicates<'a, R> where R: 'a;
+	type GraphPredicates<'a>
+		= Predicates<'a, R>
+	where
+		R: 'a;
 
 	fn graph_predicates(&self) -> Self::GraphPredicates<'_> {
 		self.predicates()
@@ -410,7 +422,10 @@ impl<R> PredicateTraversableGraph for IndexedBTreeGraph<R> {
 }
 
 impl<R> ObjectTraversableGraph for IndexedBTreeGraph<R> {
-	type GraphObjects<'a> = Objects<'a, R> where R: 'a;
+	type GraphObjects<'a>
+		= Objects<'a, R>
+	where
+		R: 'a;
 
 	fn graph_objects(&self) -> Self::GraphObjects<'_> {
 		self.objects()
@@ -432,7 +447,11 @@ impl<R: Clone + Ord> GraphMut for IndexedBTreeGraph<R> {
 }
 
 impl<R: Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
-	type TriplePatternMatching<'a, 'p> = PatternMatching<'a, R> where R: 'a, Self::Resource: 'p;
+	type TriplePatternMatching<'a, 'p>
+		= PatternMatching<'a, R>
+	where
+		R: 'a,
+		Self::Resource: 'p;
 
 	fn triple_pattern_matching<'p>(
 		&self,
