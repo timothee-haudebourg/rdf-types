@@ -18,7 +18,7 @@ use crate::{
 		quad::canonical::{PatternGraph, PatternObject, PatternPredicate, PatternSubject},
 		CanonicalQuadPattern,
 	},
-	LocalTerm, Quad, RdfDisplay,
+	Quad, RdfDisplay, Term,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -59,7 +59,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// Indexed BTree-based RDF dataset, optimized for pattern matching operations.
 #[derive(Clone)]
-pub struct IndexedBTreeDataset<R = LocalTerm> {
+pub struct IndexedBTreeDataset<R = Term> {
 	resources: Slab<Resource<R>>,
 	quads: Slab<Quad<usize>>,
 	resources_indexes: RawBTree<usize>,
@@ -467,7 +467,11 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over all the quads matching the given canonical
-	/// quad pattern. The matching quads are removed from the dataset.
+	/// quad pattern.
+	///
+	/// Each matching quad returned by [`Iterator::next`] are removed from the
+	/// dataset. Matching quads that are not iterated on a kept in the dataset,
+	/// even when the iterator is dropped.
 	pub fn extract_pattern_matching(
 		&mut self,
 		pattern: CanonicalQuadPattern<&R>,

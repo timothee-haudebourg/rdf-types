@@ -1,44 +1,43 @@
 use std::cmp::Ordering;
 
-use crate::LiteralRef;
-use iref::Iri;
+use crate::BlankId;
 
-use super::Term;
+use super::{GroundTermRef, Term};
 
 /// Lexical RDF term reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum TermRef<'a> {
-	Iri(&'a Iri),
+pub enum LocalTermRef<'a> {
+	Anonymous(&'a BlankId),
 
-	Literal(LiteralRef<'a>),
+	Named(GroundTermRef<'a>),
 }
 
-impl TermRef<'_> {
+impl LocalTermRef<'_> {
 	pub fn to_owned(self) -> Term {
 		match self {
-			Self::Iri(iri) => Term::Iri(iri.to_owned()),
-			Self::Literal(l) => Term::Literal(l.to_owned()),
+			Self::Anonymous(blank_id) => Term::BlankId(blank_id.to_owned()),
+			Self::Named(named) => Term::Ground(named.to_owned()),
 		}
 	}
 }
 
-impl PartialEq<Term> for TermRef<'_> {
+impl PartialEq<Term> for LocalTermRef<'_> {
 	fn eq(&self, other: &Term) -> bool {
 		match (self, other) {
-			(Self::Iri(a), Term::Iri(b)) => *a == b,
-			(Self::Literal(a), Term::Literal(b)) => a == b,
+			(Self::Anonymous(a), Term::BlankId(b)) => *a == b,
+			(Self::Named(a), Term::Ground(b)) => a == b,
 			_ => false,
 		}
 	}
 }
 
-impl PartialOrd<Term> for TermRef<'_> {
+impl PartialOrd<Term> for LocalTermRef<'_> {
 	fn partial_cmp(&self, other: &Term) -> Option<Ordering> {
 		match (self, other) {
-			(Self::Iri(a), Term::Iri(b)) => (*a).partial_cmp(b),
-			(Self::Iri(_), Term::Literal(_)) => Some(Ordering::Less),
-			(Self::Literal(_), Term::Iri(_)) => Some(Ordering::Greater),
-			(Self::Literal(a), Term::Literal(b)) => (*a).partial_cmp(b),
+			(Self::Anonymous(a), Term::BlankId(b)) => (*a).partial_cmp(b),
+			(Self::Anonymous(_), Term::Ground(_)) => Some(Ordering::Less),
+			(Self::Named(_), Term::BlankId(_)) => Some(Ordering::Greater),
+			(Self::Named(a), Term::Ground(b)) => (*a).partial_cmp(b),
 		}
 	}
 }

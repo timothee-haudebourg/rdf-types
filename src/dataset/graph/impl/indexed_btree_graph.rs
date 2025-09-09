@@ -14,7 +14,7 @@ use crate::{
 		triple::canonical::{PatternObject, PatternPredicate, PatternSubject},
 		CanonicalTriplePattern,
 	},
-	LocalTerm, RdfDisplay, Triple,
+	RdfDisplay, Term, Triple,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -57,7 +57,7 @@ fn triple_index_cmp<'a, R: Ord>(
 
 /// Indexed BTree-based RDF graph, optimized for pattern matching operations.
 #[derive(Clone)]
-pub struct IndexedBTreeGraph<R = LocalTerm> {
+pub struct IndexedBTreeGraph<R = Term> {
 	resources: Slab<Resource<R>>,
 	triples: Slab<Triple<usize>>,
 	resources_indexes: RawBTree<usize>,

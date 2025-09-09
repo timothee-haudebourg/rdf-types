@@ -1,107 +1,132 @@
-use crate::{Literal, LiteralRef, RdfDisplay};
-use iref::{Iri, IriBuf};
+use std::borrow::Cow;
+use std::fmt;
 use std::hash::Hash;
-use std::{borrow::Cow, fmt};
 
-mod r#ref;
-pub use r#ref::*;
+use iref::{Iri, IriBuf};
+
+use crate::{BlankId, BlankIdBuf, Id, Literal, LiteralRef, RdfDisplay};
 
 mod cow;
-pub use cow::*;
-
-mod local;
-pub use local::*;
-
 pub mod generator;
-pub use generator::{Generator, LocalGenerator};
+mod ground;
+mod r#ref;
+
+pub use cow::*;
+pub use generator::Generator;
+pub use ground::*;
+pub use r#ref::*;
 
 /// Lexical representation of an RDF resource.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Term {
-	/// IRI.
-	Iri(IriBuf),
-
-	/// Literal value.
-	Literal(Literal),
+	BlankId(BlankIdBuf),
+	Ground(GroundTerm),
 }
 
 impl Term {
-	pub fn is_iri(&self) -> bool {
-		matches!(self, Self::Iri(_))
+	pub fn iri(iri: IriBuf) -> Self {
+		Self::Ground(GroundTerm::Iri(iri))
 	}
 
-	pub fn is_literal(&self) -> bool {
-		matches!(self, Self::Literal(_))
+	pub fn literal(literal: Literal) -> Self {
+		Self::Ground(GroundTerm::Literal(literal))
 	}
 
-	pub fn as_literal(&self) -> Option<LiteralRef> {
+	pub fn is_blank_id(&self) -> bool {
+		matches!(self, Self::BlankId(_))
+	}
+
+	pub fn as_blank_id(&self) -> Option<&BlankId> {
 		match self {
-			Self::Literal(lit) => Some(lit.as_ref()),
-			_ => None,
-		}
-	}
-
-	pub fn into_literal(self) -> Option<Literal> {
-		match self {
-			Self::Literal(lit) => Some(lit),
-			_ => None,
-		}
-	}
-
-	pub fn try_into_literal(self) -> Result<Literal, IriBuf> {
-		match self {
-			Self::Literal(lit) => Ok(lit),
-			Self::Iri(id) => Err(id),
+			Self::BlankId(b) => Some(b),
+			Self::Ground(_) => None,
 		}
 	}
 
 	pub fn as_iri(&self) -> Option<&Iri> {
 		match self {
-			Self::Iri(id) => Some(id),
-			_ => None,
+			Self::Ground(t) => t.as_iri(),
+			Self::BlankId(_) => None,
 		}
 	}
 
-	pub fn try_into_iri(self) -> Result<IriBuf, Self> {
+	pub fn as_literal(&self) -> Option<LiteralRef> {
 		match self {
-			Self::Iri(iri) => Ok(iri),
-			other => Err(other),
+			Self::Ground(t) => t.as_literal(),
+			Self::BlankId(_) => None,
 		}
 	}
 
-	pub fn into_iri(self) -> Option<IriBuf> {
-		self.try_into_iri().ok()
-	}
-
-	pub fn as_ref(&self) -> TermRef {
+	pub fn as_ref(&self) -> LocalTermRef {
 		match self {
-			Self::Iri(id) => TermRef::Iri(id),
-			Self::Literal(l) => TermRef::Literal(l.as_ref()),
+			Self::BlankId(blank_id) => LocalTermRef::Anonymous(blank_id),
+			Self::Ground(named) => LocalTermRef::Named(named.as_ref()),
 		}
 	}
 
-	pub fn as_cow(&self) -> CowTerm {
+	pub fn as_cow(&self) -> CowLocalTerm {
 		match self {
-			Self::Iri(id) => CowTerm::Iri(Cow::Borrowed(id)),
-			Self::Literal(l) => CowTerm::Literal(l.as_cow()),
+			Self::BlankId(blank_id) => CowLocalTerm::Anonymous(Cow::Borrowed(blank_id)),
+			Self::Ground(named) => CowLocalTerm::Named(named.as_cow()),
 		}
 	}
 
-	pub fn into_cow(self) -> CowTerm<'static> {
+	pub fn into_cow(self) -> CowLocalTerm<'static> {
 		match self {
-			Self::Iri(id) => CowTerm::Iri(Cow::Owned(id)),
-			Self::Literal(l) => CowTerm::Literal(l.into_cow()),
+			Self::BlankId(blank_id) => CowLocalTerm::Anonymous(Cow::Owned(blank_id)),
+			Self::Ground(named) => CowLocalTerm::Named(named.into_cow()),
 		}
+	}
+
+	pub fn into_id(self) -> Result<Id, Literal> {
+		match self {
+			Self::BlankId(blank) => Ok(Id::BlankId(blank)),
+			Self::Ground(GroundTerm::Iri(iri)) => Ok(Id::Iri(iri)),
+			Self::Ground(GroundTerm::Literal(lit)) => Err(lit),
+		}
+	}
+}
+
+impl From<IriBuf> for Term {
+	fn from(value: IriBuf) -> Self {
+		Self::iri(value)
+	}
+}
+
+impl From<Literal> for Term {
+	fn from(value: Literal) -> Self {
+		Self::literal(value)
+	}
+}
+
+impl From<Id> for Term {
+	fn from(value: Id) -> Self {
+		match value {
+			Id::BlankId(b) => Self::BlankId(b),
+			Id::Iri(i) => Self::Ground(GroundTerm::Iri(i)),
+		}
+	}
+}
+
+impl From<GroundTerm> for Term {
+	fn from(value: GroundTerm) -> Self {
+		Self::Ground(value)
+	}
+}
+
+impl From<BlankIdBuf> for Term {
+	fn from(value: BlankIdBuf) -> Self {
+		Self::BlankId(value)
 	}
 }
 
 impl Hash for Term {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 		match self {
-			Self::Iri(id) => id.hash(state),
-			Self::Literal(l) => l.hash(state),
+			Self::BlankId(id) => id.hash(state),
+			Self::Ground(l) => l.hash(state),
 		}
 	}
 }
@@ -109,8 +134,8 @@ impl Hash for Term {
 impl fmt::Display for Term {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Self::Iri(id) => id.fmt(f),
-			Self::Literal(lit) => lit.fmt(f),
+			Self::BlankId(id) => id.fmt(f),
+			Self::Ground(lit) => lit.fmt(f),
 		}
 	}
 }
@@ -118,8 +143,8 @@ impl fmt::Display for Term {
 impl RdfDisplay for Term {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Self::Iri(id) => id.rdf_fmt(f),
-			Self::Literal(lit) => lit.rdf_fmt(f),
+			Self::BlankId(id) => id.rdf_fmt(f),
+			Self::Ground(lit) => lit.rdf_fmt(f),
 		}
 	}
 }

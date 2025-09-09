@@ -1,27 +1,15 @@
+use crate::BlankId;
 use std::borrow::Cow;
 
-use iref::Iri;
+use super::{CowGroundTerm, Term};
 
-use crate::CowLiteral;
+pub enum CowLocalTerm<'a> {
+	Anonymous(Cow<'a, BlankId>),
 
-use super::Term;
-
-pub enum CowTerm<'a> {
-	Iri(Cow<'a, Iri>),
-
-	Literal(CowLiteral<'a>),
+	Named(CowGroundTerm<'a>),
 }
 
-impl CowTerm<'_> {
-	pub fn into_owned(self) -> Term {
-		match self {
-			Self::Iri(iri) => Term::Iri(iri.into_owned()),
-			Self::Literal(l) => Term::Literal(l.into_owned()),
-		}
-	}
-}
-
-impl From<Term> for CowTerm<'_> {
+impl From<Term> for CowLocalTerm<'_> {
 	fn from(value: Term) -> Self {
 		value.into_cow()
 	}

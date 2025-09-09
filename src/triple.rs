@@ -1,9 +1,9 @@
-use crate::{Id, IdRef, LocalTerm, LocalTermRef, Quad, RdfDisplay};
+use crate::{Id, IdRef, LocalTermRef, Quad, RdfDisplay, Term};
 use iref::{Iri, IriBuf};
 use std::{cmp::Ordering, fmt};
 
 /// Lexical RDF triple.
-pub type LexicalTriple = Triple<Id, IriBuf, LocalTerm>;
+pub type LexicalTriple = Triple<Id, IriBuf, Term>;
 
 /// Lexical RDF triple reference.
 pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, LocalTermRef<'a>>;
@@ -11,7 +11,7 @@ pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, LocalTermRef<'a>>;
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Triple<S = LocalTerm, P = S, O = S>(pub S, pub P, pub O);
+pub struct Triple<S = Term, P = S, O = S>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>

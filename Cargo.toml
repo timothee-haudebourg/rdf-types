@@ -22,7 +22,8 @@ uuid-generator-v5 = ["uuid", "uuid/v5"]
 
 [dependencies]
 # Major dependencies (major version must be synchronized).
-iref = { version = "3.2.2", features = ["macros"] }
+# iref = { version = "3.2.2", features = ["macros"] }
+iref.path = "/home/timothee/Projets/utils/parsing/iref/"
 langtag = "0.4.0"
 thiserror = "1.0.57"
 contextual = { version = "0.1.6", optional = true }

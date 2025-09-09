@@ -1,32 +1,35 @@
-use crate::{LocalTerm, Term};
+use crate::Id;
 
 mod blank;
-pub use blank::Blank;
+pub use blank::BlankIdGenerator;
 
 mod uuid;
+use iref::IriBuf;
 pub use uuid::Uuid;
 
 mod interpretation;
-pub use interpretation::LocalGeneratorInterpretation;
+pub use interpretation::GeneratorInterpretation;
+
+/// Subject identifier generator.
+pub trait IriGenerator {
+	/// Generate a fresh term.
+	fn next_iri(&mut self) -> IriBuf;
+}
+
+impl<G: IriGenerator> IriGenerator for &mut G {
+	fn next_iri(&mut self) -> IriBuf {
+		(*self).next_iri()
+	}
+}
 
 /// Subject identifier generator.
 pub trait Generator {
 	/// Generate a fresh term.
-	fn next_term(&mut self) -> Term;
+	fn next_id(&mut self) -> Id;
 }
 
 impl<G: Generator> Generator for &mut G {
-	fn next_term(&mut self) -> Term {
-		(*self).next_term()
-	}
-}
-
-pub trait LocalGenerator {
-	fn next_local_term(&mut self) -> LocalTerm;
-}
-
-impl<G: LocalGenerator> LocalGenerator for &mut G {
-	fn next_local_term(&mut self) -> LocalTerm {
-		(*self).next_local_term()
+	fn next_id(&mut self) -> Id {
+		(*self).next_id()
 	}
 }

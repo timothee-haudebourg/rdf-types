@@ -7,7 +7,7 @@ use slab::Slab;
 use super::super::Dataset;
 use crate::{
 	dataset::{DatasetMut, IndexedBTreeDataset, ResourceTraversableDataset, TraversableDataset},
-	LocalTerm, Quad, RdfDisplay,
+	Quad, RdfDisplay, Term,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -48,7 +48,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// BTree-based RDF dataset.
 #[derive(Clone)]
-pub struct BTreeDataset<R = LocalTerm> {
+pub struct BTreeDataset<R = Term> {
 	pub(crate) resources: Slab<Resource<R>>,
 	pub(crate) quads: Slab<Quad<usize>>,
 	pub(crate) resources_indexes: RawBTree<usize>,

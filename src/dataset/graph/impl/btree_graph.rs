@@ -7,7 +7,7 @@ use slab::Slab;
 use super::{super::Graph, IndexedBTreeGraph};
 use crate::{
 	dataset::{GraphMut, ResourceTraversableGraph, TraversableGraph},
-	LocalTerm, RdfDisplay, Triple,
+	RdfDisplay, Term, Triple,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -50,7 +50,7 @@ fn triple_index_cmp<'a, R: Ord>(
 
 /// BTree-based RDF graph.
 #[derive(Clone)]
-pub struct BTreeGraph<R = LocalTerm> {
+pub struct BTreeGraph<R = Term> {
 	pub(crate) resources: Slab<Resource<R>>,
 	pub(crate) triples: Slab<Triple<usize>>,
 	pub(crate) resources_indexes: RawBTree<usize>,

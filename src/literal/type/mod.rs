@@ -67,6 +67,30 @@ impl LiteralType {
 	}
 }
 
+impl From<&Iri> for LiteralType {
+	fn from(value: &Iri) -> Self {
+		Self::Any(value.to_owned())
+	}
+}
+
+impl From<IriBuf> for LiteralType {
+	fn from(value: IriBuf) -> Self {
+		Self::Any(value)
+	}
+}
+
+impl From<&LangTag> for LiteralType {
+	fn from(value: &LangTag) -> Self {
+		Self::LangString(value.to_owned())
+	}
+}
+
+impl From<LangTagBuf> for LiteralType {
+	fn from(value: LangTagBuf) -> Self {
+		Self::LangString(value)
+	}
+}
+
 impl RdfDisplay for LiteralType {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {

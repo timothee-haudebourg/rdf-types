@@ -46,6 +46,6 @@ pub mod utils;
 
 pub use dataset::Dataset;
 pub use interpretation::{Interpretation, InterpretationMut};
-pub use iref::{iri, Iri, IriBuf};
+pub use iref::{iri, InvalidIri, Iri, IriBuf, IriError, IriRef, IriRefBuf};
 
 pub const XSD_STRING: &Iri = iri!("http://www.w3.org/2001/XMLSchema#string");

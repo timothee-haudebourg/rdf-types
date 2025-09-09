@@ -2,7 +2,8 @@
 use std::borrow::Cow;
 
 use crate::{
-	BlankId, CowId, CowLiteral, CowLocalTerm, CowTerm, IdRef, LiteralRef, LocalTermRef, TermRef,
+	BlankId, CowGroundTerm, CowId, CowLiteral, CowLocalTerm, GroundTermRef, IdRef, LiteralRef,
+	LocalTermRef,
 };
 
 mod r#impl;
@@ -21,10 +22,10 @@ pub trait Interpretation {
 
 	fn literal<'a>(&self, literal: impl Into<LiteralRef<'a>>) -> Option<Self::Resource>;
 
-	fn term<'a>(&self, term: impl Into<TermRef<'a>>) -> Option<Self::Resource> {
+	fn term<'a>(&self, term: impl Into<GroundTermRef<'a>>) -> Option<Self::Resource> {
 		match term.into() {
-			TermRef::Iri(iri) => self.iri(iri),
-			TermRef::Literal(l) => self.literal(l),
+			GroundTermRef::Iri(iri) => self.iri(iri),
+			GroundTermRef::Literal(l) => self.literal(l),
 		}
 	}
 }
@@ -62,10 +63,10 @@ pub trait InterpretationMut: Interpretation {
 
 	fn insert_literal<'a>(&mut self, literal: impl Into<CowLiteral<'a>>) -> Self::Resource;
 
-	fn insert_term<'a>(&mut self, term: impl Into<CowTerm<'a>>) -> Self::Resource {
+	fn insert_term<'a>(&mut self, term: impl Into<CowGroundTerm<'a>>) -> Self::Resource {
 		match term.into() {
-			CowTerm::Iri(iri) => self.insert_iri(iri),
-			CowTerm::Literal(literal) => self.insert_literal(literal),
+			CowGroundTerm::Iri(iri) => self.insert_iri(iri),
+			CowGroundTerm::Literal(literal) => self.insert_literal(literal),
 		}
 	}
 }
@@ -101,13 +102,13 @@ pub struct TermsOf<'a, I: 'a + ?Sized + ReverseInterpretation> {
 }
 
 impl<'a, I: 'a + ?Sized + ReverseInterpretation> Iterator for TermsOf<'a, I> {
-	type Item = CowTerm<'a>;
+	type Item = CowGroundTerm<'a>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.iris
 			.next()
-			.map(CowTerm::Iri)
-			.or_else(|| self.literals.next().map(CowTerm::Literal))
+			.map(CowGroundTerm::Iri)
+			.or_else(|| self.literals.next().map(CowGroundTerm::Literal))
 	}
 }
 

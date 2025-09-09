@@ -7,14 +7,14 @@ use crate::{
 		ConstGenerativeInterpretation, LocalInterpretation, ReverseInterpretation,
 		ReverseLocalInterpretation,
 	},
-	BlankId, CowLiteral, Interpretation, InterpretationMut, LiteralRef, LocalTerm,
+	BlankId, CowLiteral, Interpretation, InterpretationMut, LiteralRef, Term,
 };
 
-use super::LocalGenerator;
+use super::Generator;
 
-pub struct LocalGeneratorInterpretation<G>(RefCell<G>);
+pub struct GeneratorInterpretation<G>(RefCell<G>);
 
-impl<G> LocalGeneratorInterpretation<G> {
+impl<G> GeneratorInterpretation<G> {
 	pub fn new(generator: G) -> Self {
 		Self(RefCell::new(generator))
 	}
@@ -24,8 +24,8 @@ impl<G> LocalGeneratorInterpretation<G> {
 	}
 }
 
-impl<G> Interpretation for LocalGeneratorInterpretation<G> {
-	type Resource = LocalTerm;
+impl<G> Interpretation for GeneratorInterpretation<G> {
+	type Resource = Term;
 
 	fn iri(&self, iri: &Iri) -> Option<Self::Resource> {
 		Some(iri.to_owned().into())
@@ -36,13 +36,13 @@ impl<G> Interpretation for LocalGeneratorInterpretation<G> {
 	}
 }
 
-impl<G> LocalInterpretation for LocalGeneratorInterpretation<G> {
+impl<G> LocalInterpretation for GeneratorInterpretation<G> {
 	fn blank_id(&self, blank_id: &BlankId) -> Option<Self::Resource> {
 		Some(blank_id.to_owned().into())
 	}
 }
 
-impl<G> InterpretationMut for LocalGeneratorInterpretation<G> {
+impl<G> InterpretationMut for GeneratorInterpretation<G> {
 	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
 		iri.into().into_owned().into()
 	}
@@ -52,7 +52,7 @@ impl<G> InterpretationMut for LocalGeneratorInterpretation<G> {
 	}
 }
 
-impl<G> ReverseInterpretation for LocalGeneratorInterpretation<G> {
+impl<G> ReverseInterpretation for GeneratorInterpretation<G> {
 	type Iris<'a>
 		= std::option::IntoIter<Cow<'a, Iri>>
 	where
@@ -71,7 +71,7 @@ impl<G> ReverseInterpretation for LocalGeneratorInterpretation<G> {
 	}
 }
 
-impl<G> ReverseLocalInterpretation for LocalGeneratorInterpretation<G> {
+impl<G> ReverseLocalInterpretation for GeneratorInterpretation<G> {
 	type BlankIds<'a>
 		= std::option::IntoIter<Cow<'a, BlankId>>
 	where
@@ -82,9 +82,9 @@ impl<G> ReverseLocalInterpretation for LocalGeneratorInterpretation<G> {
 	}
 }
 
-impl<G: LocalGenerator> ConstGenerativeInterpretation for LocalGeneratorInterpretation<G> {
+impl<G: Generator> ConstGenerativeInterpretation for GeneratorInterpretation<G> {
 	fn new_resource(&self) -> Self::Resource {
 		let mut generator = self.0.borrow_mut();
-		generator.next_local_term()
+		generator.next_id().into()
 	}
 }

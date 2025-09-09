@@ -1,6 +1,4 @@
-use crate::{BlankIdBuf, LocalTerm};
-
-use super::LocalGenerator;
+use crate::{BlankIdBuf, Generator, Id};
 
 /// Generates numbered blank node identifiers,
 /// with an optional prefix.
@@ -8,7 +6,7 @@ use super::LocalGenerator;
 /// This generator can create `usize::MAX` unique blank node identifiers.
 /// If [`Generator::next`] is called `usize::MAX + 1` times, it will panic.
 #[derive(Default)]
-pub struct Blank {
+pub struct BlankIdGenerator {
 	/// Prefix string.
 	prefix: String,
 
@@ -16,7 +14,7 @@ pub struct Blank {
 	count: usize,
 }
 
-impl Blank {
+impl BlankIdGenerator {
 	/// Creates a new numbered generator with no prefix.
 	pub fn new() -> Self {
 		Self::new_full(String::new(), 0)
@@ -65,8 +63,8 @@ impl Blank {
 	}
 }
 
-impl LocalGenerator for Blank {
-	fn next_local_term(&mut self) -> LocalTerm {
-		LocalTerm::Anonymous(self.next_blank_id())
+impl Generator for BlankIdGenerator {
+	fn next_id(&mut self) -> Id {
+		Id::BlankId(self.next_blank_id())
 	}
 }

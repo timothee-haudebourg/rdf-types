@@ -13,6 +13,22 @@ pub enum CanonicalQuadPattern<T> {
 	GivenSubject(T, GivenSubject<T>),
 }
 
+impl<T> CanonicalQuadPattern<T> {
+	pub const ANY: Self = Self::AnySubject(AnySubject::AnyPredicate(
+		AnySubjectAnyPredicate::AnyObject(AnySubjectAnyPredicateAnyObject::AnyGraph),
+	));
+
+	pub fn graph_any(graph: Option<T>) -> Self {
+		Self::AnySubject(AnySubject::AnyPredicate(AnySubjectAnyPredicate::AnyObject(
+			AnySubjectAnyPredicateAnyObject::GivenGraph(graph),
+		)))
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool {
+		todo!()
+	}
+}
+
 impl<T> From<Triple<T>> for CanonicalQuadPattern<T> {
 	fn from(value: Triple<T>) -> Self {
 		Self::from_triple(value)

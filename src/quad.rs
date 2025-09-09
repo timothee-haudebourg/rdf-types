@@ -2,10 +2,10 @@ use std::{cmp::Ordering, fmt};
 
 use iref::{Iri, IriBuf};
 
-use crate::{Id, IdRef, LocalTerm, LocalTermRef, RdfDisplay, Triple};
+use crate::{Id, IdRef, LocalTermRef, RdfDisplay, Term, Triple};
 
 /// Lexical RDF quad.
-pub type RdfQuad = Quad<Id, IriBuf, LocalTerm, Id>;
+pub type RdfQuad = Quad<Id, IriBuf, Term, Id>;
 
 /// Lexical RDF quad reference.
 pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, LocalTermRef<'a>, IdRef<'a>>;
@@ -13,7 +13,7 @@ pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, LocalTermRef<'a>, IdRef<'a>>;
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Quad<S = LocalTerm, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
+pub struct Quad<S = Term, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]

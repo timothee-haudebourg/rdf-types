@@ -2,7 +2,7 @@ use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
 use educe::Educe;
 
-use crate::{dataset::TraversableDataset, interpretation::ReverseInterpretation, LocalTerm, Quad};
+use crate::{dataset::TraversableDataset, interpretation::ReverseInterpretation, Quad, Term};
 
 /// Checks that there is an isomorphism between the datasets `a` and `b`.
 ///
@@ -11,8 +11,8 @@ use crate::{dataset::TraversableDataset, interpretation::ReverseInterpretation, 
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
 pub fn are_isomorphic<A, B>(a: &A, b: &B) -> bool
 where
-	A: TraversableDataset<Resource = LocalTerm>,
-	B: TraversableDataset<Resource = LocalTerm>,
+	A: TraversableDataset<Resource = Term>,
+	B: TraversableDataset<Resource = Term>,
 {
 	are_isomorphic_with(&(), a, b)
 }
@@ -37,8 +37,8 @@ where
 /// there is an isomorphism between `a` and `b`.
 pub fn find_bijection<'a, 'b, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b>>
 where
-	A: TraversableDataset<Resource = LocalTerm>,
-	B: TraversableDataset<Resource = LocalTerm>,
+	A: TraversableDataset<Resource = Term>,
+	B: TraversableDataset<Resource = Term>,
 {
 	find_bijection_with(&(), a, b)
 }
@@ -249,7 +249,7 @@ where
 /// between two (isomorphic) datasets.
 #[derive(Educe)]
 #[educe(Clone)]
-pub struct BTreeBijection<'a, 'b, R = LocalTerm> {
+pub struct BTreeBijection<'a, 'b, R = Term> {
 	pub forward: BTreeMap<&'a R, &'b R>,
 	pub backward: BTreeMap<&'b R, &'a R>,
 }
