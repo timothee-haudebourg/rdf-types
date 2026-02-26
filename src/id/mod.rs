@@ -1,7 +1,8 @@
 use core::fmt;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 
-use crate::{BlankId, BlankIdBuf};
+use crate::{BlankId, BlankIdBuf, RdfDisplay};
 use iref::{Iri, IriBuf};
 
 mod r#ref;
@@ -82,6 +83,36 @@ impl fmt::Display for Id {
 		match self {
 			Self::BlankId(b) => b.fmt(f),
 			Self::Iri(i) => i.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for Id {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(b) => b.rdf_fmt(f),
+			Self::Iri(i) => i.rdf_fmt(f),
+		}
+	}
+}
+
+impl<'a> PartialEq<IdRef<'a>> for Id {
+	fn eq(&self, other: &IdRef<'a>) -> bool {
+		match (self, other) {
+			(Self::BlankId(a), IdRef::BlankId(b)) => a == *b,
+			(Self::Iri(a), IdRef::Iri(b)) => a == *b,
+			_ => false,
+		}
+	}
+}
+
+impl<'a> PartialOrd<IdRef<'a>> for Id {
+	fn partial_cmp(&self, other: &IdRef<'a>) -> Option<Ordering> {
+		match (self, other) {
+			(Self::BlankId(a), IdRef::BlankId(b)) => a.as_blank_id().partial_cmp(b),
+			(Self::BlankId(_), IdRef::Iri(_)) => Some(Ordering::Less),
+			(Self::Iri(_), IdRef::BlankId(_)) => Some(Ordering::Greater),
+			(Self::Iri(a), IdRef::Iri(b)) => a.as_iri().partial_cmp(b),
 		}
 	}
 }

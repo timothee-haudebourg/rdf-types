@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::hash::Hash;
 use std::{borrow::Cow, fmt};
 
@@ -116,6 +117,27 @@ impl RdfDisplay for GroundTerm {
 		match self {
 			Self::Iri(id) => id.rdf_fmt(f),
 			Self::Literal(lit) => lit.rdf_fmt(f),
+		}
+	}
+}
+
+impl<'a> PartialEq<GroundTermRef<'a>> for GroundTerm {
+	fn eq(&self, other: &GroundTermRef<'a>) -> bool {
+		match (self, other) {
+			(Self::Iri(a), GroundTermRef::Iri(b)) => a == *b,
+			(Self::Literal(a), GroundTermRef::Literal(b)) => a == b,
+			_ => false,
+		}
+	}
+}
+
+impl<'a> PartialOrd<GroundTermRef<'a>> for GroundTerm {
+	fn partial_cmp(&self, other: &GroundTermRef<'a>) -> Option<Ordering> {
+		match (self, other) {
+			(Self::Iri(a), GroundTermRef::Iri(b)) => (*a).partial_cmp(b),
+			(Self::Iri(_), GroundTermRef::Literal(_)) => Some(Ordering::Less),
+			(Self::Literal(_), GroundTermRef::Iri(_)) => Some(Ordering::Greater),
+			(Self::Literal(a), GroundTermRef::Literal(b)) => (*a).partial_cmp(b),
 		}
 	}
 }

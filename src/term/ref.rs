@@ -1,14 +1,15 @@
+use core::fmt;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use iref::Iri;
 
-use crate::{BlankId, LiteralRef};
+use crate::{BlankId, LiteralRef, RdfDisplay};
 
 use super::{CowTerm, GroundTermRef, Term};
 
 /// Term reference.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TermRef<'a> {
 	/// Blank identifier.
 	BlankId(&'a BlankId),
@@ -97,6 +98,24 @@ impl PartialOrd<Term> for TermRef<'_> {
 			(Self::BlankId(_), Term::Ground(_)) => Some(Ordering::Less),
 			(Self::Ground(_), Term::BlankId(_)) => Some(Ordering::Greater),
 			(Self::Ground(a), Term::Ground(b)) => (*a).partial_cmp(b),
+		}
+	}
+}
+
+impl fmt::Display for TermRef<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(id) => id.fmt(f),
+			Self::Ground(g) => g.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for TermRef<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(id) => id.rdf_fmt(f),
+			Self::Ground(g) => g.rdf_fmt(f),
 		}
 	}
 }

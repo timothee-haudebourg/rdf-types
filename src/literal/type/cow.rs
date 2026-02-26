@@ -89,6 +89,18 @@ impl<'a> From<LiteralTypeRef<'a>> for CowLiteralType<'a> {
 	}
 }
 
+impl From<LiteralType> for CowLiteralType<'_> {
+	fn from(value: LiteralType) -> Self {
+		value.into_cow()
+	}
+}
+
+impl<'a> From<&'a LiteralType> for CowLiteralType<'a> {
+	fn from(value: &'a LiteralType) -> Self {
+		value.as_cow()
+	}
+}
+
 impl<'a> From<&'a Iri> for CowLiteralType<'a> {
 	fn from(value: &'a Iri) -> Self {
 		Self::Any(Cow::Borrowed(value))

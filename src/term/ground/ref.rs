@@ -1,14 +1,15 @@
+use core::fmt;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use iref::Iri;
 
-use crate::LiteralRef;
+use crate::{LiteralRef, RdfDisplay};
 
 use super::{CowGroundTerm, GroundTerm};
 
 /// Ground term reference.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum GroundTermRef<'a> {
 	/// IRI.
 	Iri(&'a Iri),
@@ -74,6 +75,24 @@ impl PartialOrd<GroundTerm> for GroundTermRef<'_> {
 			(Self::Iri(_), GroundTerm::Literal(_)) => Some(Ordering::Less),
 			(Self::Literal(_), GroundTerm::Iri(_)) => Some(Ordering::Greater),
 			(Self::Literal(a), GroundTerm::Literal(b)) => (*a).partial_cmp(b),
+		}
+	}
+}
+
+impl fmt::Display for GroundTermRef<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Iri(iri) => iri.fmt(f),
+			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for GroundTermRef<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Iri(iri) => iri.rdf_fmt(f),
+			Self::Literal(lit) => lit.rdf_fmt(f),
 		}
 	}
 }

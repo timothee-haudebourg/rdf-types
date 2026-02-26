@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::fmt;
 use std::hash::Hash;
 
@@ -194,6 +195,27 @@ impl RdfDisplay for Term {
 		match self {
 			Self::BlankId(id) => id.rdf_fmt(f),
 			Self::Ground(lit) => lit.rdf_fmt(f),
+		}
+	}
+}
+
+impl<'a> PartialEq<TermRef<'a>> for Term {
+	fn eq(&self, other: &TermRef<'a>) -> bool {
+		match (self, other) {
+			(Self::BlankId(a), TermRef::BlankId(b)) => a == *b,
+			(Self::Ground(a), TermRef::Ground(b)) => a == b,
+			_ => false,
+		}
+	}
+}
+
+impl<'a> PartialOrd<TermRef<'a>> for Term {
+	fn partial_cmp(&self, other: &TermRef<'a>) -> Option<Ordering> {
+		match (self, other) {
+			(Self::BlankId(a), TermRef::BlankId(b)) => a.as_blank_id().partial_cmp(b),
+			(Self::BlankId(_), TermRef::Ground(_)) => Some(Ordering::Less),
+			(Self::Ground(_), TermRef::BlankId(_)) => Some(Ordering::Greater),
+			(Self::Ground(a), TermRef::Ground(b)) => a.partial_cmp(b),
 		}
 	}
 }

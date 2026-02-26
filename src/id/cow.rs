@@ -1,9 +1,11 @@
+use core::fmt;
 use std::borrow::Cow;
 
 use iref::Iri;
 
-use crate::{BlankId, Id, IdRef};
+use crate::{BlankId, Id, IdRef, RdfDisplay};
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CowId<'a> {
 	BlankId(Cow<'a, BlankId>),
 	Iri(Cow<'a, Iri>),
@@ -68,5 +70,23 @@ impl<'a> From<IdRef<'a>> for CowId<'a> {
 impl From<CowId<'_>> for Id {
 	fn from(value: CowId<'_>) -> Self {
 		value.into_owned()
+	}
+}
+
+impl fmt::Display for CowId<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(b) => b.fmt(f),
+			Self::Iri(i) => i.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for CowId<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(b) => b.rdf_fmt(f),
+			Self::Iri(i) => i.rdf_fmt(f),
+		}
 	}
 }

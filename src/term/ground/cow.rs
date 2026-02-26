@@ -1,14 +1,16 @@
+use core::fmt;
 use std::borrow::Cow;
 
 use iref::{Iri, IriBuf};
 
-use crate::{CowLiteral, CowLiteralType, Literal, LiteralRef, XSD_STRING};
+use crate::{CowLiteral, CowLiteralType, Literal, LiteralRef, RdfDisplay, XSD_STRING};
 
 use super::{GroundTerm, GroundTermRef};
 
 /// Copy-on-write ground term.
 ///
 /// A [`GroundTerm`] that is either borrowed or owned.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CowGroundTerm<'a> {
 	/// IRI.
 	Iri(Cow<'a, Iri>),
@@ -121,5 +123,23 @@ impl<'a> From<&'a str> for CowGroundTerm<'a> {
 impl<'a> From<&'a String> for CowGroundTerm<'a> {
 	fn from(value: &'a String) -> Self {
 		value.as_str().into()
+	}
+}
+
+impl fmt::Display for CowGroundTerm<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Iri(iri) => iri.fmt(f),
+			Self::Literal(lit) => lit.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for CowGroundTerm<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Iri(iri) => iri.rdf_fmt(f),
+			Self::Literal(lit) => lit.rdf_fmt(f),
+		}
 	}
 }

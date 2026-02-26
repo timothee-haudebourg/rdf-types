@@ -62,9 +62,7 @@ impl<'a> LiteralTypeRef<'a> {
 	pub fn into_cow(self) -> super::CowLiteralType<'a> {
 		match self {
 			Self::Any(i) => super::CowLiteralType::Any(std::borrow::Cow::Borrowed(i)),
-			Self::LangString(t) => {
-				super::CowLiteralType::LangString(std::borrow::Cow::Borrowed(t))
-			}
+			Self::LangString(t) => super::CowLiteralType::LangString(std::borrow::Cow::Borrowed(t)),
 		}
 	}
 }

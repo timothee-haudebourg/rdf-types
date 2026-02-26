@@ -1,11 +1,16 @@
+use core::fmt;
+use std::borrow::Cow;
+
 use iref::{Iri, IriBuf};
 
-use crate::{BlankId, BlankIdBuf, CowLiteral, GroundTerm, Id, Literal, LiteralRef, TermRef};
-use std::borrow::Cow;
+use crate::{
+	BlankId, BlankIdBuf, CowLiteral, GroundTerm, Id, Literal, LiteralRef, RdfDisplay, TermRef,
+};
 
 use super::{CowGroundTerm, Term};
 
 /// Copy-on-write term.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CowTerm<'a> {
 	/// Blank node identifier.
 	BlankId(Cow<'a, BlankId>),
@@ -41,6 +46,13 @@ impl CowTerm<'_> {
 	pub fn as_iri(&self) -> Option<&Iri> {
 		match self {
 			Self::Ground(g) => g.as_iri(),
+			_ => None,
+		}
+	}
+
+	pub fn as_ground(&self) -> Option<&CowGroundTerm<'_>> {
+		match self {
+			Self::Ground(g) => Some(g),
 			_ => None,
 		}
 	}
@@ -172,5 +184,23 @@ impl PartialEq<Iri> for CowTerm<'_> {
 impl PartialEq<&Iri> for CowTerm<'_> {
 	fn eq(&self, other: &&Iri) -> bool {
 		self.eq(*other)
+	}
+}
+
+impl fmt::Display for CowTerm<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(id) => id.fmt(f),
+			Self::Ground(g) => g.fmt(f),
+		}
+	}
+}
+
+impl RdfDisplay for CowTerm<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::BlankId(id) => id.rdf_fmt(f),
+			Self::Ground(g) => g.rdf_fmt(f),
+		}
 	}
 }
