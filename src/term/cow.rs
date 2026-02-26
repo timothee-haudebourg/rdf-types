@@ -1,6 +1,6 @@
 use iref::{Iri, IriBuf};
 
-use crate::{BlankId, BlankIdBuf, CowLiteral, GroundTerm, Id, Literal, LiteralRef};
+use crate::{BlankId, BlankIdBuf, CowLiteral, GroundTerm, Id, Literal, LiteralRef, TermRef};
 use std::borrow::Cow;
 
 use super::{CowGroundTerm, Term};
@@ -14,12 +14,68 @@ pub enum CowTerm<'a> {
 	Ground(CowGroundTerm<'a>),
 }
 
-impl<'a> CowTerm<'a> {
+impl CowTerm<'_> {
+	pub fn is_blank_id(&self) -> bool {
+		matches!(self, Self::BlankId(_))
+	}
+
+	pub fn is_ground(&self) -> bool {
+		matches!(self, Self::Ground(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Ground(CowGroundTerm::Iri(_)))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Ground(CowGroundTerm::Literal(_)))
+	}
+
+	pub fn as_blank_id(&self) -> Option<&BlankId> {
+		match self {
+			Self::BlankId(b) => Some(b),
+			_ => None,
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<&Iri> {
+		match self {
+			Self::Ground(g) => g.as_iri(),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<LiteralRef<'_>> {
+		match self {
+			Self::Ground(g) => g.as_literal(),
+			_ => None,
+		}
+	}
+
+	pub fn as_ref(&self) -> TermRef<'_> {
+		match self {
+			Self::BlankId(b) => TermRef::BlankId(b),
+			Self::Ground(g) => TermRef::Ground(g.as_ref()),
+		}
+	}
+
 	pub fn into_owned(self) -> Term {
 		match self {
 			Self::BlankId(b) => Term::BlankId(b.into_owned()),
 			Self::Ground(t) => Term::Ground(t.into_owned()),
 		}
+	}
+}
+
+impl<'a> From<TermRef<'a>> for CowTerm<'a> {
+	fn from(value: TermRef<'a>) -> Self {
+		value.into_cow()
+	}
+}
+
+impl From<CowTerm<'_>> for Term {
+	fn from(value: CowTerm<'_>) -> Self {
+		value.into_owned()
 	}
 }
 

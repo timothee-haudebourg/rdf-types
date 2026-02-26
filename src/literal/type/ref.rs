@@ -22,15 +22,30 @@ pub enum LiteralTypeRef<'a> {
 }
 
 impl<'a> LiteralTypeRef<'a> {
+	pub fn is_any(&self) -> bool {
+		matches!(self, Self::Any(_))
+	}
+
 	pub fn is_lang_string(&self) -> bool {
 		matches!(self, Self::LangString(_))
 	}
 
-	pub fn lang_tag(&self) -> Option<&'a LangTag> {
+	pub fn as_any(&self) -> Option<&'a Iri> {
+		match self {
+			Self::Any(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_lang_string(&self) -> Option<&'a LangTag> {
 		match self {
 			Self::LangString(tag) => Some(tag),
 			_ => None,
 		}
+	}
+
+	pub fn lang_tag(&self) -> Option<&'a LangTag> {
+		self.as_lang_string()
 	}
 
 	pub fn is_xsd_string(&self) -> bool {
@@ -41,6 +56,15 @@ impl<'a> LiteralTypeRef<'a> {
 		match self {
 			Self::Any(i) => *i == iri,
 			Self::LangString(_) => false,
+		}
+	}
+
+	pub fn into_cow(self) -> super::CowLiteralType<'a> {
+		match self {
+			Self::Any(i) => super::CowLiteralType::Any(std::borrow::Cow::Borrowed(i)),
+			Self::LangString(t) => {
+				super::CowLiteralType::LangString(std::borrow::Cow::Borrowed(t))
+			}
 		}
 	}
 }

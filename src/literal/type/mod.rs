@@ -23,11 +23,40 @@ pub enum LiteralType {
 }
 
 impl LiteralType {
+	pub fn is_any(&self) -> bool {
+		matches!(self, Self::Any(_))
+	}
+
 	pub fn is_lang_string(&self) -> bool {
 		matches!(self, Self::LangString(_))
 	}
 
+	pub fn as_any(&self) -> Option<&Iri> {
+		match self {
+			Self::Any(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_lang_string(&self) -> Option<&LangTag> {
+		match self {
+			Self::LangString(tag) => Some(tag),
+			_ => None,
+		}
+	}
+
 	pub fn lang_tag(&self) -> Option<&LangTag> {
+		self.as_lang_string()
+	}
+
+	pub fn into_any(self) -> Option<IriBuf> {
+		match self {
+			Self::Any(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn into_lang_string(self) -> Option<LangTagBuf> {
 		match self {
 			Self::LangString(tag) => Some(tag),
 			_ => None,

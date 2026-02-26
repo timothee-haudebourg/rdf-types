@@ -22,6 +22,43 @@ pub enum CowLiteralType<'a> {
 }
 
 impl CowLiteralType<'_> {
+	pub fn is_any(&self) -> bool {
+		matches!(self, Self::Any(_))
+	}
+
+	pub fn is_lang_string(&self) -> bool {
+		matches!(self, Self::LangString(_))
+	}
+
+	pub fn as_any(&self) -> Option<&Iri> {
+		match self {
+			Self::Any(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_lang_string(&self) -> Option<&LangTag> {
+		match self {
+			Self::LangString(tag) => Some(tag),
+			_ => None,
+		}
+	}
+
+	pub fn lang_tag(&self) -> Option<&LangTag> {
+		self.as_lang_string()
+	}
+
+	pub fn is_xsd_string(&self) -> bool {
+		self.is_iri(crate::XSD_STRING)
+	}
+
+	pub fn is_iri(&self, iri: &Iri) -> bool {
+		match self {
+			Self::Any(i) => i.as_ref() == iri,
+			Self::LangString(_) => false,
+		}
+	}
+
 	pub fn as_ref(&self) -> LiteralTypeRef<'_> {
 		match self {
 			Self::Any(i) => LiteralTypeRef::Any(i),

@@ -4,7 +4,7 @@ use iref::{Iri, IriBuf};
 
 use crate::{CowLiteral, CowLiteralType, Literal, LiteralRef, XSD_STRING};
 
-use super::GroundTerm;
+use super::{GroundTerm, GroundTermRef};
 
 /// Copy-on-write ground term.
 ///
@@ -18,6 +18,35 @@ pub enum CowGroundTerm<'a> {
 }
 
 impl CowGroundTerm<'_> {
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Literal(_))
+	}
+
+	pub fn as_iri(&self) -> Option<&Iri> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<LiteralRef<'_>> {
+		match self {
+			Self::Literal(l) => Some(l.as_ref()),
+			_ => None,
+		}
+	}
+
+	pub fn as_ref(&self) -> GroundTermRef<'_> {
+		match self {
+			Self::Iri(iri) => GroundTermRef::Iri(iri),
+			Self::Literal(l) => GroundTermRef::Literal(l.as_ref()),
+		}
+	}
+
 	pub fn into_owned(self) -> GroundTerm {
 		match self {
 			Self::Iri(iri) => GroundTerm::Iri(iri.into_owned()),
@@ -29,6 +58,24 @@ impl CowGroundTerm<'_> {
 impl From<GroundTerm> for CowGroundTerm<'_> {
 	fn from(value: GroundTerm) -> Self {
 		value.into_cow()
+	}
+}
+
+impl<'a> From<&'a GroundTerm> for CowGroundTerm<'a> {
+	fn from(value: &'a GroundTerm) -> Self {
+		value.as_cow()
+	}
+}
+
+impl<'a> From<GroundTermRef<'a>> for CowGroundTerm<'a> {
+	fn from(value: GroundTermRef<'a>) -> Self {
+		value.into_cow()
+	}
+}
+
+impl From<CowGroundTerm<'_>> for GroundTerm {
+	fn from(value: CowGroundTerm<'_>) -> Self {
+		value.into_owned()
 	}
 }
 

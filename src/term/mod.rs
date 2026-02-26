@@ -54,10 +54,28 @@ impl Term {
 		matches!(self, Self::BlankId(_))
 	}
 
+	pub fn is_ground(&self) -> bool {
+		matches!(self, Self::Ground(_))
+	}
+
 	pub fn as_blank_id(&self) -> Option<&BlankId> {
 		match self {
 			Self::BlankId(b) => Some(b),
 			Self::Ground(_) => None,
+		}
+	}
+
+	pub fn as_ground(&self) -> Option<&GroundTerm> {
+		match self {
+			Self::Ground(g) => Some(g),
+			_ => None,
+		}
+	}
+
+	pub fn into_ground(self) -> Option<GroundTerm> {
+		match self {
+			Self::Ground(g) => Some(g),
+			_ => None,
 		}
 	}
 

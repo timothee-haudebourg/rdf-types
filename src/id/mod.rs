@@ -48,10 +48,31 @@ impl Id {
 		}
 	}
 
+	pub fn into_blank_id(self) -> Option<BlankIdBuf> {
+		match self {
+			Self::BlankId(b) => Some(b),
+			_ => None,
+		}
+	}
+
+	pub fn into_iri(self) -> Option<IriBuf> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
 	pub fn as_cow(&self) -> CowId<'_> {
 		match self {
 			Self::BlankId(blank_id) => CowId::BlankId(Cow::Borrowed(blank_id)),
 			Self::Iri(iri) => CowId::Iri(Cow::Borrowed(iri)),
+		}
+	}
+
+	pub fn into_cow(self) -> CowId<'static> {
+		match self {
+			Self::BlankId(blank_id) => CowId::BlankId(Cow::Owned(blank_id)),
+			Self::Iri(iri) => CowId::Iri(Cow::Owned(iri)),
 		}
 	}
 }

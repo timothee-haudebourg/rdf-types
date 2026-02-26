@@ -1,8 +1,11 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
-use crate::BlankId;
+use iref::Iri;
 
-use super::{GroundTermRef, Term};
+use crate::{BlankId, LiteralRef};
+
+use super::{CowTerm, GroundTermRef, Term};
 
 /// Term reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -12,6 +15,59 @@ pub enum TermRef<'a> {
 
 	/// Ground term.
 	Ground(GroundTermRef<'a>),
+}
+
+impl<'a> TermRef<'a> {
+	pub fn is_blank_id(&self) -> bool {
+		matches!(self, Self::BlankId(_))
+	}
+
+	pub fn is_ground(&self) -> bool {
+		matches!(self, Self::Ground(_))
+	}
+
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Ground(GroundTermRef::Iri(_)))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Ground(GroundTermRef::Literal(_)))
+	}
+
+	pub fn as_blank_id(&self) -> Option<&'a BlankId> {
+		match self {
+			Self::BlankId(b) => Some(b),
+			_ => None,
+		}
+	}
+
+	pub fn as_ground(&self) -> Option<GroundTermRef<'a>> {
+		match self {
+			Self::Ground(g) => Some(*g),
+			_ => None,
+		}
+	}
+
+	pub fn as_iri(&self) -> Option<&'a Iri> {
+		match self {
+			Self::Ground(g) => g.as_iri(),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<LiteralRef<'a>> {
+		match self {
+			Self::Ground(g) => g.as_literal(),
+			_ => None,
+		}
+	}
+
+	pub fn into_cow(self) -> CowTerm<'a> {
+		match self {
+			Self::BlankId(b) => CowTerm::BlankId(Cow::Borrowed(b)),
+			Self::Ground(g) => CowTerm::Ground(g.into_cow()),
+		}
+	}
 }
 
 impl TermRef<'_> {

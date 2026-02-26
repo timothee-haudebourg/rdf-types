@@ -1,10 +1,11 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use iref::Iri;
 
 use crate::LiteralRef;
 
-use super::GroundTerm;
+use super::{CowGroundTerm, GroundTerm};
 
 /// Ground term reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -14,6 +15,37 @@ pub enum GroundTermRef<'a> {
 
 	/// Lexical value.
 	Literal(LiteralRef<'a>),
+}
+
+impl<'a> GroundTermRef<'a> {
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Iri(_))
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Literal(_))
+	}
+
+	pub fn as_iri(&self) -> Option<&'a Iri> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn as_literal(&self) -> Option<LiteralRef<'a>> {
+		match self {
+			Self::Literal(l) => Some(*l),
+			_ => None,
+		}
+	}
+
+	pub fn into_cow(self) -> CowGroundTerm<'a> {
+		match self {
+			Self::Iri(iri) => CowGroundTerm::Iri(Cow::Borrowed(iri)),
+			Self::Literal(l) => CowGroundTerm::Literal(l.into()),
+		}
+	}
 }
 
 impl GroundTermRef<'_> {

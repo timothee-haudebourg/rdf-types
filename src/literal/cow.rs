@@ -44,3 +44,15 @@ impl<'a> From<LiteralRef<'a>> for CowLiteral<'a> {
 		Self::new(value.value, value.type_)
 	}
 }
+
+impl From<Literal> for CowLiteral<'_> {
+	fn from(value: Literal) -> Self {
+		value.into_cow()
+	}
+}
+
+impl From<CowLiteral<'_>> for Literal {
+	fn from(value: CowLiteral<'_>) -> Self {
+		value.into_owned()
+	}
+}
