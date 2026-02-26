@@ -18,14 +18,20 @@ impl<T> CanonicalQuadPattern<T> {
 		AnySubjectAnyPredicate::AnyObject(AnySubjectAnyPredicateAnyObject::AnyGraph),
 	));
 
-	pub fn graph_any(graph: Option<T>) -> Self {
+	pub fn from_graph(graph: Option<T>) -> Self {
 		Self::AnySubject(AnySubject::AnyPredicate(AnySubjectAnyPredicate::AnyObject(
 			AnySubjectAnyPredicateAnyObject::GivenGraph(graph),
 		)))
 	}
 
-	pub fn matches(&self, quad: Quad<T>) -> bool {
-		todo!()
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnySubject(p) => p.matches(quad),
+			Self::GivenSubject(s, p) => quad.subject() == s && p.matches(quad),
+		}
 	}
 }
 
@@ -416,6 +422,19 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyPredicate(pattern) => pattern.matches(quad),
+			Self::SameAsSubject(pattern) => {
+				quad.predicate() == quad.subject() && pattern.matches(quad)
+			}
+			Self::GivenPredicate(p, pattern) => quad.predicate() == p && pattern.matches(quad),
+		}
+	}
+
 	pub fn predicate(&self) -> PatternPredicate<&T> {
 		match self {
 			Self::AnyPredicate(_) => PatternPredicate::Any,
@@ -580,6 +599,22 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject(pattern) => pattern.matches(quad),
+			Self::SameAsSubject(pattern) => {
+				quad.object() == quad.subject() && pattern.matches(quad)
+			}
+			Self::SameAsPredicate(pattern) => {
+				quad.object() == quad.predicate() && pattern.matches(quad)
+			}
+			Self::GivenObject(o, pattern) => quad.object() == o && pattern.matches(quad),
+		}
+	}
+
 	pub fn object(&self) -> PatternObject<&T> {
 		match self {
 			Self::AnyObject(_) => PatternObject::Any,
@@ -741,6 +776,19 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject(pattern) => pattern.matches(quad),
+			Self::SameAsSubject(pattern) => {
+				quad.object() == quad.subject() && pattern.matches(quad)
+			}
+			Self::GivenObject(o, pattern) => quad.object() == o && pattern.matches(quad),
+		}
+	}
+
 	pub fn object(&self) -> PatternObject<&T> {
 		match self {
 			Self::AnyObject(_) => PatternObject::Any,
@@ -876,6 +924,16 @@ impl<T> GivenSubject<T> {
 			ResourceOrVar::Var(p) => {
 				Self::AnyPredicate(GivenSubjectAnyPredicate::from_pattern(p, o, g))
 			}
+		}
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyPredicate(pattern) => pattern.matches(quad),
+			Self::GivenPredicate(p, pattern) => quad.predicate() == p && pattern.matches(quad),
 		}
 	}
 
@@ -1016,6 +1074,19 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject(pattern) => pattern.matches(quad),
+			Self::SameAsPredicate(pattern) => {
+				quad.object() == quad.predicate() && pattern.matches(quad)
+			}
+			Self::GivenObject(o, pattern) => quad.object() == o && pattern.matches(quad),
+		}
+	}
+
 	pub fn object(&self) -> PatternObject<&T> {
 		match self {
 			Self::AnyObject(_) => PatternObject::Any,
@@ -1150,6 +1221,16 @@ impl<T> GivenSubjectGivenPredicate<T> {
 			ResourceOrVar::Var(o) => {
 				Self::AnyObject(GivenSubjectGivenPredicateAnyObject::from_pattern(o, g))
 			}
+		}
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject(pattern) => pattern.matches(quad),
+			Self::GivenObject(o, pattern) => quad.object() == o && pattern.matches(quad),
 		}
 	}
 
@@ -1288,6 +1369,19 @@ impl<T> AnySubjectAnyPredicateAnyObject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsSubject => quad.graph() == Some(quad.subject()),
+			Self::SameAsPredicate => quad.graph() == Some(quad.predicate()),
+			Self::SameAsObject => quad.graph() == Some(quad.object()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
@@ -1401,6 +1495,18 @@ impl<T> GivenSubjectAnyPredicateAnyObject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsPredicate => quad.graph() == Some(quad.predicate()),
+			Self::SameAsObject => quad.graph() == Some(quad.object()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
@@ -1503,6 +1609,18 @@ impl<T> AnySubjectGivenPredicateAnyObject<T> {
 					Self::AnyGraph
 				}
 			}
+		}
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsSubject => quad.graph() == Some(quad.subject()),
+			Self::SameAsObject => quad.graph() == Some(quad.object()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
 		}
 	}
 
@@ -1611,6 +1729,18 @@ impl<T> AnySubjectAnyPredicateGivenObject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsSubject => quad.graph() == Some(quad.subject()),
+			Self::SameAsPredicate => quad.graph() == Some(quad.predicate()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
@@ -1713,6 +1843,17 @@ impl<T> AnySubjectGivenPredicateGivenObject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsSubject => quad.graph() == Some(quad.subject()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
@@ -1804,6 +1945,17 @@ impl<T> GivenSubjectAnyPredicateGivenObject<T> {
 					Self::AnyGraph
 				}
 			}
+		}
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsPredicate => quad.graph() == Some(quad.predicate()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
 		}
 	}
 
@@ -1901,6 +2053,17 @@ impl<T> GivenSubjectGivenPredicateAnyObject<T> {
 		}
 	}
 
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::SameAsObject => quad.graph() == Some(quad.object()),
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
+		}
+	}
+
 	pub fn graph(&self) -> PatternGraph<&T> {
 		match self {
 			Self::AnyGraph => PatternGraph::Any,
@@ -1985,6 +2148,16 @@ impl<T> GivenSubjectGivenPredicateGivenObject<T> {
 			None => Self::GivenGraph(None),
 			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
 			Some(ResourceOrVar::Var(_)) => Self::AnyGraph,
+		}
+	}
+
+	pub fn matches(&self, quad: Quad<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyGraph => true,
+			Self::GivenGraph(g) => quad.graph() == g.as_ref(),
 		}
 	}
 

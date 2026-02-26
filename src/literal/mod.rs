@@ -75,11 +75,11 @@ impl Literal {
 		self.type_.lang_tag()
 	}
 
-	pub fn as_ref(&self) -> LiteralRef {
+	pub fn as_ref(&self) -> LiteralRef<'_> {
 		LiteralRef::new(&self.value, self.type_.as_ref())
 	}
 
-	pub fn as_cow(&self) -> CowLiteral {
+	pub fn as_cow(&self) -> CowLiteral<'_> {
 		CowLiteral::new(&self.value, self.type_.as_cow())
 	}
 

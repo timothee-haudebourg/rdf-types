@@ -4,7 +4,7 @@ use crate::{BlankIdBuf, Generator, Id};
 /// with an optional prefix.
 ///
 /// This generator can create `usize::MAX` unique blank node identifiers.
-/// If [`Generator::next`] is called `usize::MAX + 1` times, it will panic.
+/// If [`Self::next_id`] will wrap around if more identifiers are created.
 #[derive(Default)]
 pub struct BlankIdGenerator {
 	/// Prefix string.
@@ -56,9 +56,12 @@ impl BlankIdGenerator {
 		self.count
 	}
 
+	/// Generates the next blank id.
+	///
+	/// Wraps around if more than `usize::MAX` identifiers are generated.
 	pub fn next_blank_id(&mut self) -> BlankIdBuf {
 		let id = unsafe { BlankIdBuf::new_unchecked(format!("_:{}{}", self.prefix, self.count)) };
-		self.count += 1;
+		self.count = self.count.wrapping_add(1);
 		id
 	}
 }

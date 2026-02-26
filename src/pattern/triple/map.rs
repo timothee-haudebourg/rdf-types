@@ -28,7 +28,7 @@ impl<V: Eq + Hash, T: Eq + Hash> TriplePatternMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> TriplePatternMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> Values<V> {
+	pub fn get(&self, triple: Triple<&T>) -> Values<'_, V> {
 		Values {
 			any: self.any.get(triple),
 			given: self.given.get(triple.subject()).map(|s| s.get(triple)),
@@ -70,7 +70,7 @@ impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> GivenSubjectMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectValues<'_, V> {
 		GivenSubjectValues {
 			any: self.any.get(triple),
 			given: self.given.get(triple.predicate()).map(|p| p.get(triple)),
@@ -128,7 +128,7 @@ impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectAnyPredicateMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> GivenSubjectAnyPredicateMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectAnyPredicateValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectAnyPredicateValues<'_, V> {
 		GivenSubjectAnyPredicateValues {
 			any: self.any.iter(),
 			same_as_predicate: if triple.predicate() == triple.object() {
@@ -193,7 +193,7 @@ impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectGivenPredicateMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> GivenSubjectGivenPredicateMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectGivenPredicateValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> GivenSubjectGivenPredicateValues<'_, V> {
 		GivenSubjectGivenPredicateValues {
 			any: self.any.iter(),
 			given: self.given.get(triple.object()).map(|o| o.iter()),
@@ -251,7 +251,7 @@ impl<V: Eq + Hash, T: Eq + Hash> AnySubjectMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> AnySubjectMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> AnySubjectValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> AnySubjectValues<'_, V> {
 		AnySubjectValues {
 			any: self.any.get(triple),
 			same_as_subject: if triple.subject() == triple.predicate() {
@@ -320,7 +320,7 @@ impl<V: Eq + Hash, T: Eq + Hash> AnySubjectAnyPredicateMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> AnySubjectAnyPredicateMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> AnySubjectAnyPredicateValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> AnySubjectAnyPredicateValues<'_, V> {
 		AnySubjectAnyPredicateValues {
 			any: self.any.iter(),
 			same_as_subject: if triple.subject() == triple.object() {
@@ -396,7 +396,7 @@ impl<V: Eq + Hash, T: Eq + Hash> AnySubjectGivenPredicateMap<V, T> {
 }
 
 impl<V, T: Eq + Hash> AnySubjectGivenPredicateMap<V, T> {
-	pub fn get(&self, triple: Triple<&T>) -> AnySubjectGivenPredicateValues<V> {
+	pub fn get(&self, triple: Triple<&T>) -> AnySubjectGivenPredicateValues<'_, V> {
 		AnySubjectGivenPredicateValues {
 			any: self.any.iter(),
 			same_as_subject: if triple.subject() == triple.object() {

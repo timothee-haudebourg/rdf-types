@@ -143,7 +143,7 @@ impl<R> IndexedBTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the triples of the graph.
-	pub fn iter(&self) -> Triples<R> {
+	pub fn iter(&self) -> Triples<'_, R> {
 		Triples {
 			resources: &self.resources,
 			triples: &self.triples,
@@ -152,7 +152,7 @@ impl<R> IndexedBTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the resources of the graph.
-	pub fn resources(&self) -> Resources<R> {
+	pub fn resources(&self) -> Resources<'_, R> {
 		Resources {
 			resources: &self.resources,
 			indexes: self.resources_indexes.iter(),
@@ -160,7 +160,7 @@ impl<R> IndexedBTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the subjects of the graph.
-	pub fn subjects(&self) -> Subjects<R> {
+	pub fn subjects(&self) -> Subjects<'_, R> {
 		Subjects {
 			resources: &self.resources,
 			indexes: self.subjects.iter(),
@@ -168,7 +168,7 @@ impl<R> IndexedBTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the predicates of the graph.
-	pub fn predicates(&self) -> Predicates<R> {
+	pub fn predicates(&self) -> Predicates<'_, R> {
 		Predicates {
 			resources: &self.resources,
 			indexes: self.predicates.iter(),
@@ -176,7 +176,7 @@ impl<R> IndexedBTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the objects of the graph.
-	pub fn objects(&self) -> Objects<R> {
+	pub fn objects(&self) -> Objects<'_, R> {
 		Objects {
 			resources: &self.resources,
 			indexes: self.objects.iter(),
@@ -327,7 +327,7 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 
 	/// Returns an iterator over all the triples matching the given canonical
 	/// triple pattern.
-	pub fn pattern_matching(&self, pattern: CanonicalTriplePattern<&R>) -> PatternMatching<R> {
+	pub fn pattern_matching(&self, pattern: CanonicalTriplePattern<&R>) -> PatternMatching<'_, R> {
 		PatternMatching {
 			resources: &self.resources,
 			triples: &self.triples,

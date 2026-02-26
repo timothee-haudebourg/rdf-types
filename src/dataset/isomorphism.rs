@@ -2,7 +2,7 @@ use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
 use educe::Educe;
 
-use crate::{dataset::TraversableDataset, interpretation::ReverseInterpretation, Quad, Term};
+use crate::{dataset::TraversableDataset, interpretation::ReverseGroundInterpretation, Quad, Term};
 
 /// Checks that there is an isomorphism between the datasets `a` and `b`.
 ///
@@ -24,7 +24,7 @@ where
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
 pub fn are_isomorphic_with<I, A, B>(interpretation: &I, a: &A, b: &B) -> bool
 where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 	I::Resource: Ord,
 	A: TraversableDataset<Resource = I::Resource>,
 	B: TraversableDataset<Resource = I::Resource>,
@@ -52,7 +52,7 @@ pub fn find_bijection_with<'a, 'b, I, A, B>(
 	b: &'b B,
 ) -> Option<BTreeBijection<'a, 'b, I::Resource>>
 where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 	I::Resource: Ord,
 	A: TraversableDataset<Resource = I::Resource>,
 	B: TraversableDataset<Resource = I::Resource>,
@@ -75,7 +75,6 @@ where
 	collect_signatures(interpretation, &mut b_blanks_map, b);
 
 	if a_blanks_map.len() != b_blanks_map.len() {
-		eprintln!("different blank node count");
 		return None;
 	}
 
@@ -84,12 +83,10 @@ where
 	let b_groups = split_by_size(&b_blanks_map);
 
 	if a_groups.len() != b_groups.len() {
-		eprintln!("different group count");
 		return None;
 	}
 
 	if !a_groups.iter().all(|(len, _)| b_groups.contains_key(len)) {
-		eprintln!("different group lengths");
 		return None;
 	}
 
@@ -107,7 +104,6 @@ where
 			}
 
 			if a_blank_id_candidates.is_empty() {
-				eprintln!("no candidates found for blank id");
 				return None;
 			}
 
@@ -125,7 +121,7 @@ where
 
 fn resource_matches<I>(interpretation: &I, a: &I::Resource, b: &I::Resource) -> bool
 where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 {
 	for a in interpretation.iris_of(a) {
 		for b in interpretation.iris_of(b) {
@@ -148,7 +144,7 @@ where
 
 fn quad_matches<I>(interpretation: &I, a: Quad<&I::Resource>, b: Quad<&I::Resource>) -> bool
 where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 {
 	resource_matches(interpretation, a.0, b.0)
 		&& resource_matches(interpretation, a.1, b.1)
@@ -162,7 +158,7 @@ where
 
 fn blank_count<I>(interpretation: &I, Quad(s, p, o, g): Quad<&I::Resource>) -> usize
 where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 {
 	let mut r = 0;
 
@@ -192,7 +188,7 @@ fn collect_signatures<'d, I, D>(
 	map: &mut BTreeMap<&'d I::Resource, BlankSignature<'d, I::Resource>>,
 	ds: &'d D,
 ) where
-	I: ReverseInterpretation,
+	I: ReverseGroundInterpretation,
 	I::Resource: Ord,
 	D: TraversableDataset<Resource = I::Resource>,
 {
@@ -271,7 +267,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 
 	fn resource_matches_with<I>(&self, interpretation: &I, a: &'a R, b: &'b R) -> bool
 	where
-		I: ReverseInterpretation<Resource = R>,
+		I: ReverseGroundInterpretation<Resource = R>,
 	{
 		for a in interpretation.iris_of(a) {
 			for b in interpretation.iris_of(b) {
@@ -300,7 +296,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 
 	fn quad_matches_with<I>(&self, interpretation: &I, a: Quad<&'a R>, b: Quad<&'b R>) -> bool
 	where
-		I: ReverseInterpretation<Resource = R>,
+		I: ReverseGroundInterpretation<Resource = R>,
 	{
 		self.resource_matches_with(interpretation, a.0, b.0)
 			&& self.resource_matches_with(interpretation, a.1, b.1)
@@ -319,7 +315,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		b: &BlankSignature<'b, R>,
 	) -> bool
 	where
-		I: ReverseInterpretation<Resource = R>,
+		I: ReverseGroundInterpretation<Resource = R>,
 	{
 		if a.len() == b.len() {
 			let mut other: Vec<_> = b.0.iter().map(|q| Some(*q)).collect();
@@ -352,7 +348,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		b: &BTreeMap<&'b R, BlankSignature<'b, R>>,
 	) -> Option<Self>
 	where
-		I: ReverseInterpretation<Resource = R>,
+		I: ReverseGroundInterpretation<Resource = R>,
 	{
 		match candidates.next() {
 			Some((a_blank_id, b_candidates)) => {
@@ -410,7 +406,7 @@ impl<'a, R> BlankSignature<'a, R> {
 
 	fn matches<I>(&self, interpretation: &I, other: &BlankSignature<R>) -> bool
 	where
-		I: ReverseInterpretation<Resource = R>,
+		I: ReverseGroundInterpretation<Resource = R>,
 	{
 		if self.len() == other.len() {
 			let mut other: Vec<_> = other.0.iter().map(|q| Some(*q)).collect();

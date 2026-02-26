@@ -54,6 +54,12 @@ impl LiteralTypeRef<'_> {
 	}
 }
 
+impl<'a> From<&'a Iri> for LiteralTypeRef<'a> {
+	fn from(value: &'a Iri) -> Self {
+		Self::Any(value)
+	}
+}
+
 impl PartialEq<LiteralType> for LiteralTypeRef<'_> {
 	fn eq(&self, other: &LiteralType) -> bool {
 		match (*self, other) {
@@ -96,8 +102,8 @@ impl<'a> PartialOrd<LiteralTypeRef<'a>> for LiteralType {
 	}
 }
 
-impl RdfDisplay for LiteralTypeRef<'_> {
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl fmt::Display for LiteralTypeRef<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Self::Any(ty) => {
 				f.write_str("^^")?;
@@ -108,5 +114,11 @@ impl RdfDisplay for LiteralTypeRef<'_> {
 				tag.rdf_fmt(f)
 			}
 		}
+	}
+}
+
+impl RdfDisplay for LiteralTypeRef<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Display::fmt(self, f)
 	}
 }

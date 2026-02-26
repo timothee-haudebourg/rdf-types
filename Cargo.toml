@@ -23,7 +23,7 @@ uuid-generator-v5 = ["uuid", "uuid/v5"]
 [dependencies]
 # Major dependencies (major version must be synchronized).
 # iref = { version = "3.2.2", features = ["macros"] }
-iref.path = "/home/timothee/Projets/utils/parsing/iref/"
+iref.path = "/home/work/Documents/Community/RDF/iri/iref/"
 langtag = "0.4.0"
 thiserror = "1.0.57"
 contextual = { version = "0.1.6", optional = true }
@@ -37,6 +37,7 @@ educe = "0.5.11"
 slab = "0.4.9"
 replace_with = "0.1.7"
 raw-btree = "0.2.0"
+utf8-decode.path = "/home/work/Documents/Community/Utils/parsing/utf8-decode/"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }

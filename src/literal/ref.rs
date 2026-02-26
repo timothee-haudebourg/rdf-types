@@ -21,8 +21,11 @@ pub struct LiteralRef<'a> {
 }
 
 impl<'a> LiteralRef<'a> {
-	pub fn new(value: &'a str, type_: LiteralTypeRef<'a>) -> Self {
-		Self { value, type_ }
+	pub fn new(value: &'a str, type_: impl Into<LiteralTypeRef<'a>>) -> Self {
+		Self {
+			value,
+			type_: type_.into(),
+		}
 	}
 
 	pub fn as_type(&self) -> LiteralTypeRef<'a> {

@@ -47,30 +47,6 @@ impl Uuid {
 			Self::V5(vocabulary, name) => uuid::Uuid::new_v5(vocabulary, name.as_bytes()),
 		}
 	}
-
-	#[cfg(feature = "meta")]
-	/// Generates identifiers annotated with the given metadata.
-	pub fn with_metadata<M>(self, metadata: M) -> WithMetadata<Self, M>
-	where
-		Self: Sized,
-	{
-		WithMetadata {
-			metadata,
-			generator: self,
-		}
-	}
-
-	#[cfg(feature = "meta")]
-	/// Generates identifiers annotated with the default value of type `M`.
-	pub fn with_default_metadata<M: Default>(self) -> WithMetadata<Self, M>
-	where
-		Self: Sized,
-	{
-		WithMetadata {
-			metadata: M::default(),
-			generator: self,
-		}
-	}
 }
 
 #[cfg(any(
@@ -78,13 +54,13 @@ impl Uuid {
 	feature = "uuid-generator-v4",
 	feature = "uuid-generator-v5"
 ))]
-impl Generator for Uuid {
-	fn next(&mut self) -> Term {
+impl super::IriGenerator for Uuid {
+	fn next_iri(&mut self) -> iref::IriBuf {
 		let mut buffer: Vec<u8> = vec![0; uuid::adapter::Urn::LENGTH];
 		let uuid = self.next_uuid();
 		let len = uuid.to_urn().encode_lower(buffer.as_mut()).len();
 		buffer.truncate(len);
-		Term::Iri(IriBuf::new_unchecked(String::from_utf8_unchecked(buffer)).unwrap())
+		iref::IriBuf::from_bytes(buffer).unwrap()
 	}
 }
 
@@ -105,7 +81,9 @@ mod tests {
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: Id = uuid_gen.next(&mut ());
+			use crate::generator::IriGenerator;
+
+			let reference = uuid_gen.next_iri();
 			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}
@@ -115,7 +93,9 @@ mod tests {
 	fn uuidv4_iri() {
 		let mut uuid_gen = Uuid::V4;
 		for _ in 0..100 {
-			let reference: Id = uuid_gen.next(&mut ());
+			use crate::generator::IriGenerator;
+
+			let reference = uuid_gen.next_iri();
 			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}
@@ -128,7 +108,9 @@ mod tests {
 			"test".to_string(),
 		);
 		for _ in 0..100 {
-			let reference: Id = uuid_gen.next(&mut ());
+			use crate::generator::IriGenerator;
+
+			let reference = uuid_gen.next_iri();
 			assert!(iref::Iri::new(reference.as_str()).is_ok())
 		}
 	}

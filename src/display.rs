@@ -64,24 +64,10 @@ impl RdfDisplay for iref::Iri {
 	}
 }
 
-#[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for iref::Iri {
-	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		self.rdf_fmt(f)
-	}
-}
-
 impl RdfDisplay for iref::IriBuf {
 	#[inline(always)]
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.as_iri_ref().rdf_fmt(f)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for iref::IriBuf {
-	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		self.rdf_fmt(f)
 	}
 }
 
@@ -92,13 +78,6 @@ impl RdfDisplay for iref::IriRefBuf {
 	}
 }
 
-#[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for iref::IriRefBuf {
-	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		self.rdf_fmt(f)
-	}
-}
-
 impl RdfDisplay for LangTag {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
@@ -106,24 +85,10 @@ impl RdfDisplay for LangTag {
 	}
 }
 
-#[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for LangTag {
-	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		self.rdf_fmt(f)
-	}
-}
-
 impl RdfDisplay for LangTagBuf {
 	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use fmt::Display;
 		self.as_str().fmt(f)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<C: ?Sized> RdfDisplayWithContext<C> for LangTagBuf {
-	fn rdf_fmt_with(&self, _context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		self.rdf_fmt(f)
 	}
 }
 
@@ -141,36 +106,5 @@ impl<T: RdfDisplay> fmt::Display for RdfDisplayed<T> {
 	#[inline(always)]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		self.0.rdf_fmt(f)
-	}
-}
-
-#[cfg(feature = "contextual")]
-pub trait RdfDisplayWithContext<C: ?Sized> {
-	fn rdf_fmt_with(&self, context: &C, f: &mut fmt::Formatter) -> fmt::Result;
-}
-
-#[cfg(feature = "contextual")]
-impl<'a, T: RdfDisplayWithContext<C> + ?Sized, C: ?Sized> RdfDisplayWithContext<C> for &'a T {
-	#[inline(always)]
-	fn rdf_fmt_with(&self, context: &C, f: &mut fmt::Formatter) -> fmt::Result {
-		T::rdf_fmt_with(*self, context, f)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<'c, T: RdfDisplayWithContext<C>, C: ?Sized> RdfDisplay for contextual::Contextual<T, &'c C> {
-	#[inline(always)]
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		self.0.rdf_fmt_with(self.1, f)
-	}
-}
-
-#[cfg(feature = "contextual")]
-impl<'c, T: RdfDisplayWithContext<C>, C: ?Sized> RdfDisplay
-	for contextual::Contextual<T, &'c mut C>
-{
-	#[inline(always)]
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		self.0.rdf_fmt_with(self.1, f)
 	}
 }

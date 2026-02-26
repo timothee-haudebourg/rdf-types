@@ -32,7 +32,7 @@ impl GroundTerm {
 		matches!(self, Self::Literal(_))
 	}
 
-	pub fn as_literal(&self) -> Option<LiteralRef> {
+	pub fn as_literal(&self) -> Option<LiteralRef<'_>> {
 		match self {
 			Self::Literal(lit) => Some(lit.as_ref()),
 			_ => None,
@@ -71,14 +71,14 @@ impl GroundTerm {
 		self.try_into_iri().ok()
 	}
 
-	pub fn as_ref(&self) -> GroundTermRef {
+	pub fn as_ref(&self) -> GroundTermRef<'_> {
 		match self {
 			Self::Iri(id) => GroundTermRef::Iri(id),
 			Self::Literal(l) => GroundTermRef::Literal(l.as_ref()),
 		}
 	}
 
-	pub fn as_cow(&self) -> CowGroundTerm {
+	pub fn as_cow(&self) -> CowGroundTerm<'_> {
 		match self {
 			Self::Iri(id) => CowGroundTerm::Iri(Cow::Borrowed(id)),
 			Self::Literal(l) => CowGroundTerm::Literal(l.as_cow()),

@@ -1,18 +1,16 @@
+use iref::IriBuf;
+
 use crate::Id;
 
 mod blank;
-pub use blank::BlankIdGenerator;
-
 mod uuid;
-use iref::IriBuf;
+
+pub use blank::BlankIdGenerator;
 pub use uuid::Uuid;
 
-mod interpretation;
-pub use interpretation::GeneratorInterpretation;
-
-/// Subject identifier generator.
+/// IRI generator.
 pub trait IriGenerator {
-	/// Generate a fresh term.
+	/// Generates a fresh IRI.
 	fn next_iri(&mut self) -> IriBuf;
 }
 
@@ -22,9 +20,9 @@ impl<G: IriGenerator> IriGenerator for &mut G {
 	}
 }
 
-/// Subject identifier generator.
+/// Lexical identifier generator.
 pub trait Generator {
-	/// Generate a fresh term.
+	/// Generates a fresh lexical identifier.
 	fn next_id(&mut self) -> Id;
 }
 

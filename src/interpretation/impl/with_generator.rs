@@ -3,34 +3,26 @@ use std::borrow::Cow;
 use iref::Iri;
 
 use crate::{
-	generator::IriGenerator,
 	interpretation::{
-		GenerativeInterpretation, LocalInterpretation, LocalInterpretationMut,
-		ReverseInterpretation, ReverseLocalInterpretation,
+		GenerativeInterpretation, Interpretation, InterpretationMut, ReverseGroundInterpretation,
+		ReverseInterpretation,
 	},
-	BlankId, CowLiteral, Generator, Interpretation, InterpretationMut, LiteralRef,
+	BlankId, CowLiteral, Generator, GroundInterpretation, GroundInterpretationMut, LiteralRef,
 };
 
-/// Combines any RDF interpretation with a node id generator to make it
-/// implement `InterpretationMut`.
+/// Combines any RDF interpretation with a node id generator.
 ///
-/// # Use cases
+/// - Provides a [`GenerativeInterpretation`] implementation, using the given
+///   generator to create fresh node identifiers.
+/// - Assigns a node identifier to each new resource created by
+///   [`GenerativeInterpretation::new_resource`], based on the generator.
 ///
-/// ## `()` does not implement `InterpretationMut`
+/// Note that in the case of the unit (`()`) interpretation, using
+/// [`GeneratorInterpretation`] will give you a similar result but with other
+/// advantages (such as a [`ConstGenerativeInterpretation`] implementation).
 ///
-/// The transparent interpretation (the unit type `()`) does not implement
-/// `InterpretationMut` because the `new_resource` method would require the
-/// creation of a fresh, unused, blank node identifier, which the transparent
-/// interpretation cannot create without a node id generator.
-///
-/// ## Resources returned by `InterpretationMut::new_resource` have no lexical representation
-///
-/// Interpreted resources are not required to have a lexical representation.
-/// This is most probably the case for new resources returned by
-/// `InterpretationMut::new_resource`. You can use `WithGenerator` to pair the
-/// interpretation with a node id generator so that `new_resource` will assign
-/// a lexical representation to new resources (a fresh blank node id for
-/// instance).
+/// [`GeneratorInterpretation`]: super::GeneratorInterpretation
+/// [`ConstGenerativeInterpretation`]: crate::interpretation::ConstGenerativeInterpretation
 pub struct WithIriGenerator<G, I = ()> {
 	interpretation: I,
 	generator: G,
@@ -73,7 +65,7 @@ impl<G, I> WithIriGenerator<G, I> {
 	}
 }
 
-impl<I: Interpretation, G> Interpretation for WithIriGenerator<G, I> {
+impl<I: GroundInterpretation, G> GroundInterpretation for WithIriGenerator<G, I> {
 	type Resource = I::Resource;
 
 	fn iri(&self, iri: &Iri) -> Option<Self::Resource> {
@@ -85,7 +77,7 @@ impl<I: Interpretation, G> Interpretation for WithIriGenerator<G, I> {
 	}
 }
 
-impl<I: InterpretationMut, G> InterpretationMut for WithIriGenerator<G, I> {
+impl<I: GroundInterpretationMut, G> GroundInterpretationMut for WithIriGenerator<G, I> {
 	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
 		self.interpretation.insert_iri(iri)
 	}
@@ -95,7 +87,7 @@ impl<I: InterpretationMut, G> InterpretationMut for WithIriGenerator<G, I> {
 	}
 }
 
-impl<I: ReverseInterpretation, G> ReverseInterpretation for WithIriGenerator<G, I> {
+impl<I: ReverseGroundInterpretation, G> ReverseGroundInterpretation for WithIriGenerator<G, I> {
 	type Iris<'a>
 		= I::Iris<'a>
 	where
@@ -114,10 +106,10 @@ impl<I: ReverseInterpretation, G> ReverseInterpretation for WithIriGenerator<G, 
 	}
 }
 
-impl<I: InterpretationMut, G: IriGenerator> GenerativeInterpretation for WithIriGenerator<G, I> {
+impl<I: InterpretationMut, G: Generator> GenerativeInterpretation for WithIriGenerator<G, I> {
 	fn new_resource(&mut self) -> Self::Resource {
-		let iri = self.generator.next_iri();
-		self.interpretation.insert_iri(Cow::Owned(iri))
+		let id = self.generator.next_id();
+		self.interpretation.insert_id(id)
 	}
 }
 
@@ -163,7 +155,7 @@ impl<G, I> WithGenerator<G, I> {
 	}
 }
 
-impl<I: Interpretation, G> Interpretation for WithGenerator<G, I> {
+impl<I: GroundInterpretation, G> GroundInterpretation for WithGenerator<G, I> {
 	type Resource = I::Resource;
 
 	fn iri(&self, iri: &Iri) -> Option<Self::Resource> {
@@ -175,13 +167,13 @@ impl<I: Interpretation, G> Interpretation for WithGenerator<G, I> {
 	}
 }
 
-impl<I: LocalInterpretation, G> LocalInterpretation for WithGenerator<G, I> {
+impl<I: Interpretation, G> Interpretation for WithGenerator<G, I> {
 	fn blank_id<'a>(&'a self, blank_id: &'a crate::BlankId) -> Option<Self::Resource> {
 		self.interpretation.blank_id(blank_id)
 	}
 }
 
-impl<I: InterpretationMut, G> InterpretationMut for WithGenerator<G, I> {
+impl<I: GroundInterpretationMut, G> GroundInterpretationMut for WithGenerator<G, I> {
 	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
 		self.interpretation.insert_iri(iri)
 	}
@@ -191,13 +183,13 @@ impl<I: InterpretationMut, G> InterpretationMut for WithGenerator<G, I> {
 	}
 }
 
-impl<I: LocalInterpretationMut, G> LocalInterpretationMut for WithGenerator<G, I> {
+impl<I: InterpretationMut, G> InterpretationMut for WithGenerator<G, I> {
 	fn insert_blank_id<'a>(&mut self, blank_id: impl Into<Cow<'a, BlankId>>) -> Self::Resource {
 		self.interpretation.insert_blank_id(blank_id)
 	}
 }
 
-impl<I: ReverseInterpretation, G> ReverseInterpretation for WithGenerator<G, I> {
+impl<I: ReverseGroundInterpretation, G> ReverseGroundInterpretation for WithGenerator<G, I> {
 	type Iris<'a>
 		= I::Iris<'a>
 	where
@@ -216,7 +208,7 @@ impl<I: ReverseInterpretation, G> ReverseInterpretation for WithGenerator<G, I> 
 	}
 }
 
-impl<I: ReverseLocalInterpretation, G> ReverseLocalInterpretation for WithGenerator<G, I> {
+impl<I: ReverseInterpretation, G> ReverseInterpretation for WithGenerator<G, I> {
 	type BlankIds<'a>
 		= I::BlankIds<'a>
 	where
@@ -227,7 +219,7 @@ impl<I: ReverseLocalInterpretation, G> ReverseLocalInterpretation for WithGenera
 	}
 }
 
-impl<I: LocalInterpretationMut, G: Generator> GenerativeInterpretation for WithGenerator<G, I> {
+impl<I: InterpretationMut, G: Generator> GenerativeInterpretation for WithGenerator<G, I> {
 	fn new_resource(&mut self) -> Self::Resource {
 		let id = self.generator.next_id();
 		self.interpretation.insert_id(id)

@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{cmp::Ordering, collections::BTreeSet, fmt::Debug, hash::Hash};
 
 use educe::Educe;
@@ -11,8 +12,8 @@ use super::{
 use crate::{
 	dataset::{
 		BTreeGraph, DatasetMut, MultiPatternMatchingDataset, NamedGraphTraversableDataset,
-		ObjectTraversableDataset, PredicateTraversableDataset, ResourceTraversableDataset,
-		SubjectTraversableDataset, TraversableDataset,
+		ObjectTraversableDataset, PatternMatchingDatasetMut, PredicateTraversableDataset,
+		ResourceTraversableDataset, SubjectTraversableDataset, TraversableDataset,
 	},
 	pattern::{
 		quad::canonical::{PatternGraph, PatternObject, PatternPredicate, PatternSubject},
@@ -60,14 +61,40 @@ fn quad_index_cmp<'a, R: Ord>(
 /// Indexed BTree-based RDF dataset, optimized for pattern matching operations.
 #[derive(Clone)]
 pub struct IndexedBTreeDataset<R = Term> {
+	/// All the resources appearing in this dataset.
+	///
+	/// Each of them is uniquely indexed by a `usize` in this slab.
 	resources: Slab<Resource<R>>,
+
+	/// All the quads in this dataset.
+	///
+	/// Each of them is uniquely indexed by a `usize` in this slab.
 	quads: Slab<Quad<usize>>,
+
+	/// Maps each resource to its index in `resources`.
+	///
+	/// Using a `RawBTree` so we don't have to actually store each resource
+	/// there.
 	resources_indexes: RawBTree<usize>,
+
+	/// Maps each quad to its index in `quads`.
+	///
+	/// Using a `RawBTree` so we don't have to actually store each quad there.
 	quads_indexes: RawBTree<usize>,
+
+	/// All the resources that appear as quad subject.
 	subjects: BTreeSet<usize>,
+
+	/// All the resources that appear as quad predicate.
 	predicates: BTreeSet<usize>,
+
+	/// All the resources that appear as quad object.
 	objects: BTreeSet<usize>,
+
+	/// All the quads in the default graph.
 	default_graph: BTreeSet<usize>,
+
+	/// All the resources that appear as named graph.
 	named_graphs: BTreeSet<usize>,
 }
 
@@ -164,7 +191,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the quads of the dataset.
-	pub fn iter(&self) -> Quads<R> {
+	pub fn iter(&self) -> Quads<'_, R> {
 		Quads {
 			resources: &self.resources,
 			quads: &self.quads,
@@ -173,7 +200,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the resources of the dataset.
-	pub fn resources(&self) -> Resources<R> {
+	pub fn resources(&self) -> Resources<'_, R> {
 		Resources {
 			resources: &self.resources,
 			indexes: self.resources_indexes.iter(),
@@ -181,7 +208,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the subjects of the dataset.
-	pub fn subjects(&self) -> Subjects<R> {
+	pub fn subjects(&self) -> Subjects<'_, R> {
 		Subjects {
 			resources: &self.resources,
 			indexes: self.subjects.iter(),
@@ -189,7 +216,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the predicates of the dataset.
-	pub fn predicates(&self) -> Predicates<R> {
+	pub fn predicates(&self) -> Predicates<'_, R> {
 		Predicates {
 			resources: &self.resources,
 			indexes: self.predicates.iter(),
@@ -197,7 +224,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the objects of the dataset.
-	pub fn objects(&self) -> Objects<R> {
+	pub fn objects(&self) -> Objects<'_, R> {
 		Objects {
 			resources: &self.resources,
 			indexes: self.objects.iter(),
@@ -205,7 +232,7 @@ impl<R> IndexedBTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the named graphs of the dataset.
-	pub fn named_graphs(&self) -> NamedGraphs<R> {
+	pub fn named_graphs(&self) -> NamedGraphs<'_, R> {
 		NamedGraphs {
 			resources: &self.resources,
 			indexes: self.named_graphs.iter(),
@@ -376,6 +403,10 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 		Some(graph)
 	}
 
+	/// Removes the given quad from the dataset.
+	///
+	/// If `remove_index` is set to `false`, this function will assume that
+	/// the quad has already been removed from `self.quad_indexes`.
 	fn remove_by_index(&mut self, i: usize, remove_index: bool) {
 		if remove_index {
 			self.quads_indexes
@@ -384,43 +415,50 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 
 		let Quad(s_i, p_i, o_i, g_i) = self.quads.remove(i);
 
-		self.subjects.remove(&s_i);
-		self.predicates.remove(&p_i);
-		self.objects.remove(&o_i);
-
 		let s = &mut self.resources[s_i];
 		s.as_subject.remove(&i);
-		if s.is_empty() {
-			self.resources_indexes
-				.remove(resource_index_cmp(&self.resources), &s_i);
-			self.resources.remove(s_i);
+		if s.as_subject.is_empty() {
+			self.subjects.remove(&s_i);
+			if s.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &s_i);
+				self.resources.remove(s_i);
+			}
 		}
 
 		let p = &mut self.resources[p_i];
 		p.as_predicate.remove(&i);
-		if p.is_empty() {
-			self.resources_indexes
-				.remove(resource_index_cmp(&self.resources), &p_i);
-			self.resources.remove(p_i);
+		if p.as_predicate.is_empty() {
+			self.predicates.remove(&p_i);
+			if p.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &p_i);
+				self.resources.remove(p_i);
+			}
 		}
 
 		let o = &mut self.resources[o_i];
 		o.as_object.remove(&i);
-		if o.is_empty() {
-			self.resources_indexes
-				.remove(resource_index_cmp(&self.resources), &o_i);
-			self.resources.remove(o_i);
+		if o.as_object.is_empty() {
+			self.objects.remove(&o_i);
+			if o.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &o_i);
+				self.resources.remove(o_i);
+			}
 		}
 
 		match g_i {
 			Some(g_i) => {
 				let g = &mut self.resources[g_i];
 				g.as_graph.remove(&i);
-				if g.is_empty() {
-					self.resources_indexes
-						.remove(resource_index_cmp(&self.resources), &g_i);
-					self.resources.remove(g_i);
+				if g.as_graph.is_empty() {
 					self.named_graphs.remove(&g_i);
+					if g.is_empty() {
+						self.resources_indexes
+							.remove(resource_index_cmp(&self.resources), &g_i);
+						self.resources.remove(g_i);
+					}
 				}
 			}
 			None => {
@@ -431,7 +469,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 
 	/// Returns an iterator over all the quads matching the given canonical
 	/// quad pattern.
-	pub fn pattern_matching(&self, pattern: CanonicalQuadPattern<&R>) -> PatternMatching<R> {
+	pub fn pattern_matching(&self, pattern: CanonicalQuadPattern<&R>) -> PatternMatching<'_, R> {
 		PatternMatching {
 			resources: &self.resources,
 			quads: &self.quads,
@@ -448,7 +486,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 	pub fn multi_pattern_matching<'a, P>(
 		&self,
 		pattern: CanonicalQuadPattern<P>,
-	) -> MultiPatternMatching<R>
+	) -> MultiPatternMatching<'_, R>
 	where
 		P: IntoIterator<Item = &'a R>,
 		R: 'a,
@@ -475,7 +513,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 	pub fn extract_pattern_matching(
 		&mut self,
 		pattern: CanonicalQuadPattern<&R>,
-	) -> ExtractPatternMatching<R> {
+	) -> ExtractPatternMatching<'_, R> {
 		let subject = SubjectConstraints::new_owned(self, pattern.into_subject());
 		let predicate = PredicateConstraints::new_owned(self, pattern.into_predicate());
 		let object = ObjectConstraints::new_owned(self, pattern.into_object());
@@ -652,6 +690,30 @@ impl<R: Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
 	}
 }
 
+impl<R: Clone + Ord> PatternMatchingDatasetMut for IndexedBTreeDataset<R> {
+	type ExtractMatchingQuads<'a>
+		= ExtractPatternMatching<'a, R>
+	where
+		Self: 'a;
+
+	fn extract_matching_quads(
+		&mut self,
+		pattern: CanonicalQuadPattern<&Self::Resource>,
+	) -> Self::ExtractMatchingQuads<'_> {
+		self.extract_pattern_matching(pattern)
+	}
+}
+
+impl<R: RdfDisplay> fmt::Display for IndexedBTreeDataset<R> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		for quad in self {
+			writeln!(f, "{quad} .")?;
+		}
+
+		Ok(())
+	}
+}
+
 /// Iterator over the quads of a [`BTreeGraph`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
@@ -821,19 +883,27 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.quads.capacity() {
 			let i = self.subject.next(self.i)?;
-			let quad = *self.quads.get(i)?;
-			match self.predicate.next(i, quad) {
-				Ok(()) => match self.object.next(i, quad) {
-					Ok(()) => match self.graph.next(i, quad) {
-						Ok(()) => {
-							self.i = i + 1;
-							return Some(quad_with_resources(self.resources, quad));
-						}
+			match self.quads.get(i) {
+				Some(&quad) => match self.predicate.next(i, quad) {
+					Ok(()) => match self.object.next(i, quad) {
+						Ok(()) => match self.graph.next(i, quad) {
+							Ok(()) => {
+								if let Some(j) = i.checked_add(1) {
+									self.i = j;
+								}
+								return Some(quad_with_resources(self.resources, quad));
+							}
+							Err(j) => self.i = j?,
+						},
 						Err(j) => self.i = j?,
 					},
 					Err(j) => self.i = j?,
 				},
-				Err(j) => self.i = j?,
+				None => {
+					// If `subject` is `Any`, the selected quad might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
 			}
 		}
 
@@ -858,19 +928,27 @@ impl<'a, R> Iterator for MultiPatternMatching<'a, R> {
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.quads.capacity() {
 			let i = self.subject.next(self.i)?;
-			let quad = *self.quads.get(i)?;
-			match self.predicate.next(i, quad) {
-				Ok(()) => match self.object.next(i, quad) {
-					Ok(()) => match self.graph.next(i, quad) {
-						Ok(()) => {
-							self.i = i + 1;
-							return Some(quad_with_resources(self.resources, quad));
-						}
+			match self.quads.get(i) {
+				Some(&quad) => match self.predicate.next(i, quad) {
+					Ok(()) => match self.object.next(i, quad) {
+						Ok(()) => match self.graph.next(i, quad) {
+							Ok(()) => {
+								if let Some(j) = i.checked_add(1) {
+									self.i = j;
+								}
+								return Some(quad_with_resources(self.resources, quad));
+							}
+							Err(j) => self.i = j?,
+						},
 						Err(j) => self.i = j?,
 					},
 					Err(j) => self.i = j?,
 				},
-				Err(j) => self.i = j?,
+				None => {
+					// If `subject` is `Any`, the selected quad might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
 			}
 		}
 
@@ -879,6 +957,8 @@ impl<'a, R> Iterator for MultiPatternMatching<'a, R> {
 }
 
 /// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
+///
+/// Dropping this iterator will *not* extract the remaining matching quads.
 pub struct ExtractPatternMatching<'a, R> {
 	dataset: &'a mut IndexedBTreeDataset<R>,
 	subject: SubjectConstraints<OwnedTripleIndexes>,
@@ -894,21 +974,30 @@ impl<R: Clone + Ord> Iterator for ExtractPatternMatching<'_, R> {
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.dataset.quads.capacity() {
 			let i = self.subject.next(self.i)?;
-			let quad = *self.dataset.quads.get(i)?;
-			match self.predicate.next(i, quad) {
-				Ok(()) => match self.object.next(i, quad) {
-					Ok(()) => match self.graph.next(i, quad) {
-						Ok(()) => {
-							let value = quad_with_resources(&self.dataset.resources, quad).cloned();
-							self.dataset.remove_by_index(i, true);
-							self.i = i + 1;
-							return Some(value);
-						}
+			match self.dataset.quads.get(i) {
+				Some(&quad) => match self.predicate.next(i, quad) {
+					Ok(()) => match self.object.next(i, quad) {
+						Ok(()) => match self.graph.next(i, quad) {
+							Ok(()) => {
+								let value =
+									quad_with_resources(&self.dataset.resources, quad).cloned();
+								self.dataset.remove_by_index(i, true);
+								if let Some(j) = i.checked_add(1) {
+									self.i = j;
+								}
+								return Some(value);
+							}
+							Err(j) => self.i = j?,
+						},
 						Err(j) => self.i = j?,
 					},
 					Err(j) => self.i = j?,
 				},
-				Err(j) => self.i = j?,
+				None => {
+					// If `subject` is `Any`, the selected quad might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
 			}
 		}
 

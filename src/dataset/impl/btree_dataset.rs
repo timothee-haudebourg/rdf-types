@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 
 use educe::Educe;
@@ -83,7 +84,7 @@ impl<R> BTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the quads of the dataset.
-	pub fn iter(&self) -> Quads<R> {
+	pub fn iter(&self) -> Quads<'_, R> {
 		Quads {
 			resources: &self.resources,
 			quads: &self.quads,
@@ -92,7 +93,7 @@ impl<R> BTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the resources of the dataset.
-	pub fn resources(&self) -> Resources<R> {
+	pub fn resources(&self) -> Resources<'_, R> {
 		Resources {
 			resources: &self.resources,
 			indexes: self.resources_indexes.iter(),
@@ -318,7 +319,17 @@ impl<R: Clone + Ord> DatasetMut for BTreeDataset<R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`].
+impl<R: RdfDisplay> fmt::Display for BTreeDataset<R> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		for quad in self {
+			writeln!(f, "{quad} .")?;
+		}
+
+		Ok(())
+	}
+}
+
+/// Iterator over the quads of a [`BTreeDataset`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
 pub struct Quads<'a, R> {
@@ -337,14 +348,14 @@ impl<'a, R> Iterator for Quads<'a, R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`].
-pub struct IntoTriples<R> {
+/// Iterator over the quads of a [`BTreeDataset`].
+pub struct IntoQuads<R> {
 	resources: Slab<Resource<R>>,
 	quads: Slab<Quad<usize>>,
 	indexes: raw_btree::IntoIter<usize>,
 }
 
-impl<R: Clone> Iterator for IntoTriples<R> {
+impl<R: Clone> Iterator for IntoQuads<R> {
 	type Item = Quad<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -365,10 +376,10 @@ impl<'a, R> IntoIterator for &'a BTreeDataset<R> {
 
 impl<R: Clone> IntoIterator for BTreeDataset<R> {
 	type Item = Quad<R>;
-	type IntoIter = IntoTriples<R>;
+	type IntoIter = IntoQuads<R>;
 
 	fn into_iter(self) -> Self::IntoIter {
-		IntoTriples {
+		IntoQuads {
 			resources: self.resources,
 			quads: self.quads,
 			indexes: self.quads_indexes.into_iter(),

@@ -1,8 +1,11 @@
-use std::borrow::Cow;
+use core::fmt;
+use std::{borrow::Cow, fmt::Write};
 
 use educe::Educe;
 use iref::{Iri, IriBuf};
 use langtag::{LangTag, LangTagBuf};
+
+use crate::{RdfDisplay, RDF_LANG_STRING};
 
 use super::{LiteralType, LiteralTypeRef};
 
@@ -19,7 +22,7 @@ pub enum CowLiteralType<'a> {
 }
 
 impl CowLiteralType<'_> {
-	pub fn as_ref(&self) -> LiteralTypeRef {
+	pub fn as_ref(&self) -> LiteralTypeRef<'_> {
 		match self {
 			Self::Any(i) => LiteralTypeRef::Any(i),
 			Self::LangString(l) => LiteralTypeRef::LangString(l),
@@ -82,5 +85,44 @@ impl From<LangTagBuf> for CowLiteralType<'_> {
 impl<'a> From<Cow<'a, LangTag>> for CowLiteralType<'a> {
 	fn from(value: Cow<'a, LangTag>) -> Self {
 		Self::LangString(value)
+	}
+}
+
+impl PartialEq<Iri> for CowLiteralType<'_> {
+	fn eq(&self, other: &Iri) -> bool {
+		match self {
+			Self::Any(ty) => ty.as_ref() == other,
+			Self::LangString(_) => RDF_LANG_STRING == other,
+		}
+	}
+}
+
+impl<'a> PartialEq<&'a Iri> for CowLiteralType<'_> {
+	fn eq(&self, other: &&'a Iri) -> bool {
+		match self {
+			Self::Any(ty) => ty.as_ref() == other,
+			Self::LangString(_) => RDF_LANG_STRING == other,
+		}
+	}
+}
+
+impl fmt::Display for CowLiteralType<'_> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Self::Any(ty) => {
+				f.write_str("^^")?;
+				ty.rdf_fmt(f)
+			}
+			Self::LangString(tag) => {
+				f.write_char('@')?;
+				tag.rdf_fmt(f)
+			}
+		}
+	}
+}
+
+impl RdfDisplay for CowLiteralType<'_> {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		fmt::Display::fmt(self, f)
 	}
 }

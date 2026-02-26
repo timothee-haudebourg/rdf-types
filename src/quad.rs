@@ -2,13 +2,13 @@ use std::{cmp::Ordering, fmt};
 
 use iref::{Iri, IriBuf};
 
-use crate::{Id, IdRef, LocalTermRef, RdfDisplay, Term, Triple};
+use crate::{Id, IdRef, RdfDisplay, Term, TermRef, Triple};
 
 /// Lexical RDF quad.
 pub type RdfQuad = Quad<Id, IriBuf, Term, Id>;
 
 /// Lexical RDF quad reference.
-pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, LocalTermRef<'a>, IdRef<'a>>;
+pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, TermRef<'a>, IdRef<'a>>;
 
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
@@ -82,7 +82,7 @@ impl<S, P, O, G> Quad<&S, &P, &O, &G> {
 }
 
 impl RdfQuad {
-	pub fn as_lexical_quad_ref(&self) -> RdfQuadRef {
+	pub fn as_lexical_quad_ref(&self) -> RdfQuadRef<'_> {
 		Quad(
 			self.0.as_ref(),
 			self.1.as_iri(),
@@ -239,25 +239,6 @@ pub trait TryExportQuad<S, P, O, G> {
 	type Error;
 
 	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<RdfQuad, Self::Error>;
-}
-
-/// Error returned when calling [`try_extract_from_vocabulary`][1] on a
-/// [`Quad`].
-///
-/// [1]: TryExtractFromVocabulary::try_extract_from_vocabulary
-#[derive(Debug, thiserror::Error)]
-pub enum QuadExportFailed<S, P, O, G> {
-	#[error("invalid subject: {0}")]
-	Subject(S),
-
-	#[error("invalid predicate: {0}")]
-	Predicate(P),
-
-	#[error("invalid object: {0}")]
-	Object(O),
-
-	#[error("invalid graph label: {0}")]
-	Graph(G),
 }
 
 impl<

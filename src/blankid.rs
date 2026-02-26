@@ -3,12 +3,26 @@ use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
 
+use crate::RdfDisplay;
+
 /// Invalid blank node identifier.
 ///
 /// This error is raised by the [`BlankId::new`] and [`BlankIdBuf::new`] functions
 /// when the input string is not a valid blank node identifier.
 #[derive(Debug)]
 pub struct InvalidBlankId<T>(pub T);
+
+#[macro_export]
+macro_rules! blankid {
+	($input:literal) => {
+		const {
+			match $crate::BlankId::new($input) {
+				Ok(b) => b,
+				Err(_) => panic!("invalid blank identifier"),
+			}
+		}
+	};
+}
 
 /// Blank node identifier.
 ///
@@ -27,8 +41,8 @@ pub struct BlankId(str);
 impl BlankId {
 	/// Parses a blank node identifier.
 	#[inline(always)]
-	pub fn new(s: &str) -> Result<&Self, InvalidBlankId<&str>> {
-		if check(s.chars()) {
+	pub const fn new(s: &str) -> Result<&Self, InvalidBlankId<&str>> {
+		if check(s.as_bytes()) {
 			Ok(unsafe { Self::new_unchecked(s) })
 		} else {
 			Err(InvalidBlankId(s))
@@ -41,7 +55,7 @@ impl BlankId {
 	///
 	/// The input string `s` must be a valid blank node identifier.
 	#[inline(always)]
-	pub unsafe fn new_unchecked(s: &str) -> &Self {
+	pub const unsafe fn new_unchecked(s: &str) -> &Self {
 		std::mem::transmute(s)
 	}
 
@@ -108,6 +122,12 @@ impl fmt::Debug for BlankId {
 	}
 }
 
+impl RdfDisplay for BlankId {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		f.write_str(self.as_str())
+	}
+}
+
 impl PartialEq<str> for BlankId {
 	#[inline(always)]
 	fn eq(&self, other: &str) -> bool {
@@ -134,7 +154,7 @@ impl BlankIdBuf {
 	/// Parses a blank node identifier.
 	#[inline(always)]
 	pub fn new(s: String) -> Result<Self, InvalidBlankId<String>> {
-		if check(s.chars()) {
+		if check(s.as_bytes()) {
 			Ok(unsafe { Self::new_unchecked(s) })
 		} else {
 			Err(InvalidBlankId(s))
@@ -183,7 +203,7 @@ impl BlankIdBuf {
 
 	/// Returns a reference to this blank id as a `BlankId`.
 	#[inline(always)]
-	pub fn as_blank_id_ref(&self) -> &BlankId {
+	pub fn as_blank_id(&self) -> &BlankId {
 		unsafe { BlankId::new_unchecked(&self.0) }
 	}
 }
@@ -201,21 +221,21 @@ impl Deref for BlankIdBuf {
 
 	#[inline(always)]
 	fn deref(&self) -> &BlankId {
-		self.as_blank_id_ref()
+		self.as_blank_id()
 	}
 }
 
 impl AsRef<BlankId> for BlankIdBuf {
 	#[inline(always)]
 	fn as_ref(&self) -> &BlankId {
-		self.as_blank_id_ref()
+		self.as_blank_id()
 	}
 }
 
 impl Borrow<BlankId> for BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &BlankId {
-		self.as_blank_id_ref()
+		self.as_blank_id()
 	}
 }
 
@@ -243,7 +263,7 @@ impl AsRef<[u8]> for BlankIdBuf {
 impl Borrow<BlankId> for &BlankIdBuf {
 	#[inline(always)]
 	fn borrow(&self) -> &BlankId {
-		self.as_blank_id_ref()
+		self.as_blank_id()
 	}
 }
 
@@ -275,60 +295,78 @@ impl fmt::Debug for BlankIdBuf {
 	}
 }
 
+impl RdfDisplay for BlankIdBuf {
+	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.as_blank_id().rdf_fmt(f)
+	}
+}
+
 impl PartialEq<BlankId> for BlankIdBuf {
 	fn eq(&self, other: &BlankId) -> bool {
-		self.as_blank_id_ref() == other
+		self.as_blank_id() == other
 	}
 }
 
 impl<'a> PartialEq<&'a BlankId> for BlankIdBuf {
 	fn eq(&self, other: &&'a BlankId) -> bool {
-		self.as_blank_id_ref() == *other
+		self.as_blank_id() == *other
 	}
 }
 
 impl PartialEq<BlankIdBuf> for &BlankId {
 	fn eq(&self, other: &BlankIdBuf) -> bool {
-		*self == other.as_blank_id_ref()
+		*self == other.as_blank_id()
 	}
 }
 
 impl PartialEq<BlankIdBuf> for BlankId {
 	fn eq(&self, other: &BlankIdBuf) -> bool {
-		self == other.as_blank_id_ref()
+		self == other.as_blank_id()
 	}
 }
 
-fn check<C: Iterator<Item = char>>(mut chars: C) -> bool {
-	match chars.next() {
-		Some('_') => match chars.next() {
-			Some(':') => match chars.next() {
-				Some(c) if c.is_ascii_digit() || is_pn_char_u(c) => {
-					for c in chars {
-						if !is_pn_char(c) {
-							return false;
-						}
-					}
+const fn check(input: &[u8]) -> bool {
+	let mut i = 0;
 
-					true
-				}
-				_ => false,
-			},
-			_ => false,
-		},
-		_ => false,
+	if !matches!(
+		utf8_decode::try_decode_char(input, &mut i),
+		Ok(Some(('_', _)))
+	) {
+		return false;
+	}
+
+	if !matches!(
+		utf8_decode::try_decode_char(input, &mut i),
+		Ok(Some((':', _)))
+	) {
+		return false;
+	}
+
+	if !matches!(
+		utf8_decode::try_decode_char(input, &mut i),
+		Ok(Some((c, _))) if c.is_ascii_digit() || is_pn_char_u(c)
+	) {
+		return false;
+	}
+
+	loop {
+		match utf8_decode::try_decode_char(input, &mut i) {
+			Ok(Some((c, _))) if is_pn_char(c) => (),
+			Ok(None) => break true,
+			_ => break false,
+		}
 	}
 }
 
-fn is_pn_char_base(c: char) -> bool {
+const fn is_pn_char_base(c: char) -> bool {
 	matches!(c, 'A'..='Z' | 'a'..='z' | '\u{00c0}'..='\u{00d6}' | '\u{00d8}'..='\u{00f6}' | '\u{00f8}'..='\u{02ff}' | '\u{0370}'..='\u{037d}' | '\u{037f}'..='\u{1fff}' | '\u{200c}'..='\u{200d}' | '\u{2070}'..='\u{218f}' | '\u{2c00}'..='\u{2fef}' | '\u{3001}'..='\u{d7ff}' | '\u{f900}'..='\u{fdcf}' | '\u{fdf0}'..='\u{fffd}' | '\u{10000}'..='\u{effff}')
 }
 
-fn is_pn_char_u(c: char) -> bool {
+const fn is_pn_char_u(c: char) -> bool {
 	is_pn_char_base(c) || matches!(c, '_' | ':')
 }
 
-fn is_pn_char(c: char) -> bool {
+const fn is_pn_char(c: char) -> bool {
 	is_pn_char_u(c)
 		|| matches!(c, '-' | '0'..='9' | '\u{00b7}' | '\u{0300}'..='\u{036f}' | '\u{203f}'..='\u{2040}')
 }

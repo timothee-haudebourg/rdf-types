@@ -6,11 +6,13 @@ use crate::LiteralRef;
 
 use super::GroundTerm;
 
-/// Lexical RDF term reference.
+/// Ground term reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GroundTermRef<'a> {
+	/// IRI.
 	Iri(&'a Iri),
 
+	/// Lexical value.
 	Literal(LiteralRef<'a>),
 }
 

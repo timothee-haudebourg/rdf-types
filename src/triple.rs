@@ -1,4 +1,4 @@
-use crate::{Id, IdRef, LocalTermRef, Quad, RdfDisplay, Term};
+use crate::{Id, IdRef, Quad, RdfDisplay, Term, TermRef};
 use iref::{Iri, IriBuf};
 use std::{cmp::Ordering, fmt};
 
@@ -6,7 +6,7 @@ use std::{cmp::Ordering, fmt};
 pub type LexicalTriple = Triple<Id, IriBuf, Term>;
 
 /// Lexical RDF triple reference.
-pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, LocalTermRef<'a>>;
+pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, TermRef<'a>>;
 
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
@@ -174,7 +174,7 @@ impl<T> Triple<T, T, T> {
 }
 
 impl LexicalTriple {
-	pub fn as_lexical_triple_ref(&self) -> LexicalTripleRef {
+	pub fn as_lexical_triple_ref(&self) -> LexicalTripleRef<'_> {
 		Triple(self.0.as_ref(), self.1.as_iri(), self.2.as_ref())
 	}
 }

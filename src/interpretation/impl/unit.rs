@@ -3,11 +3,11 @@ use std::borrow::Cow;
 use iref::Iri;
 
 use crate::{
-	interpretation::{Interpretation, ReverseInterpretation},
-	CowLiteral, GroundTerm, InterpretationMut, LiteralRef, Term,
+	interpretation::{GroundInterpretation, ReverseGroundInterpretation},
+	CowLiteral, GroundInterpretationMut, GroundTerm, LiteralRef, Term,
 };
 
-impl Interpretation for () {
+impl GroundInterpretation for () {
 	type Resource = Term;
 
 	fn iri(&self, iri: &Iri) -> Option<Term> {
@@ -19,7 +19,7 @@ impl Interpretation for () {
 	}
 }
 
-impl InterpretationMut for () {
+impl GroundInterpretationMut for () {
 	fn insert_iri<'a>(&mut self, iri: impl Into<Cow<'a, Iri>>) -> Self::Resource {
 		Term::iri(iri.into().into_owned())
 	}
@@ -29,7 +29,7 @@ impl InterpretationMut for () {
 	}
 }
 
-impl ReverseInterpretation for () {
+impl ReverseGroundInterpretation for () {
 	type Iris<'a> = std::option::IntoIter<Cow<'a, Iri>>;
 	type Literals<'a> = std::option::IntoIter<CowLiteral<'a>>;
 

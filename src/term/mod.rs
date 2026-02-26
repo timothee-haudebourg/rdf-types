@@ -16,12 +16,17 @@ pub use generator::Generator;
 pub use ground::*;
 pub use r#ref::*;
 
+/// Term.
+///
 /// Lexical representation of an RDF resource.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Term {
+	/// Blank identifier.
 	BlankId(BlankIdBuf),
+
+	/// Ground term.
 	Ground(GroundTerm),
 }
 
@@ -32,6 +37,17 @@ impl Term {
 
 	pub fn literal(literal: Literal) -> Self {
 		Self::Ground(GroundTerm::Literal(literal))
+	}
+
+	pub fn id(id: Id) -> Self {
+		match id {
+			Id::Iri(iri) => Self::iri(iri),
+			Id::BlankId(b) => Self::BlankId(b),
+		}
+	}
+
+	pub fn is_id(&self) -> bool {
+		matches!(self, Self::BlankId(_) | Self::Ground(GroundTerm::Iri(_)))
 	}
 
 	pub fn is_blank_id(&self) -> bool {
@@ -45,6 +61,10 @@ impl Term {
 		}
 	}
 
+	pub fn is_iri(&self) -> bool {
+		matches!(self, Self::Ground(GroundTerm::Iri(_)))
+	}
+
 	pub fn as_iri(&self) -> Option<&Iri> {
 		match self {
 			Self::Ground(t) => t.as_iri(),
@@ -52,31 +72,42 @@ impl Term {
 		}
 	}
 
-	pub fn as_literal(&self) -> Option<LiteralRef> {
+	pub fn into_iri(self) -> Result<IriBuf, Self> {
+		match self {
+			Self::Ground(GroundTerm::Iri(iri)) => Ok(iri),
+			other => Err(other),
+		}
+	}
+
+	pub fn is_literal(&self) -> bool {
+		matches!(self, Self::Ground(GroundTerm::Literal(_)))
+	}
+
+	pub fn as_literal(&self) -> Option<LiteralRef<'_>> {
 		match self {
 			Self::Ground(t) => t.as_literal(),
 			Self::BlankId(_) => None,
 		}
 	}
 
-	pub fn as_ref(&self) -> LocalTermRef {
+	pub fn as_ref(&self) -> TermRef<'_> {
 		match self {
-			Self::BlankId(blank_id) => LocalTermRef::Anonymous(blank_id),
-			Self::Ground(named) => LocalTermRef::Named(named.as_ref()),
+			Self::BlankId(blank_id) => TermRef::BlankId(blank_id),
+			Self::Ground(named) => TermRef::Ground(named.as_ref()),
 		}
 	}
 
-	pub fn as_cow(&self) -> CowLocalTerm {
+	pub fn as_cow(&self) -> CowTerm<'_> {
 		match self {
-			Self::BlankId(blank_id) => CowLocalTerm::Anonymous(Cow::Borrowed(blank_id)),
-			Self::Ground(named) => CowLocalTerm::Named(named.as_cow()),
+			Self::BlankId(blank_id) => CowTerm::BlankId(Cow::Borrowed(blank_id)),
+			Self::Ground(named) => CowTerm::Ground(named.as_cow()),
 		}
 	}
 
-	pub fn into_cow(self) -> CowLocalTerm<'static> {
+	pub fn into_cow(self) -> CowTerm<'static> {
 		match self {
-			Self::BlankId(blank_id) => CowLocalTerm::Anonymous(Cow::Owned(blank_id)),
-			Self::Ground(named) => CowLocalTerm::Named(named.into_cow()),
+			Self::BlankId(blank_id) => CowTerm::BlankId(Cow::Owned(blank_id)),
+			Self::Ground(named) => CowTerm::Ground(named.into_cow()),
 		}
 	}
 

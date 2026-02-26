@@ -17,10 +17,11 @@
 //! [w3c]: <https://www.w3.org/>
 #![recursion_limit = "1024"]
 
-#[doc(hidden)]
 pub use iref;
+pub use langtag;
 
 mod blankid;
+pub mod diff;
 mod display;
 mod id;
 mod literal;
@@ -45,7 +46,7 @@ pub mod pattern;
 pub mod utils;
 
 pub use dataset::Dataset;
-pub use interpretation::{Interpretation, InterpretationMut};
+pub use interpretation::{GroundInterpretation, GroundInterpretationMut};
 pub use iref::{iri, InvalidIri, Iri, IriBuf, IriError, IriRef, IriRefBuf};
 
 pub const XSD_STRING: &Iri = iri!("http://www.w3.org/2001/XMLSchema#string");
