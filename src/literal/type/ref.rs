@@ -1,7 +1,6 @@
 use core::fmt;
 use std::{cmp::Ordering, fmt::Write};
 
-use educe::Educe;
 use iref::Iri;
 use langtag::LangTag;
 
@@ -10,8 +9,7 @@ use crate::{RdfDisplay, XSD_STRING};
 use super::LiteralType;
 
 /// RDF literal type reference.
-#[derive(Educe, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-#[educe(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum LiteralTypeRef<'a> {
 	/// Any type.

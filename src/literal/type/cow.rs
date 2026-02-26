@@ -1,7 +1,6 @@
 use core::fmt;
 use std::{borrow::Cow, fmt::Write};
 
-use educe::Educe;
 use iref::{Iri, IriBuf};
 use langtag::{LangTag, LangTagBuf};
 
@@ -10,8 +9,7 @@ use crate::{RdfDisplay, RDF_LANG_STRING};
 use super::{LiteralType, LiteralTypeRef};
 
 /// Owned or referenced RDF literal type.
-#[derive(Educe, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-#[educe(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum CowLiteralType<'a> {
 	/// Any type.

@@ -1,7 +1,6 @@
 use core::fmt;
 use std::{borrow::Borrow, cmp::Ordering};
 
-use educe::Educe;
 use langtag::LangTag;
 
 use crate::RdfDisplay;
@@ -9,8 +8,7 @@ use crate::RdfDisplay;
 use super::{CowLiteral, Literal, LiteralTypeRef};
 
 /// RDF Literal reference.
-#[derive(Educe, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-#[educe(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct LiteralRef<'a> {
 	/// Literal value.
