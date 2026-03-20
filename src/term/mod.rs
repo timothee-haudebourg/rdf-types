@@ -81,10 +81,10 @@ impl Term {
 		}
 	}
 
-	pub fn into_ground(self) -> Option<GroundTerm> {
+	pub fn into_ground(self) -> Result<GroundTerm, BlankIdBuf> {
 		match self {
-			Self::Ground(g) => Some(g),
-			_ => None,
+			Self::Ground(g) => Ok(g),
+			Self::BlankId(b) => Err(b),
 		}
 	}
 

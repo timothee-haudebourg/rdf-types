@@ -94,10 +94,10 @@ impl CowTerm<'_> {
 }
 
 impl<'a> CowTerm<'a> {
-	pub fn into_ground(self) -> Option<CowGroundTerm<'a>> {
+	pub fn into_ground(self) -> Result<CowGroundTerm<'a>, Cow<'a, BlankId>> {
 		match self {
-			Self::Ground(g) => Some(g),
-			_ => None,
+			Self::Ground(g) => Ok(g),
+			Self::BlankId(b) => Err(b),
 		}
 	}
 

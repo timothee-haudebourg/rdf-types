@@ -83,6 +83,13 @@ impl<'a> TermRef<'a> {
 		}
 	}
 
+	pub fn into_ground(self) -> Result<GroundTermRef<'a>, &'a BlankId> {
+		match self {
+			Self::Ground(g) => Ok(g),
+			Self::BlankId(b) => Err(b),
+		}
+	}
+
 	pub fn into_cow(self) -> CowTerm<'a> {
 		match self {
 			Self::BlankId(b) => CowTerm::BlankId(Cow::Borrowed(b)),
