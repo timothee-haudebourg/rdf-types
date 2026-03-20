@@ -1,5 +1,6 @@
 use core::fmt;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 
 use iref::{Iri, IriBuf};
 
@@ -123,6 +124,60 @@ impl<'a> From<&'a str> for CowGroundTerm<'a> {
 impl<'a> From<&'a String> for CowGroundTerm<'a> {
 	fn from(value: &'a String) -> Self {
 		value.as_str().into()
+	}
+}
+
+impl PartialEq<GroundTerm> for CowGroundTerm<'_> {
+	fn eq(&self, other: &GroundTerm) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowGroundTerm<'_>> for GroundTerm {
+	fn eq(&self, other: &CowGroundTerm<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl<'a> PartialEq<GroundTermRef<'a>> for CowGroundTerm<'_> {
+	fn eq(&self, other: &GroundTermRef<'a>) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowGroundTerm<'_>> for GroundTermRef<'_> {
+	fn eq(&self, other: &CowGroundTerm<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl PartialOrd<GroundTerm> for CowGroundTerm<'_> {
+	fn partial_cmp(&self, other: &GroundTerm) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowGroundTerm<'_>> for GroundTerm {
+	fn partial_cmp(&self, other: &CowGroundTerm<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
+	}
+}
+
+impl<'a> PartialOrd<GroundTermRef<'a>> for CowGroundTerm<'_> {
+	fn partial_cmp(&self, other: &GroundTermRef<'a>) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowGroundTerm<'_>> for GroundTermRef<'_> {
+	fn partial_cmp(&self, other: &CowGroundTerm<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
+	}
+}
+
+impl From<GroundTermRef<'_>> for GroundTerm {
+	fn from(value: GroundTermRef<'_>) -> Self {
+		value.to_owned()
 	}
 }
 

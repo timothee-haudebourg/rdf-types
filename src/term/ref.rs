@@ -81,6 +81,12 @@ impl TermRef<'_> {
 	}
 }
 
+impl From<TermRef<'_>> for Term {
+	fn from(value: TermRef<'_>) -> Self {
+		value.to_owned()
+	}
+}
+
 impl PartialEq<Term> for TermRef<'_> {
 	fn eq(&self, other: &Term) -> bool {
 		match (self, other) {

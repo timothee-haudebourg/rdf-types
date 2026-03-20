@@ -1,5 +1,6 @@
 use core::fmt;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 
 use iref::{Iri, IriBuf};
 
@@ -184,6 +185,54 @@ impl PartialEq<Iri> for CowTerm<'_> {
 impl PartialEq<&Iri> for CowTerm<'_> {
 	fn eq(&self, other: &&Iri) -> bool {
 		self.eq(*other)
+	}
+}
+
+impl PartialEq<Term> for CowTerm<'_> {
+	fn eq(&self, other: &Term) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowTerm<'_>> for Term {
+	fn eq(&self, other: &CowTerm<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl<'a> PartialEq<TermRef<'a>> for CowTerm<'_> {
+	fn eq(&self, other: &TermRef<'a>) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowTerm<'_>> for TermRef<'_> {
+	fn eq(&self, other: &CowTerm<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl PartialOrd<Term> for CowTerm<'_> {
+	fn partial_cmp(&self, other: &Term) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowTerm<'_>> for Term {
+	fn partial_cmp(&self, other: &CowTerm<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
+	}
+}
+
+impl<'a> PartialOrd<TermRef<'a>> for CowTerm<'_> {
+	fn partial_cmp(&self, other: &TermRef<'a>) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowTerm<'_>> for TermRef<'_> {
+	fn partial_cmp(&self, other: &CowTerm<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
 	}
 }
 
