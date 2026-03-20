@@ -81,6 +81,12 @@ impl LiteralRef<'_> {
 	}
 }
 
+impl From<LiteralRef<'_>> for Literal {
+	fn from(value: LiteralRef<'_>) -> Self {
+		value.to_owned()
+	}
+}
+
 impl<'a> PartialEq<LiteralRef<'a>> for Literal {
 	fn eq(&self, other: &LiteralRef<'a>) -> bool {
 		self.type_ == other.type_ && self.value == other.value

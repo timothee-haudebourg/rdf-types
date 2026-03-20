@@ -1,5 +1,6 @@
 use core::fmt;
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
+use std::cmp::Ordering;
 
 use langtag::LangTag;
 
@@ -84,6 +85,72 @@ impl From<Literal> for CowLiteral<'_> {
 impl From<CowLiteral<'_>> for Literal {
 	fn from(value: CowLiteral<'_>) -> Self {
 		value.into_owned()
+	}
+}
+
+impl PartialEq<Literal> for CowLiteral<'_> {
+	fn eq(&self, other: &Literal) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowLiteral<'_>> for Literal {
+	fn eq(&self, other: &CowLiteral<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl<'a> PartialEq<LiteralRef<'a>> for CowLiteral<'_> {
+	fn eq(&self, other: &LiteralRef<'a>) -> bool {
+		self.as_ref() == *other
+	}
+}
+
+impl PartialEq<CowLiteral<'_>> for LiteralRef<'_> {
+	fn eq(&self, other: &CowLiteral<'_>) -> bool {
+		*self == other.as_ref()
+	}
+}
+
+impl PartialOrd<Literal> for CowLiteral<'_> {
+	fn partial_cmp(&self, other: &Literal) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowLiteral<'_>> for Literal {
+	fn partial_cmp(&self, other: &CowLiteral<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
+	}
+}
+
+impl<'a> PartialOrd<LiteralRef<'a>> for CowLiteral<'_> {
+	fn partial_cmp(&self, other: &LiteralRef<'a>) -> Option<Ordering> {
+		self.as_ref().partial_cmp(other)
+	}
+}
+
+impl PartialOrd<CowLiteral<'_>> for LiteralRef<'_> {
+	fn partial_cmp(&self, other: &CowLiteral<'_>) -> Option<Ordering> {
+		self.partial_cmp(&other.as_ref())
+	}
+}
+
+impl equivalent::Equivalent<Literal> for CowLiteral<'_> {
+	fn equivalent(&self, key: &Literal) -> bool {
+		self == key
+	}
+}
+
+impl Borrow<str> for CowLiteral<'_> {
+	fn borrow(&self) -> &str {
+		self.as_str()
+	}
+}
+
+impl AsRef<str> for CowLiteral<'_> {
+	fn as_ref(&self) -> &str {
+		self.as_str()
 	}
 }
 
