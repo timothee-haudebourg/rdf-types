@@ -96,6 +96,42 @@ impl RdfDisplay for Id {
 	}
 }
 
+impl PartialEq<Iri> for Id {
+	fn eq(&self, other: &Iri) -> bool {
+		match self {
+			Self::Iri(iri) => iri.as_iri() == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<IriBuf> for Id {
+	fn eq(&self, other: &IriBuf) -> bool {
+		match self {
+			Self::Iri(iri) => iri == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankId> for Id {
+	fn eq(&self, other: &BlankId) -> bool {
+		match self {
+			Self::BlankId(b) => b.as_blank_id() == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankIdBuf> for Id {
+	fn eq(&self, other: &BlankIdBuf) -> bool {
+		match self {
+			Self::BlankId(b) => b == other,
+			_ => false,
+		}
+	}
+}
+
 impl<'a> PartialEq<IdRef<'a>> for Id {
 	fn eq(&self, other: &IdRef<'a>) -> bool {
 		match (self, other) {

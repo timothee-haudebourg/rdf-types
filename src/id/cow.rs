@@ -1,9 +1,9 @@
 use core::fmt;
 use std::borrow::Cow;
 
-use iref::Iri;
+use iref::{Iri, IriBuf};
 
-use crate::{BlankId, Id, IdRef, RdfDisplay};
+use crate::{BlankId, BlankIdBuf, Id, IdRef, RdfDisplay};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CowId<'a> {
@@ -70,6 +70,42 @@ impl<'a> From<IdRef<'a>> for CowId<'a> {
 impl From<CowId<'_>> for Id {
 	fn from(value: CowId<'_>) -> Self {
 		value.into_owned()
+	}
+}
+
+impl PartialEq<Iri> for CowId<'_> {
+	fn eq(&self, other: &Iri) -> bool {
+		match self {
+			Self::Iri(iri) => iri.as_ref() == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<IriBuf> for CowId<'_> {
+	fn eq(&self, other: &IriBuf) -> bool {
+		match self {
+			Self::Iri(iri) => iri.as_ref() == other.as_iri(),
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankId> for CowId<'_> {
+	fn eq(&self, other: &BlankId) -> bool {
+		match self {
+			Self::BlankId(b) => b.as_ref() == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankIdBuf> for CowId<'_> {
+	fn eq(&self, other: &BlankIdBuf) -> bool {
+		match self {
+			Self::BlankId(b) => b.as_ref() == other.as_blank_id(),
+			_ => false,
+		}
 	}
 }
 

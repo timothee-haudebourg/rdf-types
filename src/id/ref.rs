@@ -2,9 +2,9 @@ use core::fmt;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 
-use iref::Iri;
+use iref::{Iri, IriBuf};
 
-use crate::{BlankId, RdfDisplay};
+use crate::{BlankId, BlankIdBuf, RdfDisplay};
 
 use super::{CowId, Id};
 
@@ -72,6 +72,42 @@ impl RdfDisplay for IdRef<'_> {
 		match self {
 			Self::BlankId(b) => b.rdf_fmt(f),
 			Self::Iri(i) => i.rdf_fmt(f),
+		}
+	}
+}
+
+impl PartialEq<Iri> for IdRef<'_> {
+	fn eq(&self, other: &Iri) -> bool {
+		match self {
+			Self::Iri(iri) => *iri == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<IriBuf> for IdRef<'_> {
+	fn eq(&self, other: &IriBuf) -> bool {
+		match self {
+			Self::Iri(iri) => *iri == other.as_iri(),
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankId> for IdRef<'_> {
+	fn eq(&self, other: &BlankId) -> bool {
+		match self {
+			Self::BlankId(b) => *b == other,
+			_ => false,
+		}
+	}
+}
+
+impl PartialEq<BlankIdBuf> for IdRef<'_> {
+	fn eq(&self, other: &BlankIdBuf) -> bool {
+		match self {
+			Self::BlankId(b) => *b == other.as_blank_id(),
+			_ => false,
 		}
 	}
 }
