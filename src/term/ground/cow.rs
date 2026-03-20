@@ -58,6 +58,36 @@ impl CowGroundTerm<'_> {
 	}
 }
 
+impl<'a> CowGroundTerm<'a> {
+	pub fn into_literal(self) -> Option<CowLiteral<'a>> {
+		match self {
+			Self::Literal(l) => Some(l),
+			_ => None,
+		}
+	}
+
+	pub fn try_into_literal(self) -> Result<CowLiteral<'a>, Cow<'a, Iri>> {
+		match self {
+			Self::Literal(l) => Ok(l),
+			Self::Iri(iri) => Err(iri),
+		}
+	}
+
+	pub fn into_iri(self) -> Option<Cow<'a, Iri>> {
+		match self {
+			Self::Iri(iri) => Some(iri),
+			_ => None,
+		}
+	}
+
+	pub fn try_into_iri(self) -> Result<Cow<'a, Iri>, Self> {
+		match self {
+			Self::Iri(iri) => Ok(iri),
+			other => Err(other),
+		}
+	}
+}
+
 impl From<GroundTerm> for CowGroundTerm<'_> {
 	fn from(value: GroundTerm) -> Self {
 		value.into_cow()

@@ -39,6 +39,14 @@ impl<'a> CowLiteral<'a> {
 		(self.value, self.type_)
 	}
 
+	pub fn into_type(self) -> CowLiteralType<'a> {
+		self.type_
+	}
+
+	pub fn into_value(self) -> Cow<'a, str> {
+		self.value
+	}
+
 	pub fn as_str(&self) -> &str {
 		&self.value
 	}
