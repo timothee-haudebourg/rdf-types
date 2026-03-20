@@ -82,12 +82,24 @@ impl PartialEq<Iri> for CowId<'_> {
 	}
 }
 
+impl PartialEq<&Iri> for CowId<'_> {
+	fn eq(&self, other: &&Iri) -> bool {
+		self.eq(*other)
+	}
+}
+
 impl PartialEq<IriBuf> for CowId<'_> {
 	fn eq(&self, other: &IriBuf) -> bool {
 		match self {
 			Self::Iri(iri) => iri.as_ref() == other.as_iri(),
 			_ => false,
 		}
+	}
+}
+
+impl PartialEq<&IriBuf> for CowId<'_> {
+	fn eq(&self, other: &&IriBuf) -> bool {
+		self.eq(*other)
 	}
 }
 
@@ -106,6 +118,18 @@ impl PartialEq<BlankIdBuf> for CowId<'_> {
 			Self::BlankId(b) => b.as_ref() == other.as_blank_id(),
 			_ => false,
 		}
+	}
+}
+
+impl PartialEq<&BlankId> for CowId<'_> {
+	fn eq(&self, other: &&BlankId) -> bool {
+		self.eq(*other)
+	}
+}
+
+impl PartialEq<&BlankIdBuf> for CowId<'_> {
+	fn eq(&self, other: &&BlankIdBuf) -> bool {
+		self.eq(*other)
 	}
 }
 

@@ -105,12 +105,24 @@ impl PartialEq<Iri> for Id {
 	}
 }
 
+impl PartialEq<&Iri> for Id {
+	fn eq(&self, other: &&Iri) -> bool {
+		self.eq(*other)
+	}
+}
+
 impl PartialEq<IriBuf> for Id {
 	fn eq(&self, other: &IriBuf) -> bool {
 		match self {
 			Self::Iri(iri) => iri == other,
 			_ => false,
 		}
+	}
+}
+
+impl PartialEq<&IriBuf> for Id {
+	fn eq(&self, other: &&IriBuf) -> bool {
+		self.eq(*other)
 	}
 }
 
@@ -129,6 +141,18 @@ impl PartialEq<BlankIdBuf> for Id {
 			Self::BlankId(b) => b == other,
 			_ => false,
 		}
+	}
+}
+
+impl PartialEq<&BlankId> for Id {
+	fn eq(&self, other: &&BlankId) -> bool {
+		self.eq(*other)
+	}
+}
+
+impl PartialEq<&BlankIdBuf> for Id {
+	fn eq(&self, other: &&BlankIdBuf) -> bool {
+		self.eq(*other)
 	}
 }
 
