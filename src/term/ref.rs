@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use iref::Iri;
 
-use crate::{BlankId, LiteralRef, RdfDisplay};
+use crate::{BlankId, IdRef, LiteralRef, RdfDisplay};
 
 use super::{CowTerm, GroundTermRef, Term};
 
@@ -19,6 +19,26 @@ pub enum TermRef<'a> {
 }
 
 impl<'a> TermRef<'a> {
+	pub fn is_id(&self) -> bool {
+		matches!(self, Self::BlankId(_) | Self::Ground(GroundTermRef::Iri(_)))
+	}
+
+	pub fn as_id(&self) -> Option<IdRef<'a>> {
+		match self {
+			Self::BlankId(b) => Some(IdRef::BlankId(b)),
+			Self::Ground(GroundTermRef::Iri(iri)) => Some(IdRef::Iri(iri)),
+			_ => None,
+		}
+	}
+
+	pub fn into_id(self) -> Result<IdRef<'a>, LiteralRef<'a>> {
+		match self {
+			Self::BlankId(b) => Ok(IdRef::BlankId(b)),
+			Self::Ground(GroundTermRef::Iri(iri)) => Ok(IdRef::Iri(iri)),
+			Self::Ground(GroundTermRef::Literal(lit)) => Err(lit),
+		}
+	}
+
 	pub fn is_blank_id(&self) -> bool {
 		matches!(self, Self::BlankId(_))
 	}

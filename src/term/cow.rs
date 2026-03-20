@@ -5,7 +5,8 @@ use std::cmp::Ordering;
 use iref::{Iri, IriBuf};
 
 use crate::{
-	BlankId, BlankIdBuf, CowLiteral, GroundTerm, Id, Literal, LiteralRef, RdfDisplay, TermRef,
+	BlankId, BlankIdBuf, CowId, CowLiteral, GroundTerm, Id, IdRef, Literal, LiteralRef, RdfDisplay,
+	TermRef,
 };
 
 use super::{CowGroundTerm, Term};
@@ -21,6 +22,18 @@ pub enum CowTerm<'a> {
 }
 
 impl CowTerm<'_> {
+	pub fn is_id(&self) -> bool {
+		matches!(self, Self::BlankId(_) | Self::Ground(CowGroundTerm::Iri(_)))
+	}
+
+	pub fn as_id(&self) -> Option<IdRef<'_>> {
+		match self {
+			Self::BlankId(b) => Some(IdRef::BlankId(b)),
+			Self::Ground(CowGroundTerm::Iri(iri)) => Some(IdRef::Iri(iri)),
+			_ => None,
+		}
+	}
+
 	pub fn is_blank_id(&self) -> bool {
 		matches!(self, Self::BlankId(_))
 	}
@@ -76,6 +89,23 @@ impl CowTerm<'_> {
 		match self {
 			Self::BlankId(b) => Term::BlankId(b.into_owned()),
 			Self::Ground(t) => Term::Ground(t.into_owned()),
+		}
+	}
+}
+
+impl<'a> CowTerm<'a> {
+	pub fn into_ground(self) -> Option<CowGroundTerm<'a>> {
+		match self {
+			Self::Ground(g) => Some(g),
+			_ => None,
+		}
+	}
+
+	pub fn into_id(self) -> Result<CowId<'a>, CowLiteral<'a>> {
+		match self {
+			Self::BlankId(b) => Ok(CowId::BlankId(b)),
+			Self::Ground(CowGroundTerm::Iri(iri)) => Ok(CowId::Iri(iri)),
+			Self::Ground(CowGroundTerm::Literal(lit)) => Err(lit),
 		}
 	}
 }

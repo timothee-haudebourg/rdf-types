@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use iref::{Iri, IriBuf};
 
-use crate::{BlankId, BlankIdBuf, Id, Literal, LiteralRef, RdfDisplay};
+use crate::{BlankId, BlankIdBuf, Id, IdRef, Literal, LiteralRef, RdfDisplay};
 
 mod cow;
 pub mod generator;
@@ -49,6 +49,14 @@ impl Term {
 
 	pub fn is_id(&self) -> bool {
 		matches!(self, Self::BlankId(_) | Self::Ground(GroundTerm::Iri(_)))
+	}
+
+	pub fn as_id(&self) -> Option<IdRef<'_>> {
+		match self {
+			Self::BlankId(b) => Some(IdRef::BlankId(b)),
+			Self::Ground(GroundTerm::Iri(iri)) => Some(IdRef::Iri(iri)),
+			_ => None,
+		}
 	}
 
 	pub fn is_blank_id(&self) -> bool {
