@@ -4,7 +4,7 @@ use crate::{
 	utils::{OptionIterator, TripleToQuadIterator},
 	Quad,
 };
-use maybe_owned::MaybeOwned;
+use std::borrow::Cow;
 
 pub mod r#async;
 
@@ -20,7 +20,7 @@ pub use r#impl::*;
 /// RDF dataset.
 pub trait Dataset {
 	/// Resource type.
-	type Resource;
+	type Resource: ToOwned;
 }
 
 impl<G: Graph> Dataset for G {
@@ -30,7 +30,7 @@ impl<G: Graph> Dataset for G {
 /// Dataset that can be traversed using a provided quad iterator.
 pub trait FiniteDataset: Dataset {
 	/// Quads iterator.
-	type Quads<'a>: Iterator<Item = Quad<MaybeOwned<'a, Self::Resource>>>
+	type Quads<'a>: Iterator<Item = Quad<Cow<'a, Self::Resource>>>
 	where
 		Self: 'a;
 
@@ -44,7 +44,7 @@ pub trait FiniteDataset: Dataset {
 
 impl<G: FiniteGraph> FiniteDataset for G {
 	type Quads<'a>
-		= TripleToQuadIterator<G::Triples<'a>, MaybeOwned<'a, G::Resource>>
+		= TripleToQuadIterator<G::Triples<'a>, Cow<'a, G::Resource>>
 	where
 		Self: 'a;
 
@@ -58,7 +58,7 @@ impl<G: FiniteGraph> FiniteDataset for G {
 }
 
 pub trait ResourceFiniteDataset: Dataset {
-	type Resources<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type Resources<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -85,7 +85,7 @@ impl<G: ResourceFiniteGraph> ResourceFiniteDataset for G {
 }
 
 pub trait SubjectFiniteDataset: Dataset {
-	type Subjects<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type Subjects<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -112,7 +112,7 @@ impl<G: SubjectFiniteGraph> SubjectFiniteDataset for G {
 }
 
 pub trait PredicateFiniteDataset: Dataset {
-	type Predicates<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type Predicates<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -139,7 +139,7 @@ impl<G: PredicateFiniteGraph> PredicateFiniteDataset for G {
 }
 
 pub trait ObjectFiniteDataset: Dataset {
-	type Objects<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type Objects<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -166,7 +166,7 @@ impl<G: ObjectFiniteGraph> ObjectFiniteDataset for G {
 }
 
 pub trait NamedGraphFiniteDataset: Dataset {
-	type NamedGraphs<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type NamedGraphs<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -179,7 +179,7 @@ pub trait NamedGraphFiniteDataset: Dataset {
 
 impl<G: Graph> NamedGraphFiniteDataset for G {
 	type NamedGraphs<'a>
-		= std::iter::Empty<MaybeOwned<'a, Self::Resource>>
+		= std::iter::Empty<Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -194,7 +194,7 @@ impl<G: Graph> NamedGraphFiniteDataset for G {
 
 pub trait MultiPatternMatchingDataset: Dataset {
 	/// Pattern-matching iterator.
-	type QuadMultiPatternMatching<'a, 'p>: Iterator<Item = Quad<MaybeOwned<'a, Self::Resource>>>
+	type QuadMultiPatternMatching<'a, 'p>: Iterator<Item = Quad<Cow<'a, Self::Resource>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
@@ -210,7 +210,7 @@ pub trait MultiPatternMatchingDataset: Dataset {
 /// Pattern-matching-capable dataset.
 pub trait PatternMatchingDataset: Dataset {
 	/// Pattern-matching iterator.
-	type QuadPatternMatching<'a, 'p>: Iterator<Item = Quad<MaybeOwned<'a, Self::Resource>>>
+	type QuadPatternMatching<'a, 'p>: Iterator<Item = Quad<Cow<'a, Self::Resource>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
@@ -219,12 +219,12 @@ pub trait PatternMatchingDataset: Dataset {
 	/// pattern.
 	fn quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
 	) -> Self::QuadPatternMatching<'_, 'p>;
 
 	/// Checks if the dataset contains the given quad.
 	fn contains_quad(&self, quad: Quad<&Self::Resource>) -> bool {
-		self.quad_pattern_matching(quad.map(MaybeOwned::Borrowed).into())
+		self.quad_pattern_matching(quad.map(Cow::Borrowed).into())
 			.next()
 			.is_some()
 	}
@@ -235,7 +235,7 @@ pub trait PatternMatchingDataset: Dataset {
 			GivenSubject, GivenSubjectAnyPredicate, GivenSubjectAnyPredicateAnyObject,
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::GivenSubject(
-			MaybeOwned::Borrowed(subject),
+			Cow::Borrowed(subject),
 			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject(
 				GivenSubjectAnyPredicateAnyObject::AnyGraph,
 			)),
@@ -251,7 +251,7 @@ pub trait PatternMatchingDataset: Dataset {
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(
 			AnySubject::GivenPredicate(
-				MaybeOwned::Borrowed(predicate),
+				Cow::Borrowed(predicate),
 				AnySubjectGivenPredicate::AnyObject(AnySubjectGivenPredicateAnyObject::AnyGraph),
 			),
 		))
@@ -266,7 +266,7 @@ pub trait PatternMatchingDataset: Dataset {
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
 			AnySubjectAnyPredicate::GivenObject(
-				MaybeOwned::Borrowed(object),
+				Cow::Borrowed(object),
 				AnySubjectAnyPredicateGivenObject::AnyGraph,
 			),
 		)))
@@ -281,7 +281,7 @@ pub trait PatternMatchingDataset: Dataset {
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
 			AnySubjectAnyPredicate::AnyObject(AnySubjectAnyPredicateAnyObject::GivenGraph(Some(
-				MaybeOwned::Borrowed(named_graph),
+				Cow::Borrowed(named_graph),
 			))),
 		)))
 		.next()
@@ -292,8 +292,8 @@ pub trait PatternMatchingDataset: Dataset {
 	/// `subject p o graph` present in the dataset, for any object `o`.
 	fn quad_predicates_objects<'p>(
 		&self,
-		graph: Option<MaybeOwned<'p, Self::Resource>>,
-		subject: MaybeOwned<'p, Self::Resource>,
+		graph: Option<Cow<'p, Self::Resource>>,
+		subject: Cow<'p, Self::Resource>,
 	) -> QuadPredicatesObjects<'_, 'p, Self>
 	where
 		Self: PredicateFiniteDataset,
@@ -309,9 +309,9 @@ pub trait PatternMatchingDataset: Dataset {
 	/// Returns an iterator over all the objects `o` matching the quad `subject predicate o graph`.
 	fn quad_objects<'p>(
 		&self,
-		graph: Option<MaybeOwned<'p, Self::Resource>>,
-		subject: MaybeOwned<'p, Self::Resource>,
-		predicate: MaybeOwned<'p, Self::Resource>,
+		graph: Option<Cow<'p, Self::Resource>>,
+		subject: Cow<'p, Self::Resource>,
+		predicate: Cow<'p, Self::Resource>,
 	) -> QuadObjects<'_, 'p, Self> {
 		QuadObjects {
 			first: None,
@@ -327,16 +327,14 @@ pub trait PatternMatchingDataset: Dataset {
 
 impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 	type QuadPatternMatching<'a, 'p>
-		= OptionIterator<
-		TripleToQuadIterator<G::TriplePatternMatching<'a, 'p>, MaybeOwned<'a, G::Resource>>,
-	>
+		= OptionIterator<TripleToQuadIterator<G::TriplePatternMatching<'a, 'p>, Cow<'a, G::Resource>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
 	fn quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
 	) -> Self::QuadPatternMatching<'_, 'p> {
 		let (pattern, g) = pattern.into_triple();
 		match g {
@@ -353,8 +351,8 @@ pub struct QuadPredicatesObjects<
 	'p,
 	D: 'a + ?Sized + PredicateFiniteDataset + PatternMatchingDataset,
 > {
-	graph: Option<MaybeOwned<'p, D::Resource>>,
-	subject: MaybeOwned<'p, D::Resource>,
+	graph: Option<Cow<'p, D::Resource>>,
+	subject: Cow<'p, D::Resource>,
 	predicates: D::Predicates<'a>,
 	dataset: &'a D,
 }
@@ -364,7 +362,7 @@ impl<'a: 'p, 'p, D: 'a + ?Sized + PredicateFiniteDataset + PatternMatchingDatase
 where
 	D::Resource: 'p + Clone,
 {
-	type Item = (MaybeOwned<'a, D::Resource>, QuadObjects<'p, 'p, D>);
+	type Item = (Cow<'a, D::Resource>, QuadObjects<'p, 'p, D>);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
@@ -402,7 +400,7 @@ pub struct QuadObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset>
 where
 	D::Resource: 'p,
 {
-	first: Option<MaybeOwned<'a, D::Resource>>,
+	first: Option<Cow<'a, D::Resource>>,
 	inner: D::QuadPatternMatching<'a, 'p>,
 }
 
@@ -410,7 +408,7 @@ impl<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset> Iterator for QuadObjects<'
 where
 	D::Resource: 'p,
 {
-	type Item = MaybeOwned<'a, D::Resource>;
+	type Item = Cow<'a, D::Resource>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.first

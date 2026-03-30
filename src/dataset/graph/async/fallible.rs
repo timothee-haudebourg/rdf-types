@@ -1,4 +1,4 @@
-use maybe_owned::MaybeOwned;
+use std::borrow::Cow;
 use std::future::Future;
 
 use futures_lite::{stream, Stream};
@@ -14,9 +14,7 @@ use crate::{
 
 /// Async fallible finite graph.
 pub trait AsyncTryFiniteGraph: TryGraph {
-	type AsyncTryTriples<'a>: Stream<
-		Item = Result<Triple<MaybeOwned<'a, Self::Resource>>, Self::Error>,
-	>
+	type AsyncTryTriples<'a>: Stream<Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -37,7 +35,7 @@ impl<D: TryFiniteGraph> AsyncTryFiniteGraph for D {
 /// Async fallible pattern-matching-capable graph.
 pub trait AsyncTryPatternMatchingGraph: TryGraph {
 	type AsyncTryTriplePatternMatching<'a, 'p>: Stream<
-		Item = Result<Triple<MaybeOwned<'a, Self::Resource>>, Self::Error>,
+		Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -45,7 +43,7 @@ pub trait AsyncTryPatternMatchingGraph: TryGraph {
 
 	fn async_try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
 	) -> Self::AsyncTryTriplePatternMatching<'_, 'p>;
 
 	fn async_try_contains_triple(
@@ -55,7 +53,7 @@ pub trait AsyncTryPatternMatchingGraph: TryGraph {
 		async move {
 			use futures_lite::StreamExt;
 			let mut stream = std::pin::pin!(
-				self.async_try_triple_pattern_matching(triple.map(MaybeOwned::Borrowed).into())
+				self.async_try_triple_pattern_matching(triple.map(Cow::Borrowed).into())
 			);
 			Ok(stream.next().await.transpose()?.is_some())
 		}
@@ -71,7 +69,7 @@ impl<D: TryPatternMatchingGraph> AsyncTryPatternMatchingGraph for D {
 
 	fn async_try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
 	) -> Self::AsyncTryTriplePatternMatching<'_, 'p> {
 		stream::iter(self.try_triple_pattern_matching(pattern))
 	}

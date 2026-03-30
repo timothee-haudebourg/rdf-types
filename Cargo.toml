@@ -13,7 +13,7 @@ rust-version = "1.70.0"
 version = "0.22.4"
 
 [features]
-serde = ["dep:serde", "maybe-owned/serde"]
+serde = ["dep:serde"]
 
 [dependencies]
 # Major dependencies (major version must be synchronized).
@@ -29,7 +29,6 @@ slab = "0.4.9"
 replace_with = "0.1.7"
 raw-btree = "0.2.0"
 futures-lite = "2.6.1"
-maybe-owned = "0.3.4"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }

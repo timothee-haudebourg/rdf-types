@@ -26,11 +26,11 @@ impl<R> SealedDomain<R> {
 	}
 }
 
-impl<R> Domain for SealedDomain<R> {
+impl<R: ToOwned> Domain for SealedDomain<R> {
 	type Resource = R;
 }
 
-impl<R> EqDomain for SealedDomain<R>
+impl<R: ToOwned> EqDomain for SealedDomain<R>
 where
 	R: Eq,
 {
@@ -39,7 +39,7 @@ where
 	}
 }
 
-impl<R> VariableDomain for SealedDomain<R>
+impl<R: ToOwned> VariableDomain for SealedDomain<R>
 where
 	R: MaybeVariable,
 {

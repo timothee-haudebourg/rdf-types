@@ -283,11 +283,11 @@ impl<R: Clone + Ord> Extend<Quad<R>> for BTreeDataset<R> {
 	}
 }
 
-impl<R> Dataset for BTreeDataset<R> {
+impl<R: ToOwned> Dataset for BTreeDataset<R> {
 	type Resource = R;
 }
 
-impl<R> FiniteDataset for BTreeDataset<R> {
+impl<R: ToOwned> FiniteDataset for BTreeDataset<R> {
 	type Quads<'a>
 		= crate::utils::BorrowedQuads<Quads<'a, R>>
 	where
@@ -298,7 +298,7 @@ impl<R> FiniteDataset for BTreeDataset<R> {
 	}
 }
 
-impl<R> ResourceFiniteDataset for BTreeDataset<R> {
+impl<R: ToOwned> ResourceFiniteDataset for BTreeDataset<R> {
 	type Resources<'a>
 		= crate::utils::BorrowedResources<Resources<'a, R>>
 	where

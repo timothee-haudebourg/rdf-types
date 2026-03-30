@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use super::{ConstGenDomain, Domain, EqDomain, FiniteDomain, MaybeOwned, VariableDomain};
+use super::{ConstGenDomain, Cow, Domain, EqDomain, FiniteDomain, VariableDomain};
 
 pub trait TryDomain: Domain {
 	type Error;
@@ -20,7 +20,7 @@ pub trait TryVariableDomain: TryDomain {
 
 /// Finite domain.
 pub trait TryFiniteDomain: TryDomain {
-	type TryResources<'a>: Iterator<Item = Result<MaybeOwned<'a, Self::Resource>, Self::Error>>
+	type TryResources<'a>: Iterator<Item = Result<Cow<'a, Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -77,7 +77,7 @@ impl<I: FiniteDomain> TryFiniteDomain for I {
 	type TryResources<'a>
 		= std::iter::Map<
 		I::Resources<'a>,
-		fn(MaybeOwned<'a, Self::Resource>) -> Result<MaybeOwned<'a, Self::Resource>, Infallible>,
+		fn(Cow<'a, Self::Resource>) -> Result<Cow<'a, Self::Resource>, Infallible>,
 	>
 	where
 		Self: 'a;

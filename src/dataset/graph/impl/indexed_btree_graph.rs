@@ -1,4 +1,4 @@
-use maybe_owned::MaybeOwned;
+use std::borrow::Cow;
 use std::{cmp::Ordering, collections::BTreeSet, fmt::Debug, hash::Hash};
 
 use educe::Educe;
@@ -362,11 +362,11 @@ impl<R: Clone + Ord> Extend<Triple<R>> for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R> Graph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> Graph for IndexedBTreeGraph<R> {
 	type Resource = R;
 }
 
-impl<R> FiniteGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> FiniteGraph for IndexedBTreeGraph<R> {
 	type Triples<'a>
 		= crate::utils::BorrowedTriples<Triples<'a, R>>
 	where
@@ -377,7 +377,7 @@ impl<R> FiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R> ResourceFiniteGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> ResourceFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphResources<'a>
 		= crate::utils::BorrowedResources<Resources<'a, R>>
 	where
@@ -392,7 +392,7 @@ impl<R> ResourceFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R> SubjectFiniteGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> SubjectFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphSubjects<'a>
 		= crate::utils::BorrowedResources<Subjects<'a, R>>
 	where
@@ -407,7 +407,7 @@ impl<R> SubjectFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R> PredicateFiniteGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> PredicateFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphPredicates<'a>
 		= crate::utils::BorrowedResources<Predicates<'a, R>>
 	where
@@ -422,7 +422,7 @@ impl<R> PredicateFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R> ObjectFiniteGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned> ObjectFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphObjects<'a>
 		= crate::utils::BorrowedResources<Objects<'a, R>>
 	where
@@ -447,7 +447,7 @@ impl<R: Clone + Ord> GraphMut for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
+impl<R: ToOwned + Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
 	type TriplePatternMatching<'a, 'p>
 		= crate::utils::BorrowedTriples<PatternMatching<'a, R>>
 	where
@@ -456,7 +456,7 @@ impl<R: Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
 
 	fn triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
 	) -> Self::TriplePatternMatching<'_, 'p> {
 		crate::utils::BorrowedTriples(self.pattern_matching(pattern.as_deref()))
 	}

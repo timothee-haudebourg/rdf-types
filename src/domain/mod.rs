@@ -2,11 +2,11 @@ pub mod r#async;
 pub mod fallible;
 pub mod sealed;
 
-pub use maybe_owned::MaybeOwned;
+pub use std::borrow::Cow;
 
 /// RDF resource domain.
 pub trait Domain {
-	type Resource;
+	type Resource: ToOwned;
 }
 
 pub trait EqDomain: Domain {
@@ -23,7 +23,7 @@ pub trait VariableDomain: Domain {
 
 /// Finite domain.
 pub trait FiniteDomain: Domain {
-	type Resources<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
+	type Resources<'a>: Iterator<Item = Cow<'a, Self::Resource>>
 	where
 		Self: 'a;
 

@@ -1,6 +1,6 @@
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
-use maybe_owned::MaybeOwned;
+use std::borrow::Cow;
 
 use crate::{
 	dataset::FiniteDataset,
@@ -18,7 +18,7 @@ use crate::{
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
 pub fn are_isomorphic<R, A, B>(a: &A, b: &B) -> bool
 where
-	R: Clone + Ord + MaybeVariable,
+	R: ToOwned + Ord + MaybeVariable,
 	A: FiniteDataset<Resource = R>,
 	B: FiniteDataset<Resource = R>,
 {
@@ -33,7 +33,7 @@ where
 pub fn are_isomorphic_with<I, A, B>(domain: &I, a: &A, b: &B) -> bool
 where
 	I: EqDomain + VariableDomain,
-	I::Resource: Clone + Ord,
+	I::Resource: ToOwned + Ord,
 	A: FiniteDataset<Resource = I::Resource>,
 	B: FiniteDataset<Resource = I::Resource>,
 {
@@ -45,7 +45,7 @@ where
 /// there is an isomorphism between `a` and `b`.
 pub fn find_bijection<'a, 'b, R, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b, R>>
 where
-	R: Clone + Ord + MaybeVariable,
+	R: ToOwned + Ord + MaybeVariable,
 	A: FiniteDataset<Resource = R>,
 	B: FiniteDataset<Resource = R>,
 {
@@ -62,7 +62,7 @@ pub fn find_bijection_with<'a, 'b, I, A, B>(
 ) -> Option<BTreeBijection<'a, 'b, I::Resource>>
 where
 	I: EqDomain + VariableDomain,
-	I::Resource: Clone + Ord,
+	I::Resource: ToOwned + Ord,
 	A: FiniteDataset<Resource = I::Resource>,
 	B: FiniteDataset<Resource = I::Resource>,
 {
@@ -104,10 +104,8 @@ where
 	}
 
 	// Step 3: find candidates for each blank id.
-	let mut candidates: BTreeMap<
-		MaybeOwned<'a, I::Resource>,
-		BTreeSet<MaybeOwned<'b, I::Resource>>,
-	> = BTreeMap::new();
+	let mut candidates: BTreeMap<Cow<'a, I::Resource>, BTreeSet<Cow<'b, I::Resource>>> =
+		BTreeMap::new();
 	for (len, a_group) in a_groups {
 		let b_group = b_groups.get(&len).unwrap();
 
@@ -189,11 +187,11 @@ where
 
 fn collect_signatures<'d, I, D>(
 	interpretation: &I,
-	map: &mut BTreeMap<MaybeOwned<'d, I::Resource>, BlankSignature<'d, I::Resource>>,
+	map: &mut BTreeMap<Cow<'d, I::Resource>, BlankSignature<'d, I::Resource>>,
 	ds: &'d D,
 ) where
 	I: EqDomain + VariableDomain,
-	I::Resource: Clone + Ord,
+	I::Resource: ToOwned + Ord,
 	D: FiniteDataset<Resource = I::Resource>,
 {
 	for quad in ds.quads() {
@@ -222,10 +220,10 @@ fn collect_signatures<'d, I, D>(
 }
 
 fn split_by_size<'s, 'd, R>(
-	blanks: &'s BTreeMap<MaybeOwned<'d, R>, BlankSignature<'d, R>>,
-) -> BTreeMap<usize, BTreeMap<MaybeOwned<'d, R>, &'s BlankSignature<'d, R>>>
+	blanks: &'s BTreeMap<Cow<'d, R>, BlankSignature<'d, R>>,
+) -> BTreeMap<usize, BTreeMap<Cow<'d, R>, &'s BlankSignature<'d, R>>>
 where
-	R: Clone + Ord,
+	R: ToOwned + Ord,
 {
 	let mut result = BTreeMap::new();
 
@@ -247,13 +245,21 @@ where
 
 /// Blank node identifier bijection
 /// between two (isomorphic) datasets.
-#[derive(Clone)]
-pub struct BTreeBijection<'a, 'b, R> {
-	pub forward: BTreeMap<MaybeOwned<'a, R>, MaybeOwned<'b, R>>,
-	pub backward: BTreeMap<MaybeOwned<'b, R>, MaybeOwned<'a, R>>,
+pub struct BTreeBijection<'a, 'b, R: ToOwned> {
+	pub forward: BTreeMap<Cow<'a, R>, Cow<'b, R>>,
+	pub backward: BTreeMap<Cow<'b, R>, Cow<'a, R>>,
 }
 
-impl<R> BTreeBijection<'_, '_, R> {
+impl<R: ToOwned> Clone for BTreeBijection<'_, '_, R> {
+	fn clone(&self) -> Self {
+		Self {
+			forward: self.forward.clone(),
+			backward: self.backward.clone(),
+		}
+	}
+}
+
+impl<R: ToOwned> BTreeBijection<'_, '_, R> {
 	fn new() -> Self {
 		Self {
 			forward: BTreeMap::new(),
@@ -262,8 +268,8 @@ impl<R> BTreeBijection<'_, '_, R> {
 	}
 }
 
-impl<'a, 'b, R: Clone + Ord> BTreeBijection<'a, 'b, R> {
-	fn insert(&mut self, a: MaybeOwned<'a, R>, b: MaybeOwned<'b, R>) {
+impl<'a, 'b, R: ToOwned + Ord> BTreeBijection<'a, 'b, R> {
+	fn insert(&mut self, a: Cow<'a, R>, b: Cow<'b, R>) {
 		self.forward.insert(a.clone(), b.clone());
 		self.backward.insert(b, a);
 	}
@@ -332,12 +338,9 @@ impl<'a, 'b, R: Clone + Ord> BTreeBijection<'a, 'b, R> {
 	fn find_from_candidates<I>(
 		self,
 		interpretation: &I,
-		mut candidates: std::collections::btree_map::Iter<
-			MaybeOwned<'a, R>,
-			BTreeSet<MaybeOwned<'b, R>>,
-		>,
-		a: &BTreeMap<MaybeOwned<'a, R>, BlankSignature<'a, R>>,
-		b: &BTreeMap<MaybeOwned<'b, R>, BlankSignature<'b, R>>,
+		mut candidates: std::collections::btree_map::Iter<Cow<'a, R>, BTreeSet<Cow<'b, R>>>,
+		a: &BTreeMap<Cow<'a, R>, BlankSignature<'a, R>>,
+		b: &BTreeMap<Cow<'b, R>, BlankSignature<'b, R>>,
 	) -> Option<Self>
 	where
 		I: EqDomain<Resource = R>,
@@ -374,16 +377,16 @@ impl<'a, 'b, R: Clone + Ord> BTreeBijection<'a, 'b, R> {
 
 /// Signature of a blank node identifier.
 #[allow(clippy::type_complexity)]
-struct BlankSignature<'a, R>(Vec<Quad<MaybeOwned<'a, R>>>);
+struct BlankSignature<'a, R: ToOwned>(Vec<Quad<Cow<'a, R>>>);
 
-impl<R> Default for BlankSignature<'_, R> {
+impl<R: ToOwned> Default for BlankSignature<'_, R> {
 	fn default() -> Self {
 		Self(Vec::new())
 	}
 }
 
-impl<'a, R> BlankSignature<'a, R> {
-	fn insert(&mut self, quad: Quad<MaybeOwned<'a, R>>) {
+impl<'a, R: ToOwned> BlankSignature<'a, R> {
+	fn insert(&mut self, quad: Quad<Cow<'a, R>>) {
 		self.0.push(quad)
 	}
 
@@ -394,7 +397,7 @@ impl<'a, R> BlankSignature<'a, R> {
 	fn matches<I>(&self, interpretation: &I, other: &BlankSignature<R>) -> bool
 	where
 		I: EqDomain<Resource = R> + VariableDomain,
-		R: Clone,
+		R: ToOwned,
 	{
 		if self.len() == other.len() {
 			let mut other: Vec<_> = other.0.iter().cloned().map(Some).collect();

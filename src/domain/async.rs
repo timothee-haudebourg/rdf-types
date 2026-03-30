@@ -2,7 +2,7 @@ use std::future::Future;
 
 use futures_lite::{stream, Stream};
 
-use super::{ConstGenDomain, EqDomain, FiniteDomain, MaybeOwned, VariableDomain};
+use super::{ConstGenDomain, Cow, EqDomain, FiniteDomain, VariableDomain};
 use crate::domain::fallible::{
 	TryConstGenDomain, TryDomain, TryEqDomain, TryFiniteDomain, TryVariableDomain,
 };
@@ -31,7 +31,7 @@ pub trait AsyncVariableDomain: TryDomain {
 
 /// Finite domain.
 pub trait AsyncFiniteDomain: TryDomain {
-	type AsyncResources<'a>: Stream<Item = Result<MaybeOwned<'a, Self::Resource>, Self::Error>>
+	type AsyncResources<'a>: Stream<Item = Result<Cow<'a, Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -92,9 +92,7 @@ impl<I: FiniteDomain> AsyncFiniteDomain for I {
 		= stream::Iter<
 		std::iter::Map<
 			I::Resources<'a>,
-			fn(
-				MaybeOwned<'a, Self::Resource>,
-			) -> Result<MaybeOwned<'a, Self::Resource>, Self::Error>,
+			fn(Cow<'a, Self::Resource>) -> Result<Cow<'a, Self::Resource>, Self::Error>,
 		>,
 	>
 	where
@@ -149,7 +147,7 @@ pub trait AsyncTryVariableDomain: TryDomain {
 
 /// Async fallible finite domain.
 pub trait AsyncTryFiniteDomain: TryDomain {
-	type AsyncTryResources<'a>: Stream<Item = Result<MaybeOwned<'a, Self::Resource>, Self::Error>>
+	type AsyncTryResources<'a>: Stream<Item = Result<Cow<'a, Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 

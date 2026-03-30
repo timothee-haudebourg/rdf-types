@@ -256,11 +256,11 @@ impl<R: Clone + Ord> Extend<Triple<R>> for BTreeGraph<R> {
 	}
 }
 
-impl<R> Graph for BTreeGraph<R> {
+impl<R: ToOwned> Graph for BTreeGraph<R> {
 	type Resource = R;
 }
 
-impl<R> FiniteGraph for BTreeGraph<R> {
+impl<R: ToOwned> FiniteGraph for BTreeGraph<R> {
 	type Triples<'a>
 		= crate::utils::BorrowedTriples<Triples<'a, R>>
 	where
@@ -271,7 +271,7 @@ impl<R> FiniteGraph for BTreeGraph<R> {
 	}
 }
 
-impl<R> ResourceFiniteGraph for BTreeGraph<R> {
+impl<R: ToOwned> ResourceFiniteGraph for BTreeGraph<R> {
 	type GraphResources<'a>
 		= crate::utils::BorrowedResources<Resources<'a, R>>
 	where

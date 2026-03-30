@@ -1,4 +1,4 @@
-use maybe_owned::MaybeOwned;
+use std::borrow::Cow;
 use std::future::Future;
 
 use futures_lite::{stream, Stream};
@@ -14,7 +14,7 @@ use crate::{
 
 /// Async fallible finite dataset.
 pub trait AsyncTryFiniteDataset: TryDataset {
-	type AsyncTryQuads<'a>: Stream<Item = Result<Quad<MaybeOwned<'a, Self::Resource>>, Self::Error>>
+	type AsyncTryQuads<'a>: Stream<Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -35,7 +35,7 @@ impl<D: TryFiniteDataset> AsyncTryFiniteDataset for D {
 /// Async fallible pattern-matching-capable dataset.
 pub trait AsyncTryPatternMatchingDataset: TryDataset {
 	type AsyncTryQuadPatternMatching<'a, 'p>: Stream<
-		Item = Result<Quad<MaybeOwned<'a, Self::Resource>>, Self::Error>,
+		Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -43,7 +43,7 @@ pub trait AsyncTryPatternMatchingDataset: TryDataset {
 
 	fn async_try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
 	) -> Self::AsyncTryQuadPatternMatching<'_, 'p>;
 
 	fn async_try_contains_triple(
@@ -53,7 +53,7 @@ pub trait AsyncTryPatternMatchingDataset: TryDataset {
 		async move {
 			use futures_lite::StreamExt;
 			let mut stream = std::pin::pin!(
-				self.async_try_quad_pattern_matching(triple.map(MaybeOwned::Borrowed).into())
+				self.async_try_quad_pattern_matching(triple.map(Cow::Borrowed).into())
 			);
 			Ok(stream.next().await.transpose()?.is_some())
 		}
@@ -69,7 +69,7 @@ impl<D: TryPatternMatchingDataset> AsyncTryPatternMatchingDataset for D {
 
 	fn async_try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
 	) -> Self::AsyncTryQuadPatternMatching<'_, 'p> {
 		stream::iter(self.try_quad_pattern_matching(pattern))
 	}

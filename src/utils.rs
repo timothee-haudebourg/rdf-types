@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{borrow::Cow, marker::PhantomData};
 
 use crate::{Quad, Triple};
 
@@ -28,40 +28,36 @@ impl<S, P, O, G, I: Iterator<Item = Triple<S, P, O>>> Iterator for TripleToQuadI
 	}
 }
 
-/// Wraps an iterator over `&'a R` into one over `MaybeOwned<'a, R>`.
+/// Wraps an iterator over `&'a R` into one over `Cow<'a, R>`.
 pub struct BorrowedResources<I>(pub I);
 
-impl<'a, R: 'a, I: Iterator<Item = &'a R>> Iterator for BorrowedResources<I> {
-	type Item = maybe_owned::MaybeOwned<'a, R>;
+impl<'a, R: ToOwned + 'a, I: Iterator<Item = &'a R>> Iterator for BorrowedResources<I> {
+	type Item = Cow<'a, R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0.next().map(maybe_owned::MaybeOwned::Borrowed)
+		self.0.next().map(Cow::Borrowed)
 	}
 }
 
-/// Wraps an iterator over `Triple<&'a R>` into one over `Triple<MaybeOwned<'a, R>>`.
+/// Wraps an iterator over `Triple<&'a R>` into one over `Triple<Cow<'a, R>>`.
 pub struct BorrowedTriples<I>(pub I);
 
-impl<'a, R: 'a, I: Iterator<Item = Triple<&'a R>>> Iterator for BorrowedTriples<I> {
-	type Item = Triple<maybe_owned::MaybeOwned<'a, R>>;
+impl<'a, R: ToOwned + 'a, I: Iterator<Item = Triple<&'a R>>> Iterator for BorrowedTriples<I> {
+	type Item = Triple<Cow<'a, R>>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0
-			.next()
-			.map(|t| t.map(maybe_owned::MaybeOwned::Borrowed))
+		self.0.next().map(|t| t.map(Cow::Borrowed))
 	}
 }
 
-/// Wraps an iterator over `Quad<&'a R>` into one over `Quad<MaybeOwned<'a, R>>`.
+/// Wraps an iterator over `Quad<&'a R>` into one over `Quad<Cow<'a, R>>`.
 pub struct BorrowedQuads<I>(pub I);
 
-impl<'a, R: 'a, I: Iterator<Item = Quad<&'a R>>> Iterator for BorrowedQuads<I> {
-	type Item = Quad<maybe_owned::MaybeOwned<'a, R>>;
+impl<'a, R: ToOwned + 'a, I: Iterator<Item = Quad<&'a R>>> Iterator for BorrowedQuads<I> {
+	type Item = Quad<Cow<'a, R>>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.0
-			.next()
-			.map(|q| q.map(maybe_owned::MaybeOwned::Borrowed))
+		self.0.next().map(|q| q.map(Cow::Borrowed))
 	}
 }
 
