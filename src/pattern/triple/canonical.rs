@@ -18,6 +18,12 @@ impl<T> From<Triple<T>> for CanonicalTriplePattern<T> {
 	}
 }
 
+impl<T> From<CanonicalTriplePattern<T>> for Triple<Option<T>> {
+	fn from(value: CanonicalTriplePattern<T>) -> Self {
+		value.into_triple()
+	}
+}
+
 impl<T> From<Triple<Option<T>, Option<T>, Option<T>>> for CanonicalTriplePattern<T> {
 	fn from(value: Triple<Option<T>, Option<T>, Option<T>>) -> Self {
 		Self::from_option_triple(value)
@@ -105,6 +111,22 @@ impl<T> CanonicalTriplePattern<T> {
 		match self {
 			Self::AnySubject(t) => t.into_object(),
 			Self::GivenSubject(_, t) => t.into_object(),
+		}
+	}
+
+	/// Converts the pattern into a triple of optional components.
+	///
+	/// Each `Any` or `SameAs*` component becomes `None`.
+	pub fn into_triple(self) -> Triple<Option<T>> {
+		match self {
+			Self::AnySubject(p) => {
+				let (pred, obj) = p.into_predicate_object();
+				Triple(None, pred, obj)
+			}
+			Self::GivenSubject(s, p) => {
+				let (pred, obj) = p.into_predicate_object();
+				Triple(Some(s), pred, obj)
+			}
 		}
 	}
 
@@ -576,6 +598,14 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn into_predicate_object(self) -> (Option<T>, Option<T>) {
+		match self {
+			Self::AnyPredicate(o) => (None, o.into_object().into_id()),
+			Self::SameAsSubject(o) => (None, o.into_object().into_id()),
+			Self::GivenPredicate(p, o) => (Some(p), o.into_object().into_id()),
+		}
+	}
+
 	pub fn set_predicate(&mut self, p: T) -> PatternPredicate<T>
 	where
 		T: Clone,
@@ -872,6 +902,13 @@ impl<T> GivenSubject<T> {
 		match self {
 			Self::AnyPredicate(t) => t.into_object(),
 			Self::GivenPredicate(_, t) => t.into_object(),
+		}
+	}
+
+	pub fn into_predicate_object(self) -> (Option<T>, Option<T>) {
+		match self {
+			Self::AnyPredicate(o) => (None, o.into_object().into_id()),
+			Self::GivenPredicate(p, o) => (Some(p), o.into_object().into_id()),
 		}
 	}
 
