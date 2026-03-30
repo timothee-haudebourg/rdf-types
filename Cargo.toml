@@ -13,23 +13,14 @@ rust-version = "1.70.0"
 version = "0.22.4"
 
 [features]
-default = []
-serde = ["dep:serde", "iref/serde", "langtag/serde"]
-uuid-generator = ["uuid-generator-v3", "uuid-generator-v4", "uuid-generator-v5"]
-uuid-generator-v3 = ["uuid", "uuid/v3"]
-uuid-generator-v4 = ["uuid", "uuid/v4"]
-uuid-generator-v5 = ["uuid", "uuid/v5"]
+
 
 [dependencies]
 # Major dependencies (major version must be synchronized).
-# iref = { version = "3.2.2", features = ["macros"] }
-iref.path = "../iref"
-langtag = "0.4.0"
+
 thiserror = "1.0.57"
-contextual = { version = "0.1.6", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 uuid = { version = "0.8", optional = true }
-equivalent = "1.0.2"
 
 # Minor dependencies.
 indexmap = "2.2.5"
@@ -37,7 +28,8 @@ educe = "0.5.11"
 slab = "0.4.9"
 replace_with = "0.1.7"
 raw-btree = "0.2.0"
-utf8-decode = "2.0.0"
+futures-lite = "2.6.1"
+maybe-owned = "0.3.4"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }

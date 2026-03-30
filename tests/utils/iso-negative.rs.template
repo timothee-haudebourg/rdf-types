@@ -1,0 +1,19 @@
+use rdf_types::{Quad, dataset::BTreeDataset, domain::r#static::RdfStaticEqDomain};
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum Term {
+	Ground(u32),
+	Var(u32),
+}
+
+impl RdfStaticEqDomain for Term {
+	fn is_ground(&self) -> bool {
+		matches!(self, Term::Ground(_))
+	}
+}
+
+fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
+	if let Some(_) = rdf_types::find_bijection(&a, &b) {
+		panic!("bijection found!")
+	}
+}

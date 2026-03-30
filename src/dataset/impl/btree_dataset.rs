@@ -8,7 +8,7 @@ use slab::Slab;
 use super::super::Dataset;
 use crate::{
 	dataset::{DatasetMut, IndexedBTreeDataset, ResourceTraversableDataset, TraversableDataset},
-	Quad, RdfDisplay, Term,
+	Quad,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -49,7 +49,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// BTree-based RDF dataset.
 #[derive(Clone)]
-pub struct BTreeDataset<R = Term> {
+pub struct BTreeDataset<R> {
 	pub(crate) resources: Slab<Resource<R>>,
 	pub(crate) quads: Slab<Quad<usize>>,
 	pub(crate) resources_indexes: RawBTree<usize>,
@@ -319,10 +319,10 @@ impl<R: Clone + Ord> DatasetMut for BTreeDataset<R> {
 	}
 }
 
-impl<R: RdfDisplay> fmt::Display for BTreeDataset<R> {
+impl<R: fmt::Display> fmt::Display for BTreeDataset<R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for quad in self {
-			writeln!(f, "{quad} .")?;
+			writeln!(f, "{quad}")?;
 		}
 
 		Ok(())
@@ -451,16 +451,6 @@ impl<R> Resource<R> {
 impl<R: Debug> Debug for BTreeDataset<R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_set().entries(self.iter()).finish()
-	}
-}
-
-impl<R: RdfDisplay> RdfDisplay for BTreeDataset<R> {
-	fn rdf_fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		for t in self {
-			writeln!(f, "{} .", t.rdf_display())?;
-		}
-
-		Ok(())
 	}
 }
 

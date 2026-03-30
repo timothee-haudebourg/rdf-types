@@ -1,19 +1,31 @@
-use rdf_types::{BlankIdBuf, Quad, LocalTerm, dataset::BTreeDataset, iri};
+use rdf_types::{Quad, dataset::BTreeDataset, domain::r#static::RdfStaticEqDomain};
 use std::collections::BTreeMap;
 
-fn test(a: BTreeDataset, b: BTreeDataset) {
-	match rdf_types::dataset::isomorphism::find_bijection(&a, &b) {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum Term {
+	Ground(u32),
+	Var(u32),
+}
+
+impl RdfStaticEqDomain for Term {
+	fn is_ground(&self) -> bool {
+		matches!(self, Term::Ground(_))
+	}
+}
+
+fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
+	match rdf_types::find_bijection(&a, &b) {
 		Some(bijection) => {
 			let substitution: BTreeMap<_, _> = bijection
 				.forward
 				.into_iter()
-				.map(|(a, b)| (a.to_owned(), b))
+				.map(|(a, b)| (a.clone(), b))
 				.collect();
-			let c: BTreeDataset = a
+			let c: BTreeDataset<Term> = a
 				.into_iter()
 				.map(|q| {
 					q.map(|t| {
-						if t.is_blank_id() {
+						if matches!(t, Term::Var(_)) {
 							(*substitution.get(&t).unwrap()).clone()
 						} else {
 							t

@@ -1,19 +1,13 @@
 use std::{cmp::Ordering, fmt};
 
-use iref::{Iri, IriBuf};
+// use iref::{Iri, IriBuf};
 
-use crate::{Id, IdRef, RdfDisplay, Term, TermRef, Triple};
-
-/// Lexical RDF quad.
-pub type RdfQuad = Quad<Id, IriBuf, Term, Id>;
-
-/// Lexical RDF quad reference.
-pub type RdfQuadRef<'a> = Quad<IdRef<'a>, &'a Iri, TermRef<'a>, IdRef<'a>>;
+use crate::Triple;
 
 /// RDF quad.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Quad<S = Term, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
+pub struct Quad<S, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
 	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]
@@ -78,28 +72,6 @@ impl<S, P, O, G> Quad<&S, &P, &O, &G> {
 		G: Copy,
 	{
 		Quad(*self.0, *self.1, *self.2, self.3.copied())
-	}
-}
-
-impl RdfQuad {
-	pub fn as_lexical_quad_ref(&self) -> RdfQuadRef<'_> {
-		Quad(
-			self.0.as_ref(),
-			self.1.as_iri(),
-			self.2.as_ref(),
-			self.3.as_ref().map(Id::as_ref),
-		)
-	}
-}
-
-impl RdfQuadRef<'_> {
-	pub fn into_owned(self) -> RdfQuad {
-		Quad(
-			self.0.to_owned(),
-			self.1.to_owned(),
-			self.2.to_owned(),
-			self.3.map(IdRef::into_owned),
-		)
 	}
 }
 
@@ -234,13 +206,6 @@ impl<T> Quad<T, T, T, T> {
 	}
 }
 
-/// Type that can turn a `Quad<S, P, O, G>` into a `Quad`.
-pub trait TryExportQuad<S, P, O, G> {
-	type Error;
-
-	fn try_export_quad(&self, quad: Quad<S, P, O, G>) -> Result<RdfQuad, Self::Error>;
-}
-
 impl<
 		S1: PartialEq<S2>,
 		P1: PartialEq<P2>,
@@ -294,46 +259,13 @@ impl<
 	}
 }
 
-impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> fmt::Display for Quad<S, P, O, G> {
+impl<S: fmt::Display, P: fmt::Display, O: fmt::Display, G: fmt::Display> fmt::Display
+	for Quad<S, P, O, G>
+{
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self.graph() {
-			Some(graph) => write!(
-				f,
-				"{} {} {} {}",
-				self.0.rdf_display(),
-				self.1.rdf_display(),
-				self.2.rdf_display(),
-				graph.rdf_display()
-			),
-			None => write!(
-				f,
-				"{} {} {}",
-				self.0.rdf_display(),
-				self.1.rdf_display(),
-				self.2.rdf_display()
-			),
-		}
-	}
-}
-
-impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay, G: RdfDisplay> RdfDisplay for Quad<S, P, O, G> {
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self.graph() {
-			Some(graph) => write!(
-				f,
-				"{} {} {} {}",
-				self.0.rdf_display(),
-				self.1.rdf_display(),
-				self.2.rdf_display(),
-				graph.rdf_display()
-			),
-			None => write!(
-				f,
-				"{} {} {}",
-				self.0.rdf_display(),
-				self.1.rdf_display(),
-				self.2.rdf_display()
-			),
+			Some(graph) => write!(f, "({}, {}, {}, {})", self.0, self.1, self.2, graph),
+			None => write!(f, "({}, {}, {})", self.0, self.1, self.2),
 		}
 	}
 }

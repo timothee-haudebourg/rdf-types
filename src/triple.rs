@@ -1,17 +1,10 @@
-use crate::{Id, IdRef, Quad, RdfDisplay, Term, TermRef};
-use iref::{Iri, IriBuf};
+use crate::Quad;
 use std::{cmp::Ordering, fmt};
-
-/// Lexical RDF triple.
-pub type LexicalTriple = Triple<Id, IriBuf, Term>;
-
-/// Lexical RDF triple reference.
-pub type LexicalTripleRef<'a> = Triple<IdRef<'a>, &'a Iri, TermRef<'a>>;
 
 /// RDF triple.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Triple<S = Term, P = S, O = S>(pub S, pub P, pub O);
+pub struct Triple<S, P = S, O = S>(pub S, pub P, pub O);
 
 impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, S2, P2, O2>
 	PartialEq<Triple<S2, P2, O2>> for Triple<S1, P1, O1>
@@ -173,38 +166,8 @@ impl<T> Triple<T, T, T> {
 	}
 }
 
-impl LexicalTriple {
-	pub fn as_lexical_triple_ref(&self) -> LexicalTripleRef<'_> {
-		Triple(self.0.as_ref(), self.1.as_iri(), self.2.as_ref())
-	}
-}
-
-impl LexicalTripleRef<'_> {
-	pub fn into_owned(self) -> LexicalTriple {
-		Triple(self.0.into_owned(), self.1.to_owned(), self.2.to_owned())
-	}
-}
-
-impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> fmt::Display for Triple<S, P, O> {
+impl<S: fmt::Display, P: fmt::Display, O: fmt::Display> fmt::Display for Triple<S, P, O> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(
-			f,
-			"{} {} {}",
-			self.0.rdf_display(),
-			self.1.rdf_display(),
-			self.2.rdf_display()
-		)
-	}
-}
-
-impl<S: RdfDisplay, P: RdfDisplay, O: RdfDisplay> RdfDisplay for Triple<S, P, O> {
-	fn rdf_fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(
-			f,
-			"{} {} {}",
-			self.0.rdf_display(),
-			self.1.rdf_display(),
-			self.2.rdf_display()
-		)
+		write!(f, "({}, {}, {})", self.0, self.1, self.2)
 	}
 }

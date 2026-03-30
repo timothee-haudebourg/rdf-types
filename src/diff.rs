@@ -1,7 +1,7 @@
 use core::fmt;
 use std::cmp::Ordering;
 
-use crate::{Quad, RdfDisplay};
+use crate::Quad;
 
 /// Diff between two RDF datasets.
 pub struct RdfDiff<R> {
@@ -75,30 +75,30 @@ impl<R> RdfDiff<R> {
 	}
 }
 
-impl<R: RdfDisplay> fmt::Display for RdfDiff<R> {
+impl<R: fmt::Display> fmt::Display for RdfDiff<R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for quad in &self.added {
-			writeln!(f, "+ {quad} .")?;
+			writeln!(f, "+ {quad}")?;
 		}
 
 		for quad in &self.removed {
-			writeln!(f, "- {quad} .")?;
+			writeln!(f, "- {quad}")?;
 		}
 
 		Ok(())
 	}
 }
 
-pub struct ColoredRdfDiff<'a, R>(&'a RdfDiff<R>);
+pub struct ColoredRdfDiff<'a, R>(pub &'a RdfDiff<R>);
 
-impl<'a, R: RdfDisplay> fmt::Display for ColoredRdfDiff<'a, R> {
+impl<'a, R: fmt::Display> fmt::Display for ColoredRdfDiff<'a, R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for quad in &self.0.added {
-			writeln!(f, "\x1b[32m+ {quad} .\x1b[0m")?;
+			writeln!(f, "\x1b[32m+ {quad}\x1b[0m")?;
 		}
 
 		for quad in &self.0.removed {
-			writeln!(f, "\x1b[31m- {quad} .\x1b[0m")?;
+			writeln!(f, "\x1b[31m- {quad}\x1b[0m")?;
 		}
 
 		Ok(())

@@ -19,7 +19,7 @@ use crate::{
 		quad::canonical::{PatternGraph, PatternObject, PatternPredicate, PatternSubject},
 		CanonicalQuadPattern,
 	},
-	Quad, RdfDisplay, Term,
+	Quad,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -60,7 +60,7 @@ fn quad_index_cmp<'a, R: Ord>(
 
 /// Indexed BTree-based RDF dataset, optimized for pattern matching operations.
 #[derive(Clone)]
-pub struct IndexedBTreeDataset<R = Term> {
+pub struct IndexedBTreeDataset<R> {
 	/// All the resources appearing in this dataset.
 	///
 	/// Each of them is uniquely indexed by a `usize` in this slab.
@@ -530,8 +530,8 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 	}
 }
 
-impl From<BTreeDataset> for IndexedBTreeDataset {
-	fn from(value: BTreeDataset) -> Self {
+impl<R> From<BTreeDataset<R>> for IndexedBTreeDataset<R> {
+	fn from(value: BTreeDataset<R>) -> Self {
 		Self::from_non_indexed(value)
 	}
 }
@@ -704,10 +704,10 @@ impl<R: Clone + Ord> PatternMatchingDatasetMut for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: RdfDisplay> fmt::Display for IndexedBTreeDataset<R> {
+impl<R: fmt::Display> fmt::Display for IndexedBTreeDataset<R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for quad in self {
-			writeln!(f, "{quad} .")?;
+			writeln!(f, "{quad}")?;
 		}
 
 		Ok(())
@@ -1494,16 +1494,6 @@ impl<R> Resource<R> {
 impl<R: Debug> Debug for IndexedBTreeDataset<R> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_set().entries(self.iter()).finish()
-	}
-}
-
-impl<R: RdfDisplay> RdfDisplay for IndexedBTreeDataset<R> {
-	fn rdf_fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		for t in self {
-			writeln!(f, "{} .", t.rdf_display())?;
-		}
-
-		Ok(())
 	}
 }
 

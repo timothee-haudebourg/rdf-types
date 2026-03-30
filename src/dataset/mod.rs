@@ -14,8 +14,6 @@ pub use graph::{fallible as fallible_graph, *};
 mod r#impl;
 pub use r#impl::*;
 
-pub mod isomorphism;
-
 /// RDF dataset.
 pub trait Dataset {
 	/// Resource type.

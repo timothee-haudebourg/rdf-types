@@ -15,38 +15,17 @@
 //!
 //! [rdf]: <https://w3c.github.io/rdf-primer/spec/>
 //! [w3c]: <https://www.w3.org/>
-#![recursion_limit = "1024"]
-
-pub use iref;
-pub use langtag;
-
-mod blankid;
-pub mod diff;
-mod display;
-mod id;
-mod literal;
-mod r#macro;
-mod quad;
-mod schema;
-mod term;
-mod triple;
-
-pub use blankid::*;
-pub use display::*;
-pub use id::*;
-pub use literal::*;
-pub use quad::*;
-pub use schema::*;
-pub use term::*;
-pub use triple::*;
-
 pub mod dataset;
-pub mod interpretation;
+pub mod diff;
+pub mod domain;
+mod isomorphism;
 pub mod pattern;
+mod quad;
+mod triple;
 pub mod utils;
 
 pub use dataset::Dataset;
-pub use interpretation::{GroundInterpretation, GroundInterpretationMut};
-pub use iref::{iri, InvalidIri, Iri, IriBuf, IriError, IriRef, IriRefBuf};
-
-pub const XSD_STRING: &Iri = iri!("http://www.w3.org/2001/XMLSchema#string");
+pub use domain::Domain;
+pub use isomorphism::*;
+pub use quad::*;
+pub use triple::*;

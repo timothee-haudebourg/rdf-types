@@ -2,19 +2,27 @@ use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
 use educe::Educe;
 
-use crate::{dataset::TraversableDataset, interpretation::ReverseGroundInterpretation, Quad, Term};
+use crate::{
+	dataset::TraversableDataset,
+	domain::{
+		sealed::{MaybeVariable, SealedDomain},
+		EqDomain, VariableDomain,
+	},
+	Quad,
+};
 
 /// Checks that there is an isomorphism between the datasets `a` and `b`.
 ///
 /// There is an isomorphism if there exists a blank node identifier bijection
 /// between `a` and `b`.
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
-pub fn are_isomorphic<A, B>(a: &A, b: &B) -> bool
+pub fn are_isomorphic<R, A, B>(a: &A, b: &B) -> bool
 where
-	A: TraversableDataset<Resource = Term>,
-	B: TraversableDataset<Resource = Term>,
+	R: Ord + MaybeVariable,
+	A: TraversableDataset<Resource = R>,
+	B: TraversableDataset<Resource = R>,
 {
-	are_isomorphic_with(&(), a, b)
+	are_isomorphic_with(&SealedDomain::new(), a, b)
 }
 
 /// Checks that there is an isomorphism between the datasets `a` and `b`.
@@ -22,25 +30,26 @@ where
 /// There is an isomorphism if there exists a blank node identifier bijection
 /// between `a` and `b`.
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
-pub fn are_isomorphic_with<I, A, B>(interpretation: &I, a: &A, b: &B) -> bool
+pub fn are_isomorphic_with<I, A, B>(domain: &I, a: &A, b: &B) -> bool
 where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 	I::Resource: Ord,
 	A: TraversableDataset<Resource = I::Resource>,
 	B: TraversableDataset<Resource = I::Resource>,
 {
-	find_bijection_with(interpretation, a, b).is_some()
+	find_bijection_with(domain, a, b).is_some()
 }
 
 /// Finds a blank node identifier bijection between from `a` to `b`.
 /// If such bijection exists,
 /// there is an isomorphism between `a` and `b`.
-pub fn find_bijection<'a, 'b, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b>>
+pub fn find_bijection<'a, 'b, R, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b, R>>
 where
-	A: TraversableDataset<Resource = Term>,
-	B: TraversableDataset<Resource = Term>,
+	R: Ord + MaybeVariable,
+	A: TraversableDataset<Resource = R>,
+	B: TraversableDataset<Resource = R>,
 {
-	find_bijection_with(&(), a, b)
+	find_bijection_with(&SealedDomain::new(), a, b)
 }
 
 /// Finds a blank node identifier bijection between from `a` to `b`.
@@ -52,7 +61,7 @@ pub fn find_bijection_with<'a, 'b, I, A, B>(
 	b: &'b B,
 ) -> Option<BTreeBijection<'a, 'b, I::Resource>>
 where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 	I::Resource: Ord,
 	A: TraversableDataset<Resource = I::Resource>,
 	B: TraversableDataset<Resource = I::Resource>,
@@ -121,30 +130,18 @@ where
 
 fn resource_matches<I>(interpretation: &I, a: &I::Resource, b: &I::Resource) -> bool
 where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 {
-	for a in interpretation.iris_of(a) {
-		for b in interpretation.iris_of(b) {
-			if a == b {
-				return true;
-			}
-		}
+	if interpretation.is_eq(a, b) {
+		return true;
 	}
 
-	for a in interpretation.literals_of(a) {
-		for b in interpretation.literals_of(b) {
-			if a == b {
-				return true;
-			}
-		}
-	}
-
-	interpretation.is_anonymous(a) && interpretation.is_anonymous(b)
+	interpretation.is_variable(a) && interpretation.is_variable(b)
 }
 
 fn quad_matches<I>(interpretation: &I, a: Quad<&I::Resource>, b: Quad<&I::Resource>) -> bool
 where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 {
 	resource_matches(interpretation, a.0, b.0)
 		&& resource_matches(interpretation, a.1, b.1)
@@ -158,24 +155,24 @@ where
 
 fn blank_count<I>(interpretation: &I, Quad(s, p, o, g): Quad<&I::Resource>) -> usize
 where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 {
 	let mut r = 0;
 
-	if interpretation.is_anonymous(s) {
+	if interpretation.is_variable(s) {
 		r += 1
 	}
 
-	if interpretation.is_anonymous(p) {
+	if interpretation.is_variable(p) {
 		r += 1
 	}
 
-	if interpretation.is_anonymous(o) {
+	if interpretation.is_variable(o) {
 		r += 1
 	}
 
 	if let Some(g) = g {
-		if interpretation.is_anonymous(g) {
+		if interpretation.is_variable(g) {
 			r += 1
 		}
 	}
@@ -188,25 +185,25 @@ fn collect_signatures<'d, I, D>(
 	map: &mut BTreeMap<&'d I::Resource, BlankSignature<'d, I::Resource>>,
 	ds: &'d D,
 ) where
-	I: ReverseGroundInterpretation,
+	I: EqDomain + VariableDomain,
 	I::Resource: Ord,
 	D: TraversableDataset<Resource = I::Resource>,
 {
 	for quad in ds.quads() {
-		if interpretation.is_anonymous(quad.0) {
+		if interpretation.is_variable(quad.0) {
 			map.entry(quad.0).or_default().insert(quad);
 		}
 
-		if interpretation.is_anonymous(quad.1) {
+		if interpretation.is_variable(quad.1) {
 			map.entry(quad.1).or_default().insert(quad);
 		}
 
-		if interpretation.is_anonymous(quad.2) {
+		if interpretation.is_variable(quad.2) {
 			map.entry(quad.2).or_default().insert(quad);
 		}
 
 		if let Some(g) = quad.3 {
-			if interpretation.is_anonymous(g) {
+			if interpretation.is_variable(g) {
 				map.entry(g).or_default().insert(quad);
 			}
 		}
@@ -245,7 +242,7 @@ where
 /// between two (isomorphic) datasets.
 #[derive(Educe)]
 #[educe(Clone)]
-pub struct BTreeBijection<'a, 'b, R = Term> {
+pub struct BTreeBijection<'a, 'b, R> {
 	pub forward: BTreeMap<&'a R, &'b R>,
 	pub backward: BTreeMap<&'b R, &'a R>,
 }
@@ -267,22 +264,10 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 
 	fn resource_matches_with<I>(&self, interpretation: &I, a: &'a R, b: &'b R) -> bool
 	where
-		I: ReverseGroundInterpretation<Resource = R>,
+		I: EqDomain<Resource = R>,
 	{
-		for a in interpretation.iris_of(a) {
-			for b in interpretation.iris_of(b) {
-				if a == b {
-					return true;
-				}
-			}
-		}
-
-		for a in interpretation.literals_of(a) {
-			for b in interpretation.literals_of(b) {
-				if a == b {
-					return true;
-				}
-			}
+		if interpretation.is_eq(a, b) {
+			return true;
 		}
 
 		match self.forward.get(a) {
@@ -296,7 +281,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 
 	fn quad_matches_with<I>(&self, interpretation: &I, a: Quad<&'a R>, b: Quad<&'b R>) -> bool
 	where
-		I: ReverseGroundInterpretation<Resource = R>,
+		I: EqDomain<Resource = R>,
 	{
 		self.resource_matches_with(interpretation, a.0, b.0)
 			&& self.resource_matches_with(interpretation, a.1, b.1)
@@ -315,7 +300,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		b: &BlankSignature<'b, R>,
 	) -> bool
 	where
-		I: ReverseGroundInterpretation<Resource = R>,
+		I: EqDomain<Resource = R>,
 	{
 		if a.len() == b.len() {
 			let mut other: Vec<_> = b.0.iter().map(|q| Some(*q)).collect();
@@ -348,7 +333,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		b: &BTreeMap<&'b R, BlankSignature<'b, R>>,
 	) -> Option<Self>
 	where
-		I: ReverseGroundInterpretation<Resource = R>,
+		I: EqDomain<Resource = R>,
 	{
 		match candidates.next() {
 			Some((a_blank_id, b_candidates)) => {
@@ -406,7 +391,7 @@ impl<'a, R> BlankSignature<'a, R> {
 
 	fn matches<I>(&self, interpretation: &I, other: &BlankSignature<R>) -> bool
 	where
-		I: ReverseGroundInterpretation<Resource = R>,
+		I: EqDomain<Resource = R> + VariableDomain,
 	{
 		if self.len() == other.len() {
 			let mut other: Vec<_> = other.0.iter().map(|q| Some(*q)).collect();
