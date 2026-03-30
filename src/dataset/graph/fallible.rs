@@ -1,27 +1,30 @@
 use crate::{pattern::CanonicalTriplePattern, utils::InfallibleIterator, Triple};
+use maybe_owned::MaybeOwned;
 
-use super::{Graph, GraphMut, PatternMatchingGraph, TraversableGraph};
+use super::{FiniteGraph, Graph, GraphMut, PatternMatchingGraph};
 
 /// Fallible graph.
-pub trait FallibleGraph {
+pub trait TryGraph {
 	type Resource;
 	type Error;
 }
 
-impl<D: Graph> FallibleGraph for D {
+impl<D: Graph> TryGraph for D {
 	type Resource = D::Resource;
 	type Error = std::convert::Infallible;
 }
 
-pub trait FallibleTraversableGraph: FallibleGraph {
-	type TryTriples<'a>: Iterator<Item = Result<Triple<&'a Self::Resource>, Self::Error>>
+pub trait TryFiniteGraph: TryGraph {
+	type TryTriples<'a>: Iterator<
+		Item = Result<Triple<MaybeOwned<'a, Self::Resource>>, Self::Error>,
+	>
 	where
 		Self: 'a;
 
 	fn try_triples(&self) -> Self::TryTriples<'_>;
 }
 
-impl<D: TraversableGraph> FallibleTraversableGraph for D {
+impl<D: FiniteGraph> TryFiniteGraph for D {
 	type TryTriples<'a>
 		= InfallibleIterator<D::Triples<'a>>
 	where
@@ -32,10 +35,10 @@ impl<D: TraversableGraph> FallibleTraversableGraph for D {
 	}
 }
 
-/// Pattern-matching-capable fallible dataset.
-pub trait FalliblePatternMatchingGraph: FallibleGraph {
+/// Pattern-matching-capable fallible graph.
+pub trait TryPatternMatchingGraph: TryGraph {
 	type TryTriplePatternMatching<'a, 'p>: Iterator<
-		Item = Result<Triple<&'a Self::Resource>, Self::Error>,
+		Item = Result<Triple<MaybeOwned<'a, Self::Resource>>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -43,19 +46,19 @@ pub trait FalliblePatternMatchingGraph: FallibleGraph {
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
 	) -> Self::TryTriplePatternMatching<'_, 'p>;
 
 	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
 		Ok(self
-			.try_triple_pattern_matching(triple.into())
+			.try_triple_pattern_matching(triple.map(MaybeOwned::Borrowed).into())
 			.next()
 			.transpose()?
 			.is_some())
 	}
 }
 
-impl<D: PatternMatchingGraph> FalliblePatternMatchingGraph for D {
+impl<D: PatternMatchingGraph> TryPatternMatchingGraph for D {
 	type TryTriplePatternMatching<'a, 'p>
 		= InfallibleIterator<D::TriplePatternMatching<'a, 'p>>
 	where
@@ -64,18 +67,18 @@ impl<D: PatternMatchingGraph> FalliblePatternMatchingGraph for D {
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
 	) -> Self::TryTriplePatternMatching<'_, 'p> {
 		InfallibleIterator(self.triple_pattern_matching(pattern))
 	}
 }
 
-/// Fallible mutable dataset.
-pub trait FallibleGraphMut: FallibleGraph {
+/// Fallible mutable graph.
+pub trait TryGraphMut: TryGraph {
 	fn try_insert(&mut self, triple: Triple<Self::Resource>) -> Result<(), Self::Error>;
 }
 
-impl<D: GraphMut> FallibleGraphMut for D {
+impl<D: GraphMut> TryGraphMut for D {
 	fn try_insert(&mut self, triple: Triple<Self::Resource>) -> Result<(), Self::Error> {
 		self.insert(triple);
 		Ok(())

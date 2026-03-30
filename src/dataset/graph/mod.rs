@@ -1,9 +1,11 @@
 use crate::{pattern::CanonicalTriplePattern, Triple};
+use maybe_owned::MaybeOwned;
 
+pub mod r#async;
 pub mod fallible;
-pub use fallible::FallibleGraph;
-
 mod r#impl;
+
+pub use fallible::TryGraph;
 pub use r#impl::*;
 
 /// RDF graph.
@@ -11,8 +13,8 @@ pub trait Graph {
 	type Resource;
 }
 
-pub trait TraversableGraph: Graph {
-	type Triples<'a>: Iterator<Item = Triple<&'a Self::Resource>>
+pub trait FiniteGraph: Graph {
+	type Triples<'a>: Iterator<Item = Triple<MaybeOwned<'a, Self::Resource>>>
 	where
 		Self: 'a;
 
@@ -23,8 +25,8 @@ pub trait TraversableGraph: Graph {
 	}
 }
 
-pub trait ResourceTraversableGraph: Graph {
-	type GraphResources<'a>: Iterator<Item = &'a Self::Resource>
+pub trait ResourceFiniteGraph: Graph {
+	type GraphResources<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -35,8 +37,8 @@ pub trait ResourceTraversableGraph: Graph {
 	}
 }
 
-pub trait SubjectTraversableGraph: Graph {
-	type GraphSubjects<'a>: Iterator<Item = &'a Self::Resource>
+pub trait SubjectFiniteGraph: Graph {
+	type GraphSubjects<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -47,8 +49,8 @@ pub trait SubjectTraversableGraph: Graph {
 	}
 }
 
-pub trait PredicateTraversableGraph: Graph {
-	type GraphPredicates<'a>: Iterator<Item = &'a Self::Resource>
+pub trait PredicateFiniteGraph: Graph {
+	type GraphPredicates<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -59,8 +61,8 @@ pub trait PredicateTraversableGraph: Graph {
 	}
 }
 
-pub trait ObjectTraversableGraph: Graph {
-	type GraphObjects<'a>: Iterator<Item = &'a Self::Resource>
+pub trait ObjectFiniteGraph: Graph {
+	type GraphObjects<'a>: Iterator<Item = MaybeOwned<'a, Self::Resource>>
 	where
 		Self: 'a;
 
@@ -73,25 +75,27 @@ pub trait ObjectTraversableGraph: Graph {
 
 /// Pattern-matching-capable dataset.
 pub trait PatternMatchingGraph: Graph {
-	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
+	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<MaybeOwned<'a, Self::Resource>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
 	fn triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: CanonicalTriplePattern<MaybeOwned<'p, Self::Resource>>,
 	) -> Self::TriplePatternMatching<'_, 'p>;
 
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
-		self.triple_pattern_matching(triple.into()).next().is_some()
+		self.triple_pattern_matching(triple.map(MaybeOwned::Borrowed).into())
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the graph contains the given subject.
 	fn contains_triple_subject(&self, subject: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::GivenSubject(
-			subject,
+			MaybeOwned::Borrowed(subject),
 			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject),
 		))
 		.next()
@@ -102,7 +106,10 @@ pub trait PatternMatchingGraph: Graph {
 	fn contains_triple_predicate(&self, predicate: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{AnySubject, AnySubjectGivenPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::GivenPredicate(predicate, AnySubjectGivenPredicate::AnyObject),
+			AnySubject::GivenPredicate(
+				MaybeOwned::Borrowed(predicate),
+				AnySubjectGivenPredicate::AnyObject,
+			),
 		))
 		.next()
 		.is_some()
@@ -112,7 +119,9 @@ pub trait PatternMatchingGraph: Graph {
 	fn contains_triple_object(&self, object: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{AnySubject, AnySubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(object)),
+			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(MaybeOwned::Borrowed(
+				object,
+			))),
 		))
 		.next()
 		.is_some()
@@ -121,10 +130,11 @@ pub trait PatternMatchingGraph: Graph {
 	/// Returns an iterator over all the predicates `p` matching the triple `subject p o` present in the graph, for some `o`.
 	fn triple_predicates_objects<'p>(
 		&self,
-		subject: &'p Self::Resource,
+		subject: MaybeOwned<'p, Self::Resource>,
 	) -> TriplePredicatesObjects<'_, 'p, Self>
 	where
-		Self: PredicateTraversableGraph,
+		Self: PredicateFiniteGraph,
+		Self::Resource: Clone,
 	{
 		TriplePredicatesObjects {
 			subject,
@@ -136,8 +146,8 @@ pub trait PatternMatchingGraph: Graph {
 	/// Returns an iterator over all the objects `o` matching the triple `subject predicate o` present in the graph.
 	fn triple_objects<'p>(
 		&self,
-		subject: &'p Self::Resource,
-		predicate: &'p Self::Resource,
+		subject: MaybeOwned<'p, Self::Resource>,
+		predicate: MaybeOwned<'p, Self::Resource>,
 	) -> TripleObjects<'_, 'p, Self> {
 		TripleObjects {
 			first: None,
@@ -151,26 +161,29 @@ pub trait PatternMatchingGraph: Graph {
 pub struct TriplePredicatesObjects<
 	'a,
 	'p,
-	G: 'a + ?Sized + PredicateTraversableGraph + PatternMatchingGraph,
+	G: 'a + ?Sized + PredicateFiniteGraph + PatternMatchingGraph,
 > {
-	subject: &'p G::Resource,
+	subject: MaybeOwned<'p, G::Resource>,
 	predicates: G::GraphPredicates<'a>,
 	graph: &'a G,
 }
 
-impl<'a: 'p, 'p, G: 'a + ?Sized + PredicateTraversableGraph + PatternMatchingGraph> Iterator
+impl<'a: 'p, 'p, G: 'a + ?Sized + PredicateFiniteGraph + PatternMatchingGraph> Iterator
 	for TriplePredicatesObjects<'a, 'p, G>
 where
-	G::Resource: 'p,
+	G::Resource: 'p + Clone,
 {
-	type Item = (&'a G::Resource, TripleObjects<'p, 'p, G>);
+	type Item = (MaybeOwned<'a, G::Resource>, TripleObjects<'p, 'p, G>);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
 			use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectGivenPredicate};
 			let pattern = CanonicalTriplePattern::GivenSubject(
-				self.subject,
-				GivenSubject::GivenPredicate(predicate, GivenSubjectGivenPredicate::AnyObject),
+				self.subject.clone(),
+				GivenSubject::GivenPredicate(
+					predicate.clone(),
+					GivenSubjectGivenPredicate::AnyObject,
+				),
 			);
 
 			let mut iter = self.graph.triple_pattern_matching(pattern);
@@ -193,7 +206,7 @@ pub struct TripleObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph>
 where
 	D::Resource: 'p,
 {
-	first: Option<&'a D::Resource>,
+	first: Option<MaybeOwned<'a, D::Resource>>,
 	inner: D::TriplePatternMatching<'a, 'p>,
 }
 
@@ -201,7 +214,7 @@ impl<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph> Iterator for TripleObjects<'
 where
 	D::Resource: 'p,
 {
-	type Item = &'a D::Resource;
+	type Item = MaybeOwned<'a, D::Resource>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.first

@@ -1,7 +1,5 @@
 use std::{cmp::Ordering, fmt};
 
-// use iref::{Iri, IriBuf};
-
 use crate::Triple;
 
 /// RDF quad.
@@ -203,6 +201,13 @@ impl<T> Quad<T, T, T, T> {
 	/// Maps the components with the given function.
 	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Quad<U, U, U, U> {
 		Quad(f(self.0), f(self.1), f(self.2), self.3.map(f))
+	}
+}
+
+impl<T: std::ops::Deref> Quad<T, T, T, T> {
+	/// Dereferences each component of the quad.
+	pub fn as_deref(&self) -> Quad<&T::Target, &T::Target, &T::Target, &T::Target> {
+		Quad(&*self.0, &*self.1, &*self.2, self.3.as_deref())
 	}
 }
 

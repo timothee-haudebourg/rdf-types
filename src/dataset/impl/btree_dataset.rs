@@ -7,7 +7,7 @@ use slab::Slab;
 
 use super::super::Dataset;
 use crate::{
-	dataset::{DatasetMut, IndexedBTreeDataset, ResourceTraversableDataset, TraversableDataset},
+	dataset::{DatasetMut, FiniteDataset, IndexedBTreeDataset, ResourceFiniteDataset},
 	Quad,
 };
 
@@ -287,25 +287,25 @@ impl<R> Dataset for BTreeDataset<R> {
 	type Resource = R;
 }
 
-impl<R> TraversableDataset for BTreeDataset<R> {
+impl<R> FiniteDataset for BTreeDataset<R> {
 	type Quads<'a>
-		= Quads<'a, R>
+		= crate::utils::BorrowedQuads<Quads<'a, R>>
 	where
 		R: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
-		self.iter()
+		crate::utils::BorrowedQuads(self.iter())
 	}
 }
 
-impl<R> ResourceTraversableDataset for BTreeDataset<R> {
+impl<R> ResourceFiniteDataset for BTreeDataset<R> {
 	type Resources<'a>
-		= Resources<'a, R>
+		= crate::utils::BorrowedResources<Resources<'a, R>>
 	where
 		R: 'a;
 
 	fn resources(&self) -> Self::Resources<'_> {
-		self.resources()
+		crate::utils::BorrowedResources(self.resources())
 	}
 }
 
@@ -575,7 +575,7 @@ mod tests {
 		assert_eq!(dataset.len(), quads.len());
 
 		let mut a = quads.iter().copied();
-		let mut b = dataset.iter().map(Quad::into_copied);
+		let mut b = dataset.iter().map(|q| q.cloned());
 
 		loop {
 			match (a.next(), b.next()) {

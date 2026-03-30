@@ -13,7 +13,7 @@ rust-version = "1.70.0"
 version = "0.22.4"
 
 [features]
-
+serde = ["dep:serde", "maybe-owned/serde"]
 
 [dependencies]
 # Major dependencies (major version must be synchronized).

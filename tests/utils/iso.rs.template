@@ -1,4 +1,4 @@
-use rdf_types::{Quad, dataset::BTreeDataset, domain::r#static::RdfStaticEqDomain};
+use rdf_types::{dataset::BTreeDataset, domain::sealed::MaybeVariable, Quad};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -7,7 +7,7 @@ enum Term {
 	Var(u32),
 }
 
-impl RdfStaticEqDomain for Term {
+impl MaybeVariable for Term {
 	fn is_ground(&self) -> bool {
 		matches!(self, Term::Ground(_))
 	}
@@ -19,14 +19,14 @@ fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
 			let substitution: BTreeMap<_, _> = bijection
 				.forward
 				.into_iter()
-				.map(|(a, b)| (a.clone(), b))
+				.map(|(a, b)| (a.into_owned(), b))
 				.collect();
 			let c: BTreeDataset<Term> = a
 				.into_iter()
 				.map(|q| {
 					q.map(|t| {
 						if matches!(t, Term::Var(_)) {
-							(*substitution.get(&t).unwrap()).clone()
+							(**substitution.get(&t).unwrap()).clone()
 						} else {
 							t
 						}

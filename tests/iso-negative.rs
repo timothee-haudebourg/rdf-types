@@ -1,6 +1,6 @@
 //! This file is auto generated using the
 //! `tests/utils/generate-iso-test.rb` script.
-use rdf_types::{dataset::BTreeDataset, domain::r#static::MaybeVariable, Quad};
+use rdf_types::{dataset::BTreeDataset, domain::sealed::MaybeVariable, Quad};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Term {
@@ -23,232 +23,287 @@ fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
 fn iso_e001() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(1),
-		Term::Ground(1),
-		None,
-	));
-	a.insert(Quad(Term::Ground(2), Term::Ground(2), Term::Var(0), None));
-	a.insert(Quad(
 		Term::Ground(3),
-		Term::Ground(1),
-		Term::Ground(3),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(2),
+		Term::Var(0),
 		Term::Ground(0),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(0),
+		Term::Ground(2),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Var(0),
 		Term::Ground(3),
-		None,
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Var(0),
+		Term::Ground(3),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(1),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(2),
+		Term::Ground(3),
 		Term::Var(1000),
-		None,
+		Term::Ground(0),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(1),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
 		Term::Ground(2),
-		Term::Ground(0),
-		None,
+		Term::Ground(2),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(0),
+		Term::Var(1000),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Var(1000),
 		Term::Ground(3),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Var(1000),
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e002() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(3), Term::Var(0), Term::Ground(3), None));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Var(0),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(0),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Var(0),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(0),
+		Term::Ground(1),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(0),
+		Term::Var(0),
 		Term::Ground(3),
-		Term::Ground(3),
-		None,
-	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(2), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(0), Term::Var(0), Term::Ground(1), None));
-	a.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(3),
-		Term::Ground(2),
-		None,
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(3),
-		Term::Var(1000),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(3),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
 		Term::Ground(2),
 		Term::Var(1000),
-		None,
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(0),
-		Term::Var(1000),
 		Term::Ground(1),
-		None,
+		Term::Ground(0),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(3),
+		Term::Var(1000),
+		Term::Var(1000),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(2),
-		None,
+		Term::Ground(0),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Var(1000),
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e003() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(0), Term::Ground(0), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(1), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(2), Term::Var(0), Term::Ground(3), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(2), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(0),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(1),
 		Term::Ground(3),
-		None,
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(0),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(3),
+		Term::Ground(0),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(0),
 		Term::Var(1000),
-		None,
+		Term::Ground(0),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
 		Term::Ground(3),
 		Term::Ground(1),
-		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(2),
+		Term::Ground(1),
+		Term::Ground(0),
 		Term::Var(1000),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(2),
-		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(1),
 		Term::Ground(3),
-		None,
+		Term::Ground(0),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e004() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(1), Term::Var(0), Term::Var(0), None));
 	a.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(2),
-		Term::Ground(2),
-		None,
+		Term::Ground(1),
+		Term::Ground(1),
+		Term::Ground(1),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(1),
+		Term::Ground(0),
+		Term::Ground(2),
 		Term::Ground(3),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Var(0), Term::Ground(3), Term::Ground(2), None));
-	a.insert(Quad(Term::Ground(2), Term::Ground(1), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Var(0),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Var(0),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
 		Term::Ground(1),
-		Term::Var(1000),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(2),
-		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(1),
 		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(2),
 		Term::Ground(3),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Var(1000),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(2),
+		Term::Var(1000),
+		Term::Ground(0),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1000),
 		Term::Ground(3),
-		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(1),
-		Term::Var(1000),
-		None,
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -257,169 +312,214 @@ fn iso_e005() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(0),
 		Term::Ground(2),
-		None,
+		Term::Ground(3),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(3),
+		Term::Ground(1),
 		Term::Ground(0),
-		Term::Ground(2),
-		None,
+		Term::Ground(1),
+		None
 	));
-	a.insert(Quad(Term::Ground(3), Term::Ground(0), Term::Var(0), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(1), Term::Ground(0), None));
-	a.insert(Quad(Term::Ground(0), Term::Ground(2), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(3),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(2),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
+		Term::Ground(0),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(0),
 		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(3),
-		Term::Ground(0),
-		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(0),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
 		Term::Ground(1),
 		Term::Ground(0),
-		None,
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Ground(3),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(2),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(2),
-		Term::Var(1000),
-		None,
+		Term::Ground(1),
+		Term::Ground(0),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e006() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(0), Term::Var(0), Term::Ground(3), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(1), Term::Ground(1), None));
-	a.insert(Quad(Term::Ground(2), Term::Var(0), Term::Ground(1), None));
 	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(2),
-		Term::Ground(2),
-		None,
+		Term::Ground(0),
+		Term::Ground(0),
+		Term::Var(0),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(0),
+		Term::Ground(0),
 		Term::Ground(1),
-		Term::Ground(1),
-		None,
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(2),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Var(0),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
 		Term::Ground(0),
+		Term::Ground(0),
 		Term::Var(1000),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(1),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Var(1000),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(2),
-		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(0),
+		Term::Ground(0),
 		Term::Ground(1),
-		Term::Ground(1),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(2),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(2),
+		Term::Var(1000),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e007() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(0), Term::Var(0), Term::Ground(1), None));
 	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(1),
-		Term::Ground(3),
-		None,
+		Term::Ground(2),
+		Term::Ground(0),
+		Term::Var(0),
+		None
 	));
-	a.insert(Quad(Term::Var(0), Term::Ground(3), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(0), Term::Var(0), None));
 	a.insert(Quad(
 		Term::Ground(3),
+		Term::Ground(1),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(3),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(1),
 		Term::Ground(2),
-		Term::Ground(2),
-		None,
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(3),
+		Term::Ground(0),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
+		Term::Ground(2),
 		Term::Ground(0),
 		Term::Var(1000),
-		Term::Ground(1),
-		None,
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(3),
 		Term::Ground(1),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(1),
 		Term::Ground(3),
-		None,
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1000),
 		Term::Ground(3),
-		Term::Var(1000),
-		None,
+		Term::Ground(1),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(3),
 		Term::Ground(3),
 		Term::Ground(0),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(2),
-		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -427,369 +527,479 @@ fn iso_e007() {
 fn iso_e008() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(2),
 		Term::Ground(0),
-		None,
+		Term::Var(0),
+		Term::Ground(3),
+		None
 	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(3), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Var(0), Term::Ground(1), None));
 	a.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(1),
+		Term::Var(0),
 		Term::Ground(0),
-		None,
+		Term::Ground(2),
+		None
 	));
-	a.insert(Quad(Term::Var(0), Term::Ground(1), Term::Ground(0), None));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(2),
 		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
+		Term::Var(1000),
 		Term::Ground(3),
-		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
+		Term::Var(1000),
+		Term::Ground(0),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(2),
 		Term::Ground(3),
-		Term::Var(1000),
-		Term::Ground(1),
-		None,
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(1),
 		Term::Ground(0),
-		None,
+		Term::Ground(1),
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1000),
-		Term::Ground(1),
-		Term::Ground(0),
-		None,
+		Term::Ground(3),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e009() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Var(0), Term::Ground(0), Term::Ground(1), None));
 	a.insert(Quad(
+		Term::Var(0),
 		Term::Ground(1),
-		Term::Ground(0),
-		Term::Ground(1),
-		None,
+		Term::Ground(3),
+		None
 	));
-	a.insert(Quad(Term::Ground(1), Term::Ground(2), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(1), Term::Var(0), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(3), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(2),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(2),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Var(0),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(0),
+		Term::Var(0),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
 		Term::Var(1000),
-		Term::Ground(0),
 		Term::Ground(1),
-		None,
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(1),
 		Term::Ground(0),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
 		Term::Ground(2),
 		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(3),
+		Term::Ground(2),
+		Term::Ground(2),
 		Term::Ground(1),
-		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1000),
 		Term::Ground(3),
 		Term::Var(1000),
-		None,
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(0),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e010() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Var(0), Term::Ground(2), Term::Ground(1), None));
-	a.insert(Quad(Term::Ground(0), Term::Ground(1), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(0), Term::Ground(0), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Var(0), Term::Ground(1), None));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Var(0),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Var(0),
+		Term::Var(0),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(3),
+		Term::Ground(0),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
 		Term::Ground(2),
-		Term::Ground(3),
-		None,
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
+		Term::Ground(1),
 		Term::Var(1000),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Var(1000),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(0),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
 		Term::Ground(2),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(1),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(0),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Var(1000),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(2),
-		Term::Ground(3),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e011() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(1), Term::Var(1), Term::Ground(5), None));
 	a.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(7),
 		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(4),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Var(1),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(3),
 		Term::Ground(6),
-		Term::Ground(1),
-		None,
-	));
-	a.insert(Quad(Term::Ground(2), Term::Var(0), Term::Ground(3), None));
-	a.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(3),
-		Term::Ground(7),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(5),
-		Term::Ground(1),
-		None,
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(7),
-		Term::Ground(3),
-		Term::Ground(4),
-		None,
+		Term::Ground(0),
+		Term::Ground(7),
+		None
 	));
 	a.insert(Quad(
+		Term::Var(1),
 		Term::Ground(1),
 		Term::Ground(5),
-		Term::Ground(3),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Ground(1), Term::Ground(5), Term::Var(0), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(4), Term::Var(1), None));
-	a.insert(Quad(Term::Ground(1), Term::Ground(2), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(7),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(5),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(2),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(7),
+		Term::Var(1),
+		Term::Ground(5),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(7),
 		Term::Ground(1),
-		Term::Var(1001),
-		Term::Ground(5),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(1),
+		Term::Var(1001),
+		Term::Ground(4),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Var(1001),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(3),
 		Term::Ground(6),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Var(1000),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(3),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(5),
-		Term::Ground(1),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(7),
-		Term::Ground(3),
-		Term::Ground(4),
-		None,
+		Term::Ground(0),
+		Term::Ground(7),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(5),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(5),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(4),
 		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(2),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(7),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(5),
 		Term::Var(1000),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(2),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Var(1001),
+		Term::Ground(5),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e012() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(1), Term::Var(1), Term::Var(1), None));
-	a.insert(Quad(Term::Ground(6), Term::Var(1), Term::Ground(0), None));
-	a.insert(Quad(Term::Ground(1), Term::Ground(1), Term::Var(0), None));
-	a.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(7),
-		Term::Ground(6),
-		None,
-	));
 	a.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(7),
-		Term::Ground(1),
-		None,
-	));
-	a.insert(Quad(
 		Term::Ground(0),
 		Term::Ground(4),
-		Term::Ground(1),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(7), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(0), Term::Var(0), None));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Var(1),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(0),
+		Term::Ground(7),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(1),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(5),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(7),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(5),
+		Term::Ground(0),
+		Term::Ground(3),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(5),
 		Term::Ground(2),
-		Term::Ground(3),
-		None,
+		Term::Ground(7),
+		None
 	));
-	a.insert(Quad(Term::Ground(5), Term::Var(0), Term::Ground(5), None));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(1),
-		Term::Var(1001),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(6),
-		Term::Var(1001),
 		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(1),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(7),
-		Term::Ground(6),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(7),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(0),
 		Term::Ground(4),
-		Term::Ground(1),
-		None,
+		None
 	));
 	b.insert(Quad(
+		Term::Var(1001),
+		Term::Var(1001),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
 		Term::Ground(0),
 		Term::Ground(7),
-		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(3),
+		Term::Ground(6),
+		Term::Ground(1),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(0),
-		Term::Var(1000),
-		None,
+		Term::Ground(1),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(3),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(5),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(7),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(5),
+		Term::Ground(0),
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(5),
 		Term::Ground(2),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Var(1000),
-		Term::Ground(5),
-		None,
+		Term::Ground(7),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -797,111 +1007,131 @@ fn iso_e012() {
 fn iso_e013() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(2),
-		Term::Ground(5),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(0),
-		Term::Ground(0),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(5),
+		Term::Var(1),
 		Term::Ground(1),
-		Term::Ground(2),
-		None,
+		Term::Ground(4),
+		None
 	));
-	a.insert(Quad(Term::Ground(7), Term::Ground(2), Term::Var(0), None));
 	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(5),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Var(0),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(2),
 		Term::Ground(7),
+		None
+	));
+	a.insert(Quad(
 		Term::Ground(6),
-		Term::Ground(5),
-		None,
-	));
-	a.insert(Quad(Term::Var(1), Term::Ground(2), Term::Var(0), None));
-	a.insert(Quad(Term::Var(1), Term::Ground(6), Term::Ground(7), None));
-	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(1),
+		Term::Var(1),
 		Term::Ground(0),
-		None,
+		None
 	));
 	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(4),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Var(1),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
 		Term::Ground(6),
 		Term::Ground(4),
-		Term::Ground(2),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Ground(2), Term::Var(0), Term::Var(1), None));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(2),
-		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(0),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
+		Term::Var(1001),
 		Term::Ground(1),
-		Term::Ground(2),
-		None,
+		Term::Ground(4),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(7),
 		Term::Ground(2),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(6),
 		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(2),
 		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(6),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(1),
 		Term::Ground(0),
-		None,
+		Term::Ground(2),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(3),
+		Term::Var(1000),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Ground(2),
+		Term::Ground(7),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1001),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Ground(4),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Var(1001),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
 		Term::Ground(6),
 		Term::Ground(4),
-		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Var(1000),
-		Term::Var(1001),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -909,203 +1139,263 @@ fn iso_e013() {
 fn iso_e014() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(6),
+		Term::Ground(3),
 		Term::Ground(0),
-		None,
+		Term::Ground(5),
+		None
 	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(3), Term::Var(0), None));
 	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(4),
 		Term::Ground(7),
-		None,
+		Term::Ground(3),
+		Term::Ground(6),
+		None
 	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(1), Term::Var(1), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(2), Term::Ground(7), None));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(3),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(5),
+		Term::Ground(7),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(4),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(3),
+		Term::Ground(6),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(0),
+		Term::Var(1),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(5),
-		Term::Ground(2),
-		None,
-	));
-	a.insert(Quad(Term::Ground(7), Term::Var(1), Term::Ground(1), None));
-	a.insert(Quad(Term::Ground(6), Term::Var(0), Term::Ground(4), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(5), Term::Ground(1), None));
-	a.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(0),
 		Term::Ground(6),
-		None,
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Var(0),
+		Term::Var(0),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(6),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
 		Term::Ground(3),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(4),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(1),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(2),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
 		Term::Ground(5),
-		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(7),
-		Term::Var(1001),
-		Term::Ground(1),
-		None,
+		Term::Ground(3),
+		Term::Ground(6),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(6),
-		Term::Var(1000),
-		Term::Ground(4),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(5),
-		Term::Ground(1),
-		None,
+		Term::Ground(3),
+		Term::Ground(0),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(2),
-		Term::Ground(0),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(6),
-		None,
+		Term::Ground(5),
+		Term::Ground(7),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(4),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(3),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(0),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(6),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Var(1000),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e015() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(3), Term::Var(0), Term::Ground(0), None));
-	a.insert(Quad(Term::Var(1), Term::Var(1), Term::Ground(7), None));
 	a.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(7),
-		Term::Ground(0),
-		None,
-	));
-	a.insert(Quad(Term::Ground(3), Term::Ground(7), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(0), Term::Ground(2), Term::Var(1), None));
-	a.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(7),
-		Term::Ground(6),
-		None,
-	));
-	a.insert(Quad(Term::Ground(0), Term::Ground(3), Term::Var(0), None));
-	a.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(0),
+		Term::Var(1),
 		Term::Ground(2),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Var(1), Term::Var(0), Term::Var(1), None));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(1),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Ground(1),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(5),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Ground(5),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(4),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(5),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(7),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1),
+		Term::Ground(5),
+		None
+	));
 	a.insert(Quad(
 		Term::Ground(6),
 		Term::Ground(7),
-		Term::Ground(5),
-		None,
+		Term::Var(0),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(3),
-		Term::Var(1000),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Var(1001),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(7),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(7),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
+		Term::Var(1001),
 		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
 		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(4),
-		Term::Ground(7),
-		Term::Ground(6),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(3),
+		Term::Ground(1),
 		Term::Var(1000),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(6),
 		Term::Ground(0),
+		Term::Ground(1),
 		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1001),
-		Term::Var(1000),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(7),
 		Term::Ground(5),
-		None,
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Ground(5),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(4),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(5),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(7),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1001),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(7),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -1113,216 +1403,251 @@ fn iso_e015() {
 fn iso_e016() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(15),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(16),
+		Term::Var(1),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(15),
+		Term::Var(1),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(0),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
 		Term::Ground(9),
-		Term::Ground(9),
-		Term::Ground(12),
-		None,
+		Term::Ground(10),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(7),
+		Term::Var(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(13),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Var(2),
+		Term::Ground(6),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(3),
-		Term::Ground(14),
-		Term::Ground(7),
-		None,
-	));
-	a.insert(Quad(Term::Ground(2), Term::Var(0), Term::Ground(11), None));
-	a.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(7),
-		Term::Ground(7),
-		None,
+		Term::Ground(6),
+		Term::Ground(6),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(2),
+		Term::Ground(9),
+		Term::Var(2),
+		Term::Ground(9),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(10),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(15),
 		Term::Ground(0),
-		Term::Ground(11),
-		None,
-	));
-	a.insert(Quad(Term::Ground(15), Term::Var(0), Term::Var(1), None));
-	a.insert(Quad(Term::Ground(12), Term::Ground(10), Term::Var(2), None));
-	a.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(11),
-		Term::Ground(0),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(8),
-		Term::Ground(12),
-		None,
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(5),
-		Term::Ground(10),
-		Term::Ground(13),
-		None,
+		Term::Var(0),
+		Term::Var(1),
+		None
 	));
-	a.insert(Quad(Term::Ground(8), Term::Var(0), Term::Ground(4), None));
 	a.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(12),
-		Term::Ground(1),
-		None,
-	));
-	a.insert(Quad(Term::Ground(7), Term::Ground(6), Term::Var(0), None));
-	a.insert(Quad(
-		Term::Ground(11),
-		Term::Ground(9),
 		Term::Ground(4),
-		None,
+		Term::Var(2),
+		Term::Ground(14),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(10),
-		Term::Ground(5),
-		Term::Ground(11),
-		None,
+		Term::Ground(1),
+		Term::Ground(16),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(14),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(2),
+		Term::Ground(2),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(8),
-		Term::Ground(12),
-		Term::Ground(0),
-		None,
+		Term::Ground(3),
+		Term::Ground(7),
+		None
 	));
-	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(13),
-		Term::Ground(12),
-		None,
-	));
-	a.insert(Quad(Term::Ground(6), Term::Ground(5), Term::Var(0), None));
-	a.insert(Quad(Term::Var(1), Term::Var(2), Term::Ground(1), None));
 	a.insert(Quad(
 		Term::Ground(9),
-		Term::Ground(14),
-		Term::Ground(11),
-		None,
+		Term::Ground(3),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(9),
+		Term::Var(1),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(9),
-		Term::Ground(9),
-		Term::Ground(12),
-		None,
+		Term::Ground(10),
+		Term::Ground(15),
+		Term::Ground(10),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(16),
+		Term::Var(1001),
 		Term::Ground(3),
-		Term::Ground(14),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Var(1000),
-		Term::Ground(11),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(7),
-		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(0),
-		Term::Ground(11),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(15),
-		Term::Var(1000),
 		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(12),
-		Term::Ground(10),
-		Term::Var(1002),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(11),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(8),
-		Term::Ground(12),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(10),
-		Term::Ground(13),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(8),
 		Term::Var(1000),
-		Term::Ground(4),
-		None,
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(0),
 		Term::Ground(2),
-		Term::Ground(12),
-		Term::Ground(1),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(6),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(11),
 		Term::Ground(9),
+		Term::Ground(10),
+		Term::Ground(13),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(7),
+		Term::Var(1002),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(4),
-		None,
+		Term::Ground(13),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1002),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(6),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(9),
+		Term::Var(1002),
+		Term::Ground(9),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(10),
-		Term::Ground(5),
-		Term::Ground(11),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(12),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
+		Term::Ground(10),
 		Term::Ground(13),
-		Term::Ground(12),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(15),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(5),
+		Term::Var(1000),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Var(1002),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(16),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(14),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(6),
-		Term::Ground(5),
-		Term::Var(1000),
-		None,
+		Term::Ground(2),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1001),
-		Term::Var(1002),
-		Term::Ground(1),
-		None,
+		Term::Ground(8),
+		Term::Ground(3),
+		Term::Ground(7),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9),
-		Term::Ground(14),
-		Term::Ground(11),
-		None,
+		Term::Ground(3),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(9),
+		Term::Var(1001),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -1330,650 +1655,755 @@ fn iso_e016() {
 fn iso_e017() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(12),
+		Term::Var(1),
 		Term::Ground(10),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(12),
-		Term::Ground(12),
-		Term::Ground(5),
-		None,
-	));
-	a.insert(Quad(Term::Var(0), Term::Ground(15), Term::Ground(11), None));
-	a.insert(Quad(
-		Term::Ground(13),
-		Term::Ground(6),
-		Term::Ground(12),
-		None,
-	));
-	a.insert(Quad(Term::Ground(4), Term::Var(1), Term::Ground(0), None));
-	a.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(15),
-		Term::Ground(5),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(13),
-		Term::Ground(7),
-		None,
-	));
-	a.insert(Quad(Term::Var(1), Term::Ground(8), Term::Ground(5), None));
-	a.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(0),
-		Term::Ground(0),
-		None,
-	));
-	a.insert(Quad(
 		Term::Ground(2),
-		Term::Ground(8),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Var(0),
 		Term::Ground(9),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(4),
-		Term::Ground(14),
-		None,
-	));
-	a.insert(Quad(Term::Var(1), Term::Ground(3), Term::Ground(10), None));
-	a.insert(Quad(Term::Var(2), Term::Ground(2), Term::Ground(4), None));
-	a.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(4),
+		Term::Ground(7),
+		Term::Ground(10),
 		Term::Ground(1),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(3),
+		Term::Ground(11),
+		Term::Var(2),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
 		Term::Ground(10),
-		None,
+		Term::Ground(8),
+		Term::Ground(11),
+		None
 	));
-	a.insert(Quad(Term::Ground(0), Term::Var(0), Term::Ground(1), None));
 	a.insert(Quad(
-		Term::Ground(9),
-		Term::Ground(6),
 		Term::Ground(10),
-		None,
-	));
-	a.insert(Quad(
+		Term::Ground(13),
 		Term::Ground(15),
-		Term::Ground(12),
-		Term::Ground(12),
-		None,
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(13),
+		Term::Ground(6),
+		Term::Var(0),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(16),
-		Term::Ground(3),
+		Term::Ground(13),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(0),
 		Term::Ground(8),
-		None,
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(11),
+		Term::Ground(11),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(9),
+		Term::Ground(11),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(16),
+		Term::Var(2),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(11),
+		Term::Ground(15),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(2),
+		Term::Ground(7),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(15),
+		Term::Var(2),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(16),
+		Term::Ground(4),
+		Term::Ground(9),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(10),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(15),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(5),
+		Term::Var(1),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(2),
+		Term::Ground(7),
 		Term::Ground(5),
-		Term::Ground(11),
-		None,
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(12),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(12),
-		Term::Ground(12),
-		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(15),
-		Term::Ground(11),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(13),
-		Term::Ground(6),
-		Term::Ground(12),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(4),
 		Term::Var(1001),
-		Term::Ground(0),
-		None,
+		Term::Ground(10),
+		Term::Ground(2),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(15),
-		Term::Ground(5),
-		None,
+		Term::Ground(10),
+		Term::Var(1000),
+		Term::Ground(9),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(13),
 		Term::Ground(7),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(8),
-		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(0),
-		Term::Ground(0),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(8),
-		Term::Ground(9),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(4),
-		Term::Ground(14),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(3),
 		Term::Ground(10),
-		None,
+		Term::Ground(1),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(11),
 		Term::Var(1002),
-		Term::Ground(2),
-		Term::Ground(4),
-		None,
+		Term::Ground(5),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(4),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(3),
 		Term::Ground(10),
-		None,
+		Term::Ground(8),
+		Term::Ground(11),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(0),
-		Term::Var(1000),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(9),
-		Term::Ground(6),
 		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
+		Term::Ground(13),
 		Term::Ground(15),
-		Term::Ground(12),
-		Term::Ground(12),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(13),
+		Term::Ground(6),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(16),
-		Term::Ground(3),
+		Term::Ground(13),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(0),
 		Term::Ground(8),
-		None,
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(11),
+		Term::Ground(11),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(9),
+		Term::Ground(11),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(16),
+		Term::Var(1002),
+		Term::Ground(10),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(11),
+		Term::Ground(15),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1002),
+		Term::Ground(7),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(15),
+		Term::Var(1002),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(16),
+		Term::Ground(4),
+		Term::Ground(9),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(10),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(15),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(5),
+		Term::Var(1001),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(2),
+		Term::Ground(7),
 		Term::Ground(5),
-		Term::Ground(11),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e018() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Ground(4), Term::Var(1), Term::Ground(16), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(15), Term::Var(1), None));
-	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(5),
-		Term::Ground(14),
-		None,
-	));
 	a.insert(Quad(
 		Term::Ground(7),
-		Term::Ground(1),
-		Term::Ground(14),
-		None,
+		Term::Ground(7),
+		Term::Var(2),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(16),
-		Term::Ground(4),
-		Term::Ground(11),
-		None,
-	));
-	a.insert(Quad(Term::Ground(2), Term::Var(1), Term::Ground(11), None));
-	a.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(16),
-		Term::Ground(4),
-		None,
-	));
-	a.insert(Quad(
+		Term::Ground(0),
 		Term::Ground(10),
-		Term::Ground(5),
-		Term::Ground(1),
-		None,
+		Term::Ground(7),
+		None
 	));
-	a.insert(Quad(Term::Ground(16), Term::Var(2), Term::Ground(4), None));
-	a.insert(Quad(
-		Term::Ground(13),
-		Term::Ground(2),
-		Term::Ground(16),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(16),
-		Term::Ground(6),
-		Term::Ground(6),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(4),
-		Term::Ground(2),
-		None,
-	));
-	a.insert(Quad(Term::Ground(8), Term::Ground(7), Term::Var(0), None));
-	a.insert(Quad(Term::Ground(16), Term::Ground(9), Term::Var(1), None));
-	a.insert(Quad(Term::Ground(9), Term::Var(2), Term::Ground(6), None));
 	a.insert(Quad(
 		Term::Ground(7),
 		Term::Ground(9),
-		Term::Ground(13),
-		None,
+		Term::Ground(1),
+		None
 	));
-	a.insert(Quad(Term::Var(1), Term::Ground(5), Term::Ground(10), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(6), Term::Ground(5), None));
 	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(16),
+		Term::Ground(7),
+		Term::Ground(1),
+		Term::Ground(8),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(6),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(5),
+		Term::Var(1),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(2),
 		Term::Ground(10),
-		None,
+		Term::Var(1),
+		None
 	));
 	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(1),
 		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(4),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(9),
+		Term::Ground(1),
+		Term::Ground(6),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(13),
+		Term::Var(0),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(2),
+		Term::Ground(16),
+		Term::Ground(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(6),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(16),
+		Term::Ground(5),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(1),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(2),
+		Term::Ground(1),
 		Term::Ground(11),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Var(0),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Ground(4),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(12),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(7),
 		Term::Ground(15),
-		None,
+		Term::Ground(9),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(4),
-		Term::Var(1001),
-		Term::Ground(16),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(15),
-		Term::Var(1001),
-		None,
+		Term::Ground(7),
+		Term::Ground(7),
+		Term::Var(1002),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(0),
-		Term::Ground(5),
-		Term::Ground(14),
-		None,
+		Term::Ground(10),
+		Term::Ground(7),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(9),
+		Term::Ground(1),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(7),
 		Term::Ground(1),
-		Term::Ground(14),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(16),
-		Term::Ground(4),
-		Term::Ground(11),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Var(1001),
-		Term::Ground(11),
-		None,
+		Term::Ground(8),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(8),
-		Term::Ground(16),
-		Term::Ground(4),
-		None,
+		Term::Ground(6),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
+		Term::Ground(5),
+		Term::Var(1001),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1002),
 		Term::Ground(10),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(1),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(3),
+		Term::Ground(4),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(9),
+		Term::Ground(1),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(13),
+		Term::Var(1000),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1002),
+		Term::Ground(16),
+		Term::Ground(5),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(6),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(16),
 		Term::Ground(5),
 		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(16),
-		Term::Var(1002),
-		Term::Ground(4),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(13),
-		Term::Ground(2),
-		Term::Ground(16),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(16),
-		Term::Ground(6),
-		Term::Ground(6),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(4),
-		Term::Ground(2),
-		None,
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(8),
-		Term::Ground(7),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(16),
-		Term::Ground(9),
+		Term::Ground(1),
 		Term::Var(1001),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(9),
-		Term::Var(1002),
-		Term::Ground(6),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(9),
-		Term::Ground(13),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(5),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(6),
-		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(16),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(14),
+		Term::Ground(2),
+		Term::Ground(1),
 		Term::Ground(11),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1000),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1001),
+		Term::Ground(4),
+		Term::Var(1000),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(12),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
 		Term::Ground(15),
-		None,
+		Term::Ground(9),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
 #[test]
 fn iso_e019() {
 	let mut a = BTreeDataset::new();
-	a.insert(Quad(Term::Var(1), Term::Ground(5), Term::Ground(11), None));
 	a.insert(Quad(
-		Term::Ground(9),
+		Term::Var(2),
 		Term::Ground(0),
-		Term::Ground(4),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(7),
 		Term::Ground(15),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(9),
-		Term::Ground(0),
-		Term::Ground(10),
-		None,
-	));
-	a.insert(Quad(Term::Ground(9), Term::Var(1), Term::Var(1), None));
-	a.insert(Quad(
-		Term::Ground(12),
-		Term::Ground(13),
-		Term::Ground(16),
-		None,
+		Term::Var(1),
+		Term::Ground(1),
+		Term::Ground(8),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(7),
-		Term::Ground(3),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(5),
-		Term::Ground(15),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(0),
-		Term::Ground(12),
-		None,
-	));
-	a.insert(Quad(
+		Term::Ground(9),
 		Term::Ground(10),
-		Term::Ground(3),
-		Term::Ground(11),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(11),
 		Term::Ground(16),
-		None,
+		Term::Var(2),
+		Term::Ground(8),
+		None
 	));
-	a.insert(Quad(Term::Var(2), Term::Ground(14), Term::Ground(9), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(7), Term::Ground(1), None));
-	a.insert(Quad(Term::Var(1), Term::Ground(1), Term::Ground(3), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(10), Term::Var(0), None));
 	a.insert(Quad(
 		Term::Ground(7),
-		Term::Ground(0),
-		Term::Ground(16),
-		None,
+		Term::Ground(1),
+		Term::Ground(3),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(10),
-		Term::Ground(5),
-		Term::Ground(15),
-		None,
+		Term::Var(2),
+		Term::Var(2),
+		Term::Ground(13),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(8),
-		Term::Ground(0),
-		Term::Ground(12),
-		None,
+		Term::Ground(14),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(4),
+		Term::Ground(1),
+		None
 	));
 	a.insert(Quad(
 		Term::Ground(10),
-		Term::Ground(7),
-		Term::Ground(1),
-		None,
+		Term::Ground(12),
+		Term::Ground(15),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(6),
 		Term::Ground(3),
-		None,
+		Term::Ground(3),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(13),
+		Term::Ground(13),
+		Term::Ground(11),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(16),
+		Term::Ground(9),
+		Term::Ground(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(0),
+		Term::Var(2),
+		Term::Ground(15),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(15),
+		Term::Ground(14),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(5),
+		Term::Ground(10),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Var(0),
+		Term::Ground(15),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(7),
+		Term::Var(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Var(1),
+		Term::Ground(6),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(1),
+		Term::Ground(8),
+		None
 	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(5),
-		Term::Ground(11),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(9),
+		Term::Var(1002),
 		Term::Ground(0),
-		Term::Ground(4),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(14),
-		Term::Ground(7),
 		Term::Ground(15),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(9),
-		Term::Ground(0),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(9),
 		Term::Var(1001),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(12),
-		Term::Ground(13),
-		Term::Ground(16),
-		None,
+		Term::Ground(1),
+		Term::Ground(8),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(1),
-		Term::Ground(7),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(5),
-		Term::Ground(15),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(6),
-		Term::Ground(0),
-		Term::Ground(12),
-		None,
-	));
-	b.insert(Quad(
+		Term::Ground(9),
 		Term::Ground(10),
-		Term::Ground(3),
-		Term::Ground(11),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(11),
 		Term::Ground(16),
-		None,
+		Term::Var(1002),
+		Term::Ground(8),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Ground(1),
+		Term::Ground(3),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1002),
-		Term::Ground(14),
-		Term::Ground(9),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(7),
-		Term::Ground(1),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Ground(1),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(10),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(7),
-		Term::Ground(0),
-		Term::Ground(16),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(10),
-		Term::Ground(5),
-		Term::Ground(15),
-		None,
+		Term::Var(1002),
+		Term::Ground(13),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(8),
-		Term::Ground(0),
-		Term::Ground(12),
-		None,
+		Term::Ground(14),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(4),
+		Term::Ground(1),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(10),
-		Term::Ground(7),
-		Term::Ground(1),
-		None,
+		Term::Ground(12),
+		Term::Ground(15),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(0),
-		Term::Ground(6),
 		Term::Ground(3),
-		None,
+		Term::Ground(3),
+		Term::Ground(10),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(13),
+		Term::Ground(13),
+		Term::Ground(11),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(16),
+		Term::Ground(9),
+		Term::Ground(1),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1000),
+		Term::Var(1002),
+		Term::Ground(15),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(15),
+		Term::Ground(14),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(5),
+		Term::Ground(10),
+		Term::Ground(13),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Var(1000),
+		Term::Ground(15),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(3),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Ground(7),
+		Term::Var(1002),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(10),
+		Term::Var(1001),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(4),
+		Term::Ground(1),
+		Term::Ground(8),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }
@@ -1981,866 +2411,1211 @@ fn iso_e019() {
 fn iso_e020() {
 	let mut a = BTreeDataset::new();
 	a.insert(Quad(
-		Term::Ground(18),
-		Term::Ground(13),
-		Term::Ground(42),
-		None,
-	));
-	a.insert(Quad(Term::Ground(9), Term::Var(1), Term::Var(29), None));
-	a.insert(Quad(Term::Var(18), Term::Ground(14), Term::Ground(2), None));
-	a.insert(Quad(Term::Ground(3), Term::Var(4), Term::Var(36), None));
-	a.insert(Quad(Term::Var(0), Term::Ground(29), Term::Var(28), None));
-	a.insert(Quad(
-		Term::Ground(13),
-		Term::Var(30),
-		Term::Ground(15),
-		None,
-	));
-	a.insert(Quad(Term::Var(35), Term::Ground(38), Term::Var(28), None));
-	a.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(32),
-		Term::Ground(21),
-		None,
-	));
-	a.insert(Quad(Term::Var(7), Term::Var(49), Term::Ground(10), None));
-	a.insert(Quad(Term::Ground(31), Term::Var(44), Term::Var(23), None));
-	a.insert(Quad(Term::Ground(1), Term::Var(27), Term::Ground(20), None));
-	a.insert(Quad(Term::Var(48), Term::Ground(2), Term::Ground(21), None));
-	a.insert(Quad(
-		Term::Ground(21),
-		Term::Var(28),
-		Term::Ground(47),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(43),
-		Term::Ground(3),
-		Term::Ground(6),
-		None,
-	));
-	a.insert(Quad(
 		Term::Ground(46),
-		Term::Ground(28),
-		Term::Ground(3),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(46),
-		Term::Ground(42),
-		Term::Var(23),
-		None,
-	));
-	a.insert(Quad(Term::Var(4), Term::Ground(30), Term::Ground(17), None));
-	a.insert(Quad(
-		Term::Ground(29),
-		Term::Var(38),
-		Term::Ground(10),
-		None,
-	));
-	a.insert(Quad(
-		Term::Ground(11),
-		Term::Var(42),
-		Term::Ground(44),
-		None,
-	));
-	a.insert(Quad(
+		Term::Var(9),
 		Term::Ground(22),
-		Term::Ground(10),
-		Term::Ground(38),
-		None,
+		None
 	));
-	a.insert(Quad(Term::Ground(20), Term::Var(25), Term::Var(41), None));
-	a.insert(Quad(Term::Ground(39), Term::Var(3), Term::Var(15), None));
-	a.insert(Quad(Term::Var(38), Term::Ground(30), Term::Ground(3), None));
 	a.insert(Quad(
-		Term::Var(29),
-		Term::Ground(44),
-		Term::Ground(43),
-		None,
-	));
-	a.insert(Quad(Term::Var(3), Term::Var(10), Term::Var(1), None));
-	a.insert(Quad(Term::Var(39), Term::Ground(45), Term::Var(10), None));
-	a.insert(Quad(
-		Term::Ground(37),
-		Term::Ground(31),
-		Term::Ground(38),
-		None,
+		Term::Var(44),
+		Term::Ground(16),
+		Term::Var(22),
+		None
 	));
 	a.insert(Quad(
 		Term::Var(34),
-		Term::Ground(14),
-		Term::Ground(27),
-		None,
+		Term::Ground(42),
+		Term::Var(22),
+		None
 	));
-	a.insert(Quad(Term::Var(7), Term::Ground(38), Term::Var(5), None));
-	a.insert(Quad(Term::Var(23), Term::Var(48), Term::Var(39), None));
 	a.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(7),
-		Term::Ground(10),
-		None,
-	));
-	a.insert(Quad(Term::Var(1), Term::Var(22), Term::Var(32), None));
-	a.insert(Quad(Term::Ground(43), Term::Ground(7), Term::Var(46), None));
-	a.insert(Quad(Term::Ground(38), Term::Var(2), Term::Var(16), None));
-	a.insert(Quad(Term::Var(32), Term::Var(10), Term::Var(18), None));
-	a.insert(Quad(Term::Var(37), Term::Var(39), Term::Ground(48), None));
-	a.insert(Quad(Term::Var(13), Term::Var(37), Term::Ground(28), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(12), Term::Var(1), None));
-	a.insert(Quad(Term::Ground(26), Term::Var(9), Term::Var(12), None));
-	a.insert(Quad(
-		Term::Ground(28),
-		Term::Ground(8),
+		Term::Var(8),
 		Term::Ground(5),
-		None,
+		Term::Var(17),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(15),
-		Term::Ground(32),
-		Term::Var(39),
-		None,
-	));
-	a.insert(Quad(Term::Var(3), Term::Ground(11), Term::Var(41), None));
-	a.insert(Quad(
-		Term::Ground(30),
-		Term::Ground(28),
-		Term::Ground(41),
-		None,
+		Term::Var(28),
+		Term::Var(14),
+		Term::Ground(4),
+		None
 	));
 	a.insert(Quad(
-		Term::Var(47),
-		Term::Ground(32),
-		Term::Ground(12),
-		None,
+		Term::Ground(40),
+		Term::Var(40),
+		Term::Var(20),
+		None
 	));
-	a.insert(Quad(Term::Var(4), Term::Var(24), Term::Ground(45), None));
-	a.insert(Quad(Term::Var(29), Term::Ground(16), Term::Var(49), None));
-	a.insert(Quad(Term::Ground(12), Term::Var(15), Term::Ground(3), None));
+	a.insert(Quad(
+		Term::Ground(17),
+		Term::Var(37),
+		Term::Var(22),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(24),
+		Term::Ground(31),
+		Term::Ground(2),
+		None
+	));
 	a.insert(Quad(
 		Term::Var(16),
-		Term::Ground(21),
-		Term::Ground(34),
-		None,
-	));
-	a.insert(Quad(Term::Var(29), Term::Ground(14), Term::Var(36), None));
-	a.insert(Quad(Term::Ground(28), Term::Var(44), Term::Var(20), None));
-	a.insert(Quad(Term::Ground(8), Term::Ground(6), Term::Var(40), None));
-	a.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(18),
-		Term::Ground(31),
-		None,
-	));
-	a.insert(Quad(Term::Ground(34), Term::Var(15), Term::Var(13), None));
-	a.insert(Quad(Term::Ground(14), Term::Var(31), Term::Var(41), None));
-	a.insert(Quad(Term::Ground(17), Term::Var(29), Term::Var(2), None));
-	a.insert(Quad(Term::Ground(3), Term::Ground(44), Term::Var(33), None));
-	a.insert(Quad(Term::Ground(4), Term::Var(7), Term::Var(25), None));
-	a.insert(Quad(
-		Term::Var(10),
 		Term::Ground(33),
-		Term::Ground(38),
-		None,
+		Term::Ground(32),
+		None
 	));
-	a.insert(Quad(Term::Ground(20), Term::Ground(9), Term::Var(34), None));
-	a.insert(Quad(Term::Ground(1), Term::Ground(30), Term::Var(30), None));
-	a.insert(Quad(
-		Term::Ground(15),
-		Term::Ground(43),
-		Term::Ground(21),
-		None,
-	));
-	a.insert(Quad(Term::Var(11), Term::Var(18), Term::Ground(28), None));
-	a.insert(Quad(Term::Var(31), Term::Var(1), Term::Ground(2), None));
-	a.insert(Quad(Term::Var(47), Term::Var(24), Term::Var(20), None));
-	a.insert(Quad(Term::Var(16), Term::Var(26), Term::Var(38), None));
 	a.insert(Quad(
 		Term::Ground(42),
-		Term::Ground(39),
-		Term::Ground(22),
-		None,
-	));
-	a.insert(Quad(Term::Ground(38), Term::Var(49), Term::Var(11), None));
-	a.insert(Quad(Term::Var(35), Term::Ground(35), Term::Var(37), None));
-	a.insert(Quad(Term::Ground(2), Term::Ground(38), Term::Var(12), None));
-	a.insert(Quad(Term::Var(42), Term::Ground(42), Term::Ground(3), None));
-	a.insert(Quad(
-		Term::Ground(37),
-		Term::Ground(29),
-		Term::Ground(10),
-		None,
+		Term::Ground(15),
+		Term::Var(21),
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(23),
-		Term::Ground(16),
-		Term::Ground(3),
-		None,
+		Term::Ground(25),
+		Term::Var(20),
+		Term::Var(34),
+		None
 	));
-	a.insert(Quad(Term::Var(46), Term::Ground(36), Term::Var(18), None));
 	a.insert(Quad(
 		Term::Var(40),
-		Term::Ground(33),
-		Term::Ground(15),
-		None,
+		Term::Ground(7),
+		Term::Var(7),
+		None
 	));
-	a.insert(Quad(Term::Var(48), Term::Var(14), Term::Var(41), None));
+	a.insert(Quad(
+		Term::Ground(18),
+		Term::Ground(3),
+		Term::Var(25),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(2),
+		Term::Var(2),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(34),
+		Term::Ground(0),
+		Term::Var(40),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(17),
+		Term::Var(30),
+		Term::Var(20),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(18),
+		Term::Var(15),
+		Term::Ground(45),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(11),
+		Term::Ground(11),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(12),
+		Term::Ground(24),
+		Term::Ground(8),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(23),
+		Term::Ground(40),
+		Term::Var(21),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(41),
+		Term::Var(16),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(14),
+		Term::Var(37),
+		Term::Var(45),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(41),
+		Term::Var(12),
+		Term::Var(22),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(42),
+		Term::Ground(31),
+		Term::Var(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(35),
+		Term::Ground(5),
+		Term::Ground(18),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(6),
+		Term::Var(7),
+		Term::Ground(44),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(6),
+		Term::Ground(13),
+		Term::Var(18),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(39),
+		Term::Var(33),
+		Term::Ground(47),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(45),
+		Term::Var(34),
+		Term::Ground(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(23),
+		Term::Var(12),
+		Term::Ground(48),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(46),
+		Term::Ground(10),
+		Term::Ground(8),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(26),
+		Term::Var(8),
+		Term::Var(1),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(39),
+		Term::Var(30),
+		Term::Ground(32),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(29),
+		Term::Var(5),
+		Term::Var(27),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(35),
+		Term::Var(20),
+		Term::Ground(29),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(35),
+		Term::Var(3),
+		Term::Ground(19),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(15),
+		Term::Ground(1),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(7),
+		Term::Var(8),
+		Term::Var(6),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(32),
+		Term::Ground(5),
+		Term::Var(28),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(28),
+		Term::Ground(43),
+		Term::Ground(27),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(26),
+		Term::Ground(18),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(30),
+		Term::Var(40),
+		Term::Ground(38),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(4),
+		Term::Var(41),
+		Term::Ground(22),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(12),
+		Term::Ground(36),
+		Term::Ground(44),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(22),
+		Term::Ground(7),
+		Term::Ground(6),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(17),
+		Term::Var(21),
+		Term::Ground(15),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(19),
+		Term::Var(4),
+		Term::Var(0),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(20),
+		Term::Ground(32),
+		Term::Var(26),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(10),
+		Term::Ground(37),
+		Term::Ground(21),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(1),
+		Term::Var(13),
+		Term::Ground(30),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(4),
+		Term::Ground(9),
+		Term::Var(32),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(32),
+		Term::Ground(39),
+		Term::Var(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(5),
+		Term::Var(10),
+		Term::Ground(12),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(46),
+		Term::Var(28),
+		Term::Ground(18),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(28),
+		Term::Ground(48),
+		Term::Ground(2),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(40),
+		Term::Ground(39),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(32),
+		Term::Var(38),
+		Term::Var(43),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(0),
+		Term::Var(48),
+		Term::Ground(26),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(24),
+		Term::Var(0),
+		Term::Ground(39),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(7),
+		Term::Var(18),
+		Term::Ground(42),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(32),
+		Term::Var(16),
+		Term::Ground(8),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(29),
+		Term::Ground(45),
+		Term::Ground(25),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(42),
+		Term::Var(34),
+		Term::Ground(34),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(41),
+		Term::Ground(33),
+		Term::Var(34),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(44),
+		Term::Ground(8),
+		Term::Var(18),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(8),
+		Term::Var(49),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(11),
+		Term::Var(15),
+		Term::Var(41),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(21),
+		Term::Ground(47),
+		Term::Ground(36),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(13),
+		Term::Var(16),
+		Term::Var(20),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(34),
+		Term::Var(43),
+		Term::Var(28),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(42),
+		Term::Ground(31),
+		Term::Ground(12),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(24),
+		Term::Ground(3),
+		Term::Ground(35),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(37),
+		Term::Ground(27),
+		Term::Ground(4),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(23),
+		Term::Var(3),
+		Term::Ground(20),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(9),
+		Term::Var(10),
+		Term::Ground(13),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(20),
+		Term::Ground(39),
+		Term::Ground(15),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(11),
+		Term::Ground(11),
+		Term::Ground(29),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(14),
+		Term::Var(1),
+		Term::Var(47),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(31),
+		Term::Ground(32),
+		Term::Ground(19),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(21),
+		Term::Var(37),
+		Term::Var(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(39),
+		Term::Var(41),
+		Term::Ground(29),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(18),
+		Term::Var(0),
+		Term::Var(45),
+		None
+	));
 	a.insert(Quad(
 		Term::Var(33),
+		Term::Ground(18),
 		Term::Ground(26),
-		Term::Ground(46),
-		None,
+		None
 	));
 	a.insert(Quad(
-		Term::Ground(27),
-		Term::Var(18),
-		Term::Ground(43),
-		None,
+		Term::Ground(36),
+		Term::Ground(47),
+		Term::Var(48),
+		None
 	));
-	a.insert(Quad(Term::Var(8), Term::Var(24), Term::Var(48), None));
-	a.insert(Quad(Term::Ground(15), Term::Var(6), Term::Ground(29), None));
 	a.insert(Quad(
-		Term::Ground(21),
-		Term::Ground(27),
-		Term::Ground(35),
-		None,
+		Term::Ground(12),
+		Term::Var(0),
+		Term::Ground(31),
+		None
 	));
-	a.insert(Quad(Term::Var(18), Term::Ground(5), Term::Var(1), None));
-	a.insert(Quad(Term::Var(14), Term::Var(16), Term::Var(49), None));
-	a.insert(Quad(Term::Ground(30), Term::Ground(36), Term::Var(0), None));
 	a.insert(Quad(
-		Term::Ground(44),
-		Term::Ground(27),
-		Term::Ground(38),
-		None,
+		Term::Ground(19),
+		Term::Ground(23),
+		Term::Ground(25),
+		None
 	));
-	a.insert(Quad(Term::Var(5), Term::Ground(12), Term::Var(21), None));
-	a.insert(Quad(Term::Var(20), Term::Ground(18), Term::Var(34), None));
-	a.insert(Quad(Term::Var(7), Term::Ground(41), Term::Ground(15), None));
-	a.insert(Quad(Term::Var(19), Term::Var(4), Term::Ground(10), None));
-	a.insert(Quad(Term::Var(46), Term::Ground(4), Term::Var(10), None));
-	a.insert(Quad(Term::Ground(19), Term::Ground(27), Term::Var(6), None));
-	a.insert(Quad(Term::Var(41), Term::Var(33), Term::Var(5), None));
-	a.insert(Quad(Term::Ground(16), Term::Var(32), Term::Var(30), None));
-	a.insert(Quad(Term::Ground(37), Term::Var(34), Term::Ground(3), None));
-	a.insert(Quad(Term::Var(25), Term::Var(15), Term::Ground(30), None));
-	a.insert(Quad(Term::Ground(37), Term::Ground(14), Term::Var(8), None));
 	a.insert(Quad(
-		Term::Ground(13),
+		Term::Var(43),
 		Term::Var(19),
-		Term::Ground(30),
-		None,
+		Term::Ground(7),
+		None
 	));
-	a.insert(Quad(Term::Var(23), Term::Ground(4), Term::Ground(45), None));
-	a.insert(Quad(Term::Var(44), Term::Ground(12), Term::Var(0), None));
-	a.insert(Quad(Term::Var(35), Term::Var(1), Term::Ground(26), None));
-	a.insert(Quad(Term::Var(12), Term::Var(42), Term::Var(33), None));
+	a.insert(Quad(
+		Term::Ground(6),
+		Term::Var(9),
+		Term::Var(26),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(18),
+		Term::Ground(40),
+		Term::Ground(7),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(14),
+		Term::Var(49),
+		Term::Ground(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(10),
+		Term::Var(34),
+		Term::Ground(33),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(23),
+		Term::Var(13),
+		Term::Var(3),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(36),
+		Term::Var(20),
+		Term::Var(5),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(48),
+		Term::Ground(8),
+		Term::Var(37),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(12),
+		Term::Ground(21),
+		Term::Var(16),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(45),
+		Term::Var(10),
+		Term::Var(28),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(11),
+		Term::Var(19),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Var(17),
+		Term::Ground(47),
+		Term::Ground(22),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(47),
+		Term::Var(47),
+		Term::Ground(10),
+		None
+	));
+	a.insert(Quad(
+		Term::Ground(37),
+		Term::Var(24),
+		Term::Var(25),
+		None
+	));
 	let mut b = BTreeDataset::new();
 	b.insert(Quad(
-		Term::Ground(18),
-		Term::Ground(13),
-		Term::Ground(42),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(9),
-		Term::Var(1001),
-		Term::Var(1029),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1018),
-		Term::Ground(14),
-		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Var(1004),
-		Term::Var(1036),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1000),
-		Term::Ground(29),
-		Term::Var(1028),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(13),
-		Term::Var(1030),
-		Term::Ground(15),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1035),
-		Term::Ground(38),
-		Term::Var(1028),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(32),
-		Term::Ground(21),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1007),
-		Term::Var(1049),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(31),
-		Term::Var(1044),
-		Term::Var(1023),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
-		Term::Var(1027),
-		Term::Ground(20),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1048),
-		Term::Ground(2),
-		Term::Ground(21),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(21),
-		Term::Var(1028),
-		Term::Ground(47),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(43),
-		Term::Ground(3),
-		Term::Ground(6),
-		None,
-	));
-	b.insert(Quad(
 		Term::Ground(46),
-		Term::Ground(28),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(46),
-		Term::Ground(42),
-		Term::Var(1023),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1004),
-		Term::Ground(30),
-		Term::Ground(17),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(29),
-		Term::Var(1038),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(11),
-		Term::Var(1042),
-		Term::Ground(44),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(22),
-		Term::Ground(10),
-		Term::Ground(38),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(20),
-		Term::Var(1025),
-		Term::Var(1041),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(39),
-		Term::Var(1003),
-		Term::Var(1015),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1038),
-		Term::Ground(30),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1029),
-		Term::Ground(44),
-		Term::Ground(43),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1003),
-		Term::Var(1010),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1039),
-		Term::Ground(45),
-		Term::Var(1010),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(37),
-		Term::Ground(31),
-		Term::Ground(38),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1034),
-		Term::Ground(14),
-		Term::Ground(27),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1007),
-		Term::Ground(38),
-		Term::Var(1005),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1023),
-		Term::Var(1048),
-		Term::Var(1039),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(7),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1001),
-		Term::Var(1022),
-		Term::Var(1032),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(43),
-		Term::Ground(7),
-		Term::Var(1046),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(38),
-		Term::Var(1002),
-		Term::Var(1016),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1032),
-		Term::Var(1010),
-		Term::Var(1018),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1037),
-		Term::Var(1039),
-		Term::Ground(48),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1013),
-		Term::Var(1037),
-		Term::Ground(28),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(12),
-		Term::Var(1001),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(26),
 		Term::Var(1009),
-		Term::Var(1012),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(28),
-		Term::Ground(8),
-		Term::Ground(5),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(15),
-		Term::Ground(32),
-		Term::Var(1039),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1003),
-		Term::Ground(11),
-		Term::Var(1041),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(30),
-		Term::Ground(28),
-		Term::Ground(41),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1047),
-		Term::Ground(32),
-		Term::Ground(12),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1004),
-		Term::Var(1024),
-		Term::Ground(45),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1029),
-		Term::Ground(16),
-		Term::Var(1049),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(12),
-		Term::Var(1015),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1016),
-		Term::Ground(21),
-		Term::Ground(34),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1029),
-		Term::Ground(14),
-		Term::Var(1036),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(28),
-		Term::Var(1044),
-		Term::Var(1020),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(8),
-		Term::Ground(6),
-		Term::Var(1040),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(5),
-		Term::Ground(18),
-		Term::Ground(31),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(34),
-		Term::Var(1015),
-		Term::Var(1013),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(14),
-		Term::Var(1031),
-		Term::Var(1041),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(17),
-		Term::Var(1029),
-		Term::Var(1002),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(3),
-		Term::Ground(44),
-		Term::Var(1033),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(4),
-		Term::Var(1007),
-		Term::Var(1025),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1010),
-		Term::Ground(33),
-		Term::Ground(38),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(20),
-		Term::Ground(9),
-		Term::Var(1034),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(1),
-		Term::Ground(30),
-		Term::Var(1030),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(15),
-		Term::Ground(43),
-		Term::Ground(21),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1011),
-		Term::Var(1018),
-		Term::Ground(28),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1031),
-		Term::Var(1001),
-		Term::Ground(2),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1047),
-		Term::Var(1024),
-		Term::Var(1020),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1016),
-		Term::Var(1026),
-		Term::Var(1038),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(42),
-		Term::Ground(39),
 		Term::Ground(22),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(38),
-		Term::Var(1049),
-		Term::Var(1011),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1035),
-		Term::Ground(35),
-		Term::Var(1037),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(2),
-		Term::Ground(38),
-		Term::Var(1012),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1042),
-		Term::Ground(42),
-		Term::Ground(3),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(37),
-		Term::Ground(29),
-		Term::Ground(10),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(23),
+		Term::Var(1044),
 		Term::Ground(16),
-		Term::Ground(3),
-		None,
+		Term::Var(1022),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1046),
-		Term::Ground(36),
-		Term::Var(1018),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1040),
-		Term::Ground(33),
-		Term::Ground(15),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1048),
-		Term::Var(1014),
-		Term::Var(1041),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1033),
-		Term::Ground(26),
-		Term::Ground(46),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(27),
-		Term::Var(1018),
-		Term::Ground(43),
-		None,
+		Term::Var(1034),
+		Term::Ground(42),
+		Term::Var(1022),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1008),
-		Term::Var(1024),
-		Term::Var(1048),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(15),
-		Term::Var(1006),
-		Term::Ground(29),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(21),
-		Term::Ground(27),
-		Term::Ground(35),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1018),
 		Term::Ground(5),
-		Term::Var(1001),
-		None,
+		Term::Var(1017),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1028),
+		Term::Var(1014),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(40),
+		Term::Var(1040),
+		Term::Var(1020),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(17),
+		Term::Var(1037),
+		Term::Var(1022),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1024),
+		Term::Ground(31),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1016),
+		Term::Ground(33),
+		Term::Ground(32),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(42),
+		Term::Ground(15),
+		Term::Var(1021),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(25),
+		Term::Var(1020),
+		Term::Var(1034),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1040),
+		Term::Ground(7),
+		Term::Var(1007),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(18),
+		Term::Ground(3),
+		Term::Var(1025),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1002),
+		Term::Var(1002),
+		Term::Ground(10),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1034),
+		Term::Ground(0),
+		Term::Var(1040),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(17),
+		Term::Var(1030),
+		Term::Var(1020),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(18),
+		Term::Var(1015),
+		Term::Ground(45),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Ground(11),
+		Term::Ground(11),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(12),
+		Term::Ground(24),
+		Term::Ground(8),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(23),
+		Term::Ground(40),
+		Term::Var(1021),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(8),
+		Term::Ground(41),
+		Term::Var(1016),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1014),
-		Term::Var(1016),
-		Term::Var(1049),
-		None,
+		Term::Var(1037),
+		Term::Var(1045),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(41),
+		Term::Var(1012),
+		Term::Var(1022),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1042),
+		Term::Ground(31),
+		Term::Var(1003),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1035),
+		Term::Ground(5),
+		Term::Ground(18),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1006),
+		Term::Var(1007),
+		Term::Ground(44),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1006),
+		Term::Ground(13),
+		Term::Var(1018),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1039),
+		Term::Var(1033),
+		Term::Ground(47),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(45),
+		Term::Var(1034),
+		Term::Ground(0),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(23),
+		Term::Var(1012),
+		Term::Ground(48),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(46),
+		Term::Ground(10),
+		Term::Ground(8),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(26),
+		Term::Var(1008),
+		Term::Var(1001),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1039),
+		Term::Var(1030),
+		Term::Ground(32),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1029),
+		Term::Var(1005),
+		Term::Var(1027),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(35),
+		Term::Var(1020),
+		Term::Ground(29),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(35),
+		Term::Var(1003),
+		Term::Ground(19),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(15),
+		Term::Ground(1),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(7),
+		Term::Var(1008),
+		Term::Var(1006),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(32),
+		Term::Ground(5),
+		Term::Var(1028),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(28),
+		Term::Ground(43),
+		Term::Ground(27),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1026),
+		Term::Ground(18),
+		Term::Ground(13),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(30),
-		Term::Ground(36),
-		Term::Var(1000),
-		None,
-	));
-	b.insert(Quad(
-		Term::Ground(44),
-		Term::Ground(27),
+		Term::Var(1040),
 		Term::Ground(38),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1005),
-		Term::Ground(12),
-		Term::Var(1021),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1020),
-		Term::Ground(18),
-		Term::Var(1034),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1007),
-		Term::Ground(41),
-		Term::Ground(15),
-		None,
-	));
-	b.insert(Quad(
-		Term::Var(1019),
 		Term::Var(1004),
-		Term::Ground(10),
-		None,
+		Term::Var(1041),
+		Term::Ground(22),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1046),
-		Term::Ground(4),
-		Term::Var(1010),
-		None,
+		Term::Ground(12),
+		Term::Ground(36),
+		Term::Ground(44),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1022),
+		Term::Ground(7),
+		Term::Ground(6),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1017),
+		Term::Var(1021),
+		Term::Ground(15),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(19),
-		Term::Ground(27),
-		Term::Var(1006),
-		None,
+		Term::Var(1004),
+		Term::Var(1000),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1041),
-		Term::Var(1033),
-		Term::Var(1005),
-		None,
+		Term::Var(1020),
+		Term::Ground(32),
+		Term::Var(1026),
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(16),
-		Term::Var(1032),
-		Term::Var(1030),
-		None,
-	));
-	b.insert(Quad(
+		Term::Ground(10),
 		Term::Ground(37),
-		Term::Var(1034),
-		Term::Ground(3),
-		None,
+		Term::Ground(21),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1025),
-		Term::Var(1015),
+		Term::Var(1001),
+		Term::Var(1013),
 		Term::Ground(30),
-		None,
+		None
 	));
 	b.insert(Quad(
-		Term::Ground(37),
-		Term::Ground(14),
-		Term::Var(1008),
-		None,
+		Term::Var(1004),
+		Term::Ground(9),
+		Term::Var(1032),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(32),
+		Term::Ground(39),
+		Term::Var(1002),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1005),
+		Term::Var(1010),
+		Term::Ground(12),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1046),
+		Term::Var(1028),
+		Term::Ground(18),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(28),
+		Term::Ground(48),
+		Term::Ground(2),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1040),
+		Term::Ground(39),
+		Term::Ground(13),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(32),
+		Term::Var(1038),
+		Term::Var(1043),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(0),
+		Term::Var(1048),
+		Term::Ground(26),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(24),
+		Term::Var(1000),
+		Term::Ground(39),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1007),
+		Term::Var(1018),
+		Term::Ground(42),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1032),
+		Term::Var(1016),
+		Term::Ground(8),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(29),
+		Term::Ground(45),
+		Term::Ground(25),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(42),
+		Term::Var(1034),
+		Term::Ground(34),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(41),
+		Term::Ground(33),
+		Term::Var(1034),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(44),
+		Term::Ground(8),
+		Term::Var(1018),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(1),
+		Term::Ground(8),
+		Term::Var(1049),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(11),
+		Term::Var(1015),
+		Term::Var(1041),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(21),
+		Term::Ground(47),
+		Term::Ground(36),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(13),
+		Term::Var(1016),
+		Term::Var(1020),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1034),
+		Term::Var(1043),
+		Term::Var(1028),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1042),
+		Term::Ground(31),
+		Term::Ground(12),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1024),
+		Term::Ground(3),
+		Term::Ground(35),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1037),
+		Term::Ground(27),
+		Term::Ground(4),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(23),
+		Term::Var(1003),
+		Term::Ground(20),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1009),
+		Term::Var(1010),
+		Term::Ground(13),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1020),
+		Term::Ground(39),
+		Term::Ground(15),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1011),
+		Term::Ground(11),
+		Term::Ground(29),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1014),
+		Term::Var(1001),
+		Term::Var(1047),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1031),
+		Term::Ground(32),
+		Term::Ground(19),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1021),
+		Term::Var(1037),
+		Term::Var(1003),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1039),
+		Term::Var(1041),
+		Term::Ground(29),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(18),
+		Term::Var(1000),
+		Term::Var(1045),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1033),
+		Term::Ground(18),
+		Term::Ground(26),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(36),
+		Term::Ground(47),
+		Term::Var(1048),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(12),
+		Term::Var(1000),
+		Term::Ground(31),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(19),
+		Term::Ground(23),
+		Term::Ground(25),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1043),
 		Term::Var(1019),
-		Term::Ground(30),
-		None,
+		Term::Ground(7),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(6),
+		Term::Var(1009),
+		Term::Var(1026),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(18),
+		Term::Ground(40),
+		Term::Ground(7),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(14),
+		Term::Var(1049),
+		Term::Ground(3),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1010),
+		Term::Var(1034),
+		Term::Ground(33),
+		None
 	));
 	b.insert(Quad(
 		Term::Var(1023),
-		Term::Ground(4),
-		Term::Ground(45),
-		None,
+		Term::Var(1013),
+		Term::Var(1003),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1044),
+		Term::Ground(36),
+		Term::Var(1020),
+		Term::Var(1005),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1048),
+		Term::Ground(8),
+		Term::Var(1037),
+		None
+	));
+	b.insert(Quad(
 		Term::Ground(12),
-		Term::Var(1000),
-		None,
+		Term::Ground(21),
+		Term::Var(1016),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1035),
-		Term::Var(1001),
-		Term::Ground(26),
-		None,
+		Term::Ground(45),
+		Term::Var(1010),
+		Term::Var(1028),
+		None
 	));
 	b.insert(Quad(
-		Term::Var(1012),
-		Term::Var(1042),
-		Term::Var(1033),
-		None,
+		Term::Ground(11),
+		Term::Var(1019),
+		Term::Ground(10),
+		None
+	));
+	b.insert(Quad(
+		Term::Var(1017),
+		Term::Ground(47),
+		Term::Ground(22),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(47),
+		Term::Var(1047),
+		Term::Ground(10),
+		None
+	));
+	b.insert(Quad(
+		Term::Ground(37),
+		Term::Var(1024),
+		Term::Var(1025),
+		None
 	));
 	b.insert(Quad(
 		Term::Ground(9999),
 		Term::Ground(9999),
 		Term::Ground(9999),
-		None,
+		None
 	));
 	test(a, b)
 }

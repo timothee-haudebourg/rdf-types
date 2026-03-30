@@ -1,9 +1,9 @@
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
-use educe::Educe;
+use maybe_owned::MaybeOwned;
 
 use crate::{
-	dataset::TraversableDataset,
+	dataset::FiniteDataset,
 	domain::{
 		sealed::{MaybeVariable, SealedDomain},
 		EqDomain, VariableDomain,
@@ -18,9 +18,9 @@ use crate::{
 /// This is equivalent to `find_bijection_with(a, b).is_some()`.
 pub fn are_isomorphic<R, A, B>(a: &A, b: &B) -> bool
 where
-	R: Ord + MaybeVariable,
-	A: TraversableDataset<Resource = R>,
-	B: TraversableDataset<Resource = R>,
+	R: Clone + Ord + MaybeVariable,
+	A: FiniteDataset<Resource = R>,
+	B: FiniteDataset<Resource = R>,
 {
 	are_isomorphic_with(&SealedDomain::new(), a, b)
 }
@@ -33,9 +33,9 @@ where
 pub fn are_isomorphic_with<I, A, B>(domain: &I, a: &A, b: &B) -> bool
 where
 	I: EqDomain + VariableDomain,
-	I::Resource: Ord,
-	A: TraversableDataset<Resource = I::Resource>,
-	B: TraversableDataset<Resource = I::Resource>,
+	I::Resource: Clone + Ord,
+	A: FiniteDataset<Resource = I::Resource>,
+	B: FiniteDataset<Resource = I::Resource>,
 {
 	find_bijection_with(domain, a, b).is_some()
 }
@@ -45,9 +45,9 @@ where
 /// there is an isomorphism between `a` and `b`.
 pub fn find_bijection<'a, 'b, R, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b, R>>
 where
-	R: Ord + MaybeVariable,
-	A: TraversableDataset<Resource = R>,
-	B: TraversableDataset<Resource = R>,
+	R: Clone + Ord + MaybeVariable,
+	A: FiniteDataset<Resource = R>,
+	B: FiniteDataset<Resource = R>,
 {
 	find_bijection_with(&SealedDomain::new(), a, b)
 }
@@ -62,16 +62,20 @@ pub fn find_bijection_with<'a, 'b, I, A, B>(
 ) -> Option<BTreeBijection<'a, 'b, I::Resource>>
 where
 	I: EqDomain + VariableDomain,
-	I::Resource: Ord,
-	A: TraversableDataset<Resource = I::Resource>,
-	B: TraversableDataset<Resource = I::Resource>,
+	I::Resource: Clone + Ord,
+	A: FiniteDataset<Resource = I::Resource>,
+	B: FiniteDataset<Resource = I::Resource>,
 {
 	if a.quads_count() != b.quads_count() {
 		return None;
 	}
 
-	let a_blank_count = a.quads().fold(0, |c, q| c + blank_count(interpretation, q));
-	let b_blank_count = b.quads().fold(0, |c, q| c + blank_count(interpretation, q));
+	let a_blank_count = a
+		.quads()
+		.fold(0, |c, q| c + blank_count(interpretation, q.as_deref()));
+	let b_blank_count = b
+		.quads()
+		.fold(0, |c, q| c + blank_count(interpretation, q.as_deref()));
 
 	if a_blank_count != b_blank_count {
 		return None;
@@ -100,7 +104,10 @@ where
 	}
 
 	// Step 3: find candidates for each blank id.
-	let mut candidates: BTreeMap<&'a I::Resource, BTreeSet<&'b I::Resource>> = BTreeMap::new();
+	let mut candidates: BTreeMap<
+		MaybeOwned<'a, I::Resource>,
+		BTreeSet<MaybeOwned<'b, I::Resource>>,
+	> = BTreeMap::new();
 	for (len, a_group) in a_groups {
 		let b_group = b_groups.get(&len).unwrap();
 
@@ -108,7 +115,7 @@ where
 			let mut a_blank_id_candidates = BTreeSet::new();
 			for (b_blank_id, b_sig) in b_group {
 				if a_sig.matches(interpretation, b_sig) {
-					a_blank_id_candidates.insert(*b_blank_id);
+					a_blank_id_candidates.insert(b_blank_id.clone());
 				}
 			}
 
@@ -182,28 +189,28 @@ where
 
 fn collect_signatures<'d, I, D>(
 	interpretation: &I,
-	map: &mut BTreeMap<&'d I::Resource, BlankSignature<'d, I::Resource>>,
+	map: &mut BTreeMap<MaybeOwned<'d, I::Resource>, BlankSignature<'d, I::Resource>>,
 	ds: &'d D,
 ) where
 	I: EqDomain + VariableDomain,
-	I::Resource: Ord,
-	D: TraversableDataset<Resource = I::Resource>,
+	I::Resource: Clone + Ord,
+	D: FiniteDataset<Resource = I::Resource>,
 {
 	for quad in ds.quads() {
-		if interpretation.is_variable(quad.0) {
-			map.entry(quad.0).or_default().insert(quad);
+		if interpretation.is_variable(&*quad.0) {
+			map.entry(quad.0.clone()).or_default().insert(quad.clone());
 		}
 
-		if interpretation.is_variable(quad.1) {
-			map.entry(quad.1).or_default().insert(quad);
+		if interpretation.is_variable(&*quad.1) {
+			map.entry(quad.1.clone()).or_default().insert(quad.clone());
 		}
 
-		if interpretation.is_variable(quad.2) {
-			map.entry(quad.2).or_default().insert(quad);
+		if interpretation.is_variable(&*quad.2) {
+			map.entry(quad.2.clone()).or_default().insert(quad.clone());
 		}
 
-		if let Some(g) = quad.3 {
-			if interpretation.is_variable(g) {
+		if let Some(g) = quad.3.clone() {
+			if interpretation.is_variable(&*g) {
 				map.entry(g).or_default().insert(quad);
 			}
 		}
@@ -215,22 +222,22 @@ fn collect_signatures<'d, I, D>(
 }
 
 fn split_by_size<'s, 'd, R>(
-	blanks: &'s BTreeMap<&'d R, BlankSignature<'d, R>>,
-) -> BTreeMap<usize, BTreeMap<&'d R, &'s BlankSignature<'d, R>>>
+	blanks: &'s BTreeMap<MaybeOwned<'d, R>, BlankSignature<'d, R>>,
+) -> BTreeMap<usize, BTreeMap<MaybeOwned<'d, R>, &'s BlankSignature<'d, R>>>
 where
-	R: Ord,
+	R: Clone + Ord,
 {
 	let mut result = BTreeMap::new();
 
-	for (&blank_id, sig) in blanks {
+	for (blank_id, sig) in blanks {
 		match result.entry(sig.len()) {
 			Entry::Vacant(entry) => {
 				let mut map = BTreeMap::new();
-				map.insert(blank_id, sig);
+				map.insert(blank_id.clone(), sig);
 				entry.insert(map);
 			}
 			Entry::Occupied(mut entry) => {
-				entry.get_mut().insert(blank_id, sig);
+				entry.get_mut().insert(blank_id.clone(), sig);
 			}
 		}
 	}
@@ -240,11 +247,10 @@ where
 
 /// Blank node identifier bijection
 /// between two (isomorphic) datasets.
-#[derive(Educe)]
-#[educe(Clone)]
+#[derive(Clone)]
 pub struct BTreeBijection<'a, 'b, R> {
-	pub forward: BTreeMap<&'a R, &'b R>,
-	pub backward: BTreeMap<&'b R, &'a R>,
+	pub forward: BTreeMap<MaybeOwned<'a, R>, MaybeOwned<'b, R>>,
+	pub backward: BTreeMap<MaybeOwned<'b, R>, MaybeOwned<'a, R>>,
 }
 
 impl<R> BTreeBijection<'_, '_, R> {
@@ -256,13 +262,13 @@ impl<R> BTreeBijection<'_, '_, R> {
 	}
 }
 
-impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
-	fn insert(&mut self, a: &'a R, b: &'b R) {
-		self.forward.insert(a, b);
+impl<'a, 'b, R: Clone + Ord> BTreeBijection<'a, 'b, R> {
+	fn insert(&mut self, a: MaybeOwned<'a, R>, b: MaybeOwned<'b, R>) {
+		self.forward.insert(a.clone(), b.clone());
 		self.backward.insert(b, a);
 	}
 
-	fn resource_matches_with<I>(&self, interpretation: &I, a: &'a R, b: &'b R) -> bool
+	fn resource_matches_with<I>(&self, interpretation: &I, a: &R, b: &R) -> bool
 	where
 		I: EqDomain<Resource = R>,
 	{
@@ -271,15 +277,15 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		}
 
 		match self.forward.get(a) {
-			Some(&c) => c == b,
+			Some(c) => **c == *b,
 			None => match self.backward.get(b) {
-				Some(&c) => a == c,
+				Some(c) => *a == **c,
 				None => true,
 			},
 		}
 	}
 
-	fn quad_matches_with<I>(&self, interpretation: &I, a: Quad<&'a R>, b: Quad<&'b R>) -> bool
+	fn quad_matches_with<I>(&self, interpretation: &I, a: Quad<&R>, b: Quad<&R>) -> bool
 	where
 		I: EqDomain<Resource = R>,
 	{
@@ -303,19 +309,17 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 		I: EqDomain<Resource = R>,
 	{
 		if a.len() == b.len() {
-			let mut other: Vec<_> = b.0.iter().map(|q| Some(*q)).collect();
+			let mut other: Vec<_> = b.0.iter().cloned().map(Some).collect();
 			'next_quad: for quad in a.0.iter() {
 				for other_quad in &mut other {
 					if let Some(oq) = other_quad {
-						if self.quad_matches_with(interpretation, *quad, *oq) {
-							// eprintln!("matching {} with {}", quad, oq);
+						if self.quad_matches_with(interpretation, quad.as_deref(), oq.as_deref()) {
 							other_quad.take();
 							continue 'next_quad;
 						}
 					}
 				}
 
-				// eprintln!("could not match {} with anything", quad);
 				return false;
 			}
 
@@ -328,9 +332,12 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 	fn find_from_candidates<I>(
 		self,
 		interpretation: &I,
-		mut candidates: std::collections::btree_map::Iter<&'a R, BTreeSet<&'b R>>,
-		a: &BTreeMap<&'a R, BlankSignature<'a, R>>,
-		b: &BTreeMap<&'b R, BlankSignature<'b, R>>,
+		mut candidates: std::collections::btree_map::Iter<
+			MaybeOwned<'a, R>,
+			BTreeSet<MaybeOwned<'b, R>>,
+		>,
+		a: &BTreeMap<MaybeOwned<'a, R>, BlankSignature<'a, R>>,
+		b: &BTreeMap<MaybeOwned<'b, R>, BlankSignature<'b, R>>,
 	) -> Option<Self>
 	where
 		I: EqDomain<Resource = R>,
@@ -339,16 +346,13 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 			Some((a_blank_id, b_candidates)) => {
 				for b_candidate in b_candidates {
 					if !self.backward.contains_key(b_candidate) {
-						// eprintln!("analyzing candidate {} for {}", b_candidate, a_blank_id);
-
 						let mut new_sigma = self.clone();
-						new_sigma.insert(a_blank_id, b_candidate);
+						new_sigma.insert(a_blank_id.clone(), b_candidate.clone());
 						if new_sigma.signature_matches_with(
 							interpretation,
 							a.get(a_blank_id).unwrap(),
 							b.get(b_candidate).unwrap(),
 						) {
-							// eprintln!("this is a valid candidate. continuing.");
 							if let Some(final_sigma) = new_sigma.find_from_candidates(
 								interpretation,
 								candidates.clone(),
@@ -357,12 +361,10 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 							) {
 								return Some(final_sigma);
 							}
-							// eprintln!("it didn't work out in the end. next candidate for {}.", a_blank_id);
 						}
 					}
 				}
 
-				// eprintln!("no valid candidate for {}", a_blank_id);
 				None
 			}
 			None => Some(self),
@@ -372,7 +374,7 @@ impl<'a, 'b, R: Ord> BTreeBijection<'a, 'b, R> {
 
 /// Signature of a blank node identifier.
 #[allow(clippy::type_complexity)]
-struct BlankSignature<'a, R>(Vec<Quad<&'a R>>);
+struct BlankSignature<'a, R>(Vec<Quad<MaybeOwned<'a, R>>>);
 
 impl<R> Default for BlankSignature<'_, R> {
 	fn default() -> Self {
@@ -381,7 +383,7 @@ impl<R> Default for BlankSignature<'_, R> {
 }
 
 impl<'a, R> BlankSignature<'a, R> {
-	fn insert(&mut self, quad: Quad<&'a R>) {
+	fn insert(&mut self, quad: Quad<MaybeOwned<'a, R>>) {
 		self.0.push(quad)
 	}
 
@@ -392,13 +394,14 @@ impl<'a, R> BlankSignature<'a, R> {
 	fn matches<I>(&self, interpretation: &I, other: &BlankSignature<R>) -> bool
 	where
 		I: EqDomain<Resource = R> + VariableDomain,
+		R: Clone,
 	{
 		if self.len() == other.len() {
-			let mut other: Vec<_> = other.0.iter().map(|q| Some(*q)).collect();
+			let mut other: Vec<_> = other.0.iter().cloned().map(Some).collect();
 			'next_quad: for quad in &self.0 {
 				for other_quad in &mut other {
 					if let Some(oq) = other_quad {
-						if quad_matches(interpretation, *quad, *oq) {
+						if quad_matches(interpretation, quad.as_deref(), oq.as_deref()) {
 							other_quad.take();
 							continue 'next_quad;
 						}

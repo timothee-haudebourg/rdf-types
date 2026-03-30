@@ -2217,3 +2217,175 @@ impl<T> GivenSubjectGivenPredicateGivenObject<T> {
 		}
 	}
 }
+
+// --- as_deref impls ---
+
+impl<T: std::ops::Deref> CanonicalQuadPattern<T> {
+	pub fn as_deref(&self) -> CanonicalQuadPattern<&T::Target> {
+		match self {
+			Self::AnySubject(p) => CanonicalQuadPattern::AnySubject(p.as_deref()),
+			Self::GivenSubject(s, p) => CanonicalQuadPattern::GivenSubject(&**s, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubject<T> {
+	pub fn as_deref(&self) -> AnySubject<&T::Target> {
+		match self {
+			Self::AnyPredicate(p) => AnySubject::AnyPredicate(p.as_deref()),
+			Self::SameAsSubject(p) => AnySubject::SameAsSubject(p.as_deref()),
+			Self::GivenPredicate(t, p) => AnySubject::GivenPredicate(&**t, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubjectAnyPredicate<T> {
+	pub fn as_deref(&self) -> AnySubjectAnyPredicate<&T::Target> {
+		match self {
+			Self::AnyObject(p) => AnySubjectAnyPredicate::AnyObject(p.as_deref()),
+			Self::SameAsSubject(p) => AnySubjectAnyPredicate::SameAsSubject(p.as_deref()),
+			Self::SameAsPredicate(p) => AnySubjectAnyPredicate::SameAsPredicate(p.as_deref()),
+			Self::GivenObject(t, p) => AnySubjectAnyPredicate::GivenObject(&**t, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubjectGivenPredicate<T> {
+	pub fn as_deref(&self) -> AnySubjectGivenPredicate<&T::Target> {
+		match self {
+			Self::AnyObject(p) => AnySubjectGivenPredicate::AnyObject(p.as_deref()),
+			Self::SameAsSubject(p) => AnySubjectGivenPredicate::SameAsSubject(p.as_deref()),
+			Self::GivenObject(t, p) => AnySubjectGivenPredicate::GivenObject(&**t, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubject<T> {
+	pub fn as_deref(&self) -> GivenSubject<&T::Target> {
+		match self {
+			Self::AnyPredicate(p) => GivenSubject::AnyPredicate(p.as_deref()),
+			Self::GivenPredicate(t, p) => GivenSubject::GivenPredicate(&**t, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectAnyPredicate<T> {
+	pub fn as_deref(&self) -> GivenSubjectAnyPredicate<&T::Target> {
+		match self {
+			Self::AnyObject(p) => GivenSubjectAnyPredicate::AnyObject(p.as_deref()),
+			Self::SameAsPredicate(p) => GivenSubjectAnyPredicate::SameAsPredicate(p.as_deref()),
+			Self::GivenObject(t, p) => GivenSubjectAnyPredicate::GivenObject(&**t, p.as_deref()),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectGivenPredicate<T> {
+	pub fn as_deref(&self) -> GivenSubjectGivenPredicate<&T::Target> {
+		match self {
+			Self::AnyObject(p) => GivenSubjectGivenPredicate::AnyObject(p.as_deref()),
+			Self::GivenObject(t, p) => GivenSubjectGivenPredicate::GivenObject(&**t, p.as_deref()),
+		}
+	}
+}
+
+fn option_as_deref<T: std::ops::Deref>(o: &Option<T>) -> Option<&T::Target> {
+	o.as_ref().map(|t| &**t)
+}
+
+impl<T: std::ops::Deref> AnySubjectAnyPredicateAnyObject<T> {
+	pub fn as_deref(&self) -> AnySubjectAnyPredicateAnyObject<&T::Target> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateAnyObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => AnySubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectAnyPredicateAnyObject::GivenGraph(option_as_deref(g)),
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectAnyPredicateAnyObject<T> {
+	pub fn as_deref(&self) -> GivenSubjectAnyPredicateAnyObject<&T::Target> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => GivenSubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => {
+				GivenSubjectAnyPredicateAnyObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubjectGivenPredicateAnyObject<T> {
+	pub fn as_deref(&self) -> AnySubjectGivenPredicateAnyObject<&T::Target> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateAnyObject::SameAsSubject,
+			Self::SameAsObject => AnySubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => {
+				AnySubjectGivenPredicateAnyObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubjectAnyPredicateGivenObject<T> {
+	pub fn as_deref(&self) -> AnySubjectAnyPredicateGivenObject<&T::Target> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateGivenObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => {
+				AnySubjectAnyPredicateGivenObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> AnySubjectGivenPredicateGivenObject<T> {
+	pub fn as_deref(&self) -> AnySubjectGivenPredicateGivenObject<&T::Target> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			Self::GivenGraph(g) => {
+				AnySubjectGivenPredicateGivenObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectAnyPredicateGivenObject<T> {
+	pub fn as_deref(&self) -> GivenSubjectAnyPredicateGivenObject<&T::Target> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => {
+				GivenSubjectAnyPredicateGivenObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectGivenPredicateAnyObject<T> {
+	pub fn as_deref(&self) -> GivenSubjectGivenPredicateAnyObject<&T::Target> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsObject => GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => {
+				GivenSubjectGivenPredicateAnyObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}
+
+impl<T: std::ops::Deref> GivenSubjectGivenPredicateGivenObject<T> {
+	pub fn as_deref(&self) -> GivenSubjectGivenPredicateGivenObject<&T::Target> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::GivenGraph(g) => {
+				GivenSubjectGivenPredicateGivenObject::GivenGraph(option_as_deref(g))
+			}
+		}
+	}
+}

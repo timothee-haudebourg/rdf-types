@@ -1,9 +1,10 @@
 use crate::{pattern::CanonicalQuadPattern, utils::InfallibleIterator, Quad, Triple};
+use maybe_owned::MaybeOwned;
 
-use super::{Dataset, DatasetMut, PatternMatchingDataset, TraversableDataset};
+use super::{Dataset, DatasetMut, FiniteDataset, PatternMatchingDataset};
 
 /// Fallible dataset.
-pub trait FallibleDataset {
+pub trait TryDataset {
 	/// Resource type.
 	type Resource;
 
@@ -11,22 +12,22 @@ pub trait FallibleDataset {
 	type Error;
 }
 
-impl<D: Dataset> FallibleDataset for D {
+impl<D: Dataset> TryDataset for D {
 	type Resource = D::Resource;
 	type Error = std::convert::Infallible;
 }
 
 /// Fallible traversable dataset.
-pub trait FallibleTraversableDataset: FallibleDataset {
+pub trait TryFiniteDataset: TryDataset {
 	/// Fallible quads iterator.
-	type TryQuads<'a>: Iterator<Item = Result<Quad<&'a Self::Resource>, Self::Error>>
+	type TryQuads<'a>: Iterator<Item = Result<Quad<MaybeOwned<'a, Self::Resource>>, Self::Error>>
 	where
 		Self: 'a;
 
 	fn try_quads(&self) -> Self::TryQuads<'_>;
 }
 
-impl<D: TraversableDataset> FallibleTraversableDataset for D {
+impl<D: FiniteDataset> TryFiniteDataset for D {
 	type TryQuads<'a>
 		= InfallibleIterator<D::Quads<'a>>
 	where
@@ -38,9 +39,9 @@ impl<D: TraversableDataset> FallibleTraversableDataset for D {
 }
 
 /// Pattern-matching-capable fallible dataset.
-pub trait FalliblePatternMatchingDataset: FallibleDataset {
+pub trait TryPatternMatchingDataset: TryDataset {
 	type TryQuadPatternMatching<'a, 'p>: Iterator<
-		Item = Result<Quad<&'a Self::Resource>, Self::Error>,
+		Item = Result<Quad<MaybeOwned<'a, Self::Resource>>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -48,19 +49,19 @@ pub trait FalliblePatternMatchingDataset: FallibleDataset {
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
 	) -> Self::TryQuadPatternMatching<'_, 'p>;
 
 	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
 		Ok(self
-			.try_quad_pattern_matching(triple.into())
+			.try_quad_pattern_matching(triple.map(MaybeOwned::Borrowed).into())
 			.next()
 			.transpose()?
 			.is_some())
 	}
 }
 
-impl<D: PatternMatchingDataset> FalliblePatternMatchingDataset for D {
+impl<D: PatternMatchingDataset> TryPatternMatchingDataset for D {
 	type TryQuadPatternMatching<'a, 'p>
 		= InfallibleIterator<D::QuadPatternMatching<'a, 'p>>
 	where
@@ -69,18 +70,18 @@ impl<D: PatternMatchingDataset> FalliblePatternMatchingDataset for D {
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: CanonicalQuadPattern<MaybeOwned<'p, Self::Resource>>,
 	) -> Self::TryQuadPatternMatching<'_, 'p> {
 		InfallibleIterator(self.quad_pattern_matching(pattern))
 	}
 }
 
 /// Fallible mutable dataset.
-pub trait FallibleDatasetMut: FallibleDataset {
+pub trait TryDatasetMut: TryDataset {
 	fn try_insert(&mut self, quad: Quad<Self::Resource>) -> Result<(), Self::Error>;
 }
 
-impl<D: DatasetMut> FallibleDatasetMut for D {
+impl<D: DatasetMut> TryDatasetMut for D {
 	fn try_insert(&mut self, quad: Quad<Self::Resource>) -> Result<(), Self::Error> {
 		self.insert(quad);
 		Ok(())

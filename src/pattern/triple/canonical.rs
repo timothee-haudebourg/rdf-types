@@ -358,6 +358,15 @@ impl<T> CanonicalTriplePattern<T> {
 	}
 }
 
+impl<T: std::ops::Deref> CanonicalTriplePattern<T> {
+	pub fn as_deref(&self) -> CanonicalTriplePattern<&T::Target> {
+		match self {
+			Self::AnySubject(p) => CanonicalTriplePattern::AnySubject(p.as_deref()),
+			Self::GivenSubject(s, p) => CanonicalTriplePattern::GivenSubject(&**s, p.as_deref()),
+		}
+	}
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PatternSubject<T> {
 	Any,
@@ -484,6 +493,16 @@ pub enum AnySubject<T> {
 	AnyPredicate(AnySubjectAnyPredicate<T>),
 	SameAsSubject(AnySubjectGivenPredicate<T>),
 	GivenPredicate(T, AnySubjectGivenPredicate<T>),
+}
+
+impl<T: std::ops::Deref> AnySubject<T> {
+	pub fn as_deref(&self) -> AnySubject<&T::Target> {
+		match self {
+			Self::AnyPredicate(p) => AnySubject::AnyPredicate(p.as_deref()),
+			Self::SameAsSubject(p) => AnySubject::SameAsSubject(p.as_deref()),
+			Self::GivenPredicate(t, p) => AnySubject::GivenPredicate(&**t, p.as_deref()),
+		}
+	}
 }
 
 impl<T> AnySubject<T> {
@@ -634,6 +653,17 @@ pub enum AnySubjectAnyPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T: std::ops::Deref> AnySubjectAnyPredicate<T> {
+	pub fn as_deref(&self) -> AnySubjectAnyPredicate<&T::Target> {
+		match self {
+			Self::AnyObject => AnySubjectAnyPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectAnyPredicate::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(t) => AnySubjectAnyPredicate::GivenObject(&**t),
+		}
+	}
+}
+
 impl<T> AnySubjectAnyPredicate<T> {
 	pub fn from_option(o: Option<T>) -> Self {
 		match o {
@@ -705,6 +735,16 @@ pub enum AnySubjectGivenPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T: std::ops::Deref> AnySubjectGivenPredicate<T> {
+	pub fn as_deref(&self) -> AnySubjectGivenPredicate<&T::Target> {
+		match self {
+			Self::AnyObject => AnySubjectGivenPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectGivenPredicate::SameAsSubject,
+			Self::GivenObject(t) => AnySubjectGivenPredicate::GivenObject(&**t),
+		}
+	}
+}
+
 impl<T> AnySubjectGivenPredicate<T> {
 	pub fn from_option(o: Option<T>) -> Self {
 		match o {
@@ -766,6 +806,15 @@ impl<T> AnySubjectGivenPredicate<T> {
 pub enum GivenSubject<T> {
 	AnyPredicate(GivenSubjectAnyPredicate<T>),
 	GivenPredicate(T, GivenSubjectGivenPredicate<T>),
+}
+
+impl<T: std::ops::Deref> GivenSubject<T> {
+	pub fn as_deref(&self) -> GivenSubject<&T::Target> {
+		match self {
+			Self::AnyPredicate(p) => GivenSubject::AnyPredicate(p.as_deref()),
+			Self::GivenPredicate(t, p) => GivenSubject::GivenPredicate(&**t, p.as_deref()),
+		}
+	}
 }
 
 impl<T> GivenSubject<T> {
@@ -878,6 +927,16 @@ pub enum GivenSubjectAnyPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T: std::ops::Deref> GivenSubjectAnyPredicate<T> {
+	pub fn as_deref(&self) -> GivenSubjectAnyPredicate<&T::Target> {
+		match self {
+			Self::AnyObject => GivenSubjectAnyPredicate::AnyObject,
+			Self::SameAsPredicate => GivenSubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(t) => GivenSubjectAnyPredicate::GivenObject(&**t),
+		}
+	}
+}
+
 impl<T> GivenSubjectAnyPredicate<T> {
 	pub fn from_option(o: Option<T>) -> Self {
 		match o {
@@ -946,6 +1005,15 @@ impl<T> GivenSubjectAnyPredicate<T> {
 pub enum GivenSubjectGivenPredicate<T> {
 	AnyObject,
 	GivenObject(T),
+}
+
+impl<T: std::ops::Deref> GivenSubjectGivenPredicate<T> {
+	pub fn as_deref(&self) -> GivenSubjectGivenPredicate<&T::Target> {
+		match self {
+			Self::AnyObject => GivenSubjectGivenPredicate::AnyObject,
+			Self::GivenObject(t) => GivenSubjectGivenPredicate::GivenObject(&**t),
+		}
+	}
 }
 
 impl<T> GivenSubjectGivenPredicate<T> {

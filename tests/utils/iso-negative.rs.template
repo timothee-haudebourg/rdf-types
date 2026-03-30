@@ -1,4 +1,4 @@
-use rdf_types::{Quad, dataset::BTreeDataset, domain::r#static::RdfStaticEqDomain};
+use rdf_types::{dataset::BTreeDataset, domain::sealed::MaybeVariable, Quad};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Term {
@@ -6,7 +6,7 @@ enum Term {
 	Var(u32),
 }
 
-impl RdfStaticEqDomain for Term {
+impl MaybeVariable for Term {
 	fn is_ground(&self) -> bool {
 		matches!(self, Term::Ground(_))
 	}

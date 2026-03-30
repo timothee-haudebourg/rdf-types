@@ -6,7 +6,7 @@ use slab::Slab;
 
 use super::{super::Graph, IndexedBTreeGraph};
 use crate::{
-	dataset::{GraphMut, ResourceTraversableGraph, TraversableGraph},
+	dataset::{FiniteGraph, GraphMut, ResourceFiniteGraph},
 	Triple,
 };
 
@@ -260,25 +260,25 @@ impl<R> Graph for BTreeGraph<R> {
 	type Resource = R;
 }
 
-impl<R> TraversableGraph for BTreeGraph<R> {
+impl<R> FiniteGraph for BTreeGraph<R> {
 	type Triples<'a>
-		= Triples<'a, R>
+		= crate::utils::BorrowedTriples<Triples<'a, R>>
 	where
 		R: 'a;
 
 	fn triples(&self) -> Self::Triples<'_> {
-		self.iter()
+		crate::utils::BorrowedTriples(self.iter())
 	}
 }
 
-impl<R> ResourceTraversableGraph for BTreeGraph<R> {
+impl<R> ResourceFiniteGraph for BTreeGraph<R> {
 	type GraphResources<'a>
-		= Resources<'a, R>
+		= crate::utils::BorrowedResources<Resources<'a, R>>
 	where
 		R: 'a;
 
 	fn graph_resources(&self) -> Self::GraphResources<'_> {
-		self.resources()
+		crate::utils::BorrowedResources(self.resources())
 	}
 }
 
@@ -515,7 +515,7 @@ mod tests {
 		assert_eq!(graph.len(), triples.len());
 
 		let mut a = triples.iter().copied();
-		let mut b = graph.iter().map(Triple::into_copied);
+		let mut b = graph.iter().map(|t| t.cloned());
 
 		loop {
 			match (a.next(), b.next()) {
