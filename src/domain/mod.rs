@@ -49,3 +49,7 @@ pub trait ConstGenDomain: Domain {
 	/// Create a new resource.
 	fn new_resource(&self) -> Self::Resource;
 }
+
+pub trait Interpretation<T>: Domain {
+	fn interpret(&mut self, term: T) -> Self::Resource;
+}
