@@ -29,6 +29,7 @@ slab = "0.4.9"
 replace_with = "0.1.7"
 raw-btree = "0.2.0"
 futures-lite = "2.6.1"
+into-owned-trait = "1.0.0"
 
 [dev-dependencies]
 rand = { version = "0.8.5", features = ["small_rng"] }
