@@ -692,16 +692,20 @@ impl<R: ToOwned + Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
 }
 
 impl<R: Clone + Ord> PatternMatchingDatasetMut for IndexedBTreeDataset<R> {
-	type ExtractMatchingQuads<'a>
+	type ExtractMatchingQuads<'a, 'p>
 		= ExtractPatternMatching<'a, R>
 	where
-		Self: 'a;
+		Self: 'a,
+		R: 'p;
 
-	fn extract_matching_quads(
+	fn extract_matching_quads<'p>(
 		&mut self,
-		pattern: CanonicalQuadPattern<&Self::Resource>,
-	) -> Self::ExtractMatchingQuads<'_> {
-		self.extract_pattern_matching(pattern)
+		pattern: impl Into<CanonicalQuadPattern<Cow<'p, Self::Resource>>>,
+	) -> Self::ExtractMatchingQuads<'_, 'p>
+	where
+		R: 'p,
+	{
+		self.extract_pattern_matching(pattern.into().as_deref())
 	}
 }
 

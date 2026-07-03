@@ -420,9 +420,10 @@ where
 /// Pattern-matching-capable mutable dataset.
 pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
 	// Pattern-matching iterator.
-	type ExtractMatchingQuads<'a>: Iterator<Item = Quad<Self::Resource>>
+	type ExtractMatchingQuads<'a, 'p>: Iterator<Item = Quad<Self::Resource>>
 	where
-		Self: 'a;
+		Self: 'a,
+		Self::Resource: 'p;
 
 	/// Returns an iterator over all the quads matching the given canonical
 	/// quad pattern.
@@ -430,10 +431,12 @@ pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
 	/// Each matching quad returned by [`Iterator::next`] are removed from the
 	/// dataset. Matching quads that are not iterated on are kept in the
 	/// dataset, even when the iterator is dropped.
-	fn extract_matching_quads(
+	fn extract_matching_quads<'p>(
 		&mut self,
-		pattern: CanonicalQuadPattern<&Self::Resource>,
-	) -> Self::ExtractMatchingQuads<'_>;
+		pattern: impl Into<CanonicalQuadPattern<Cow<'p, Self::Resource>>>,
+	) -> Self::ExtractMatchingQuads<'_, 'p>
+	where
+		Self::Resource: 'p;
 }
 
 /// Mutable dataset.
