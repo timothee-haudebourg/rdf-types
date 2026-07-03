@@ -61,6 +61,45 @@ impl<'a, R: ToOwned + 'a, I: Iterator<Item = Quad<&'a R>>> Iterator for Borrowed
 	}
 }
 
+/// Wraps an iterator over `Result<&'a R, E>` into one over `Result<Cow<'a, R>, E>`.
+pub struct BorrowedResultResources<I>(pub I);
+
+impl<'a, R: ToOwned + 'a, E, I: Iterator<Item = Result<&'a R, E>>> Iterator
+	for BorrowedResultResources<I>
+{
+	type Item = Result<Cow<'a, R>, E>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0.next().map(|r| r.map(Cow::Borrowed))
+	}
+}
+
+/// Wraps an iterator over `Result<Triple<&'a R>, E>` into one over `Result<Triple<Cow<'a, R>>, E>`.
+pub struct BorrowedResultTriples<I>(pub I);
+
+impl<'a, R: ToOwned + 'a, E, I: Iterator<Item = Result<Triple<&'a R>, E>>> Iterator
+	for BorrowedResultTriples<I>
+{
+	type Item = Result<Triple<Cow<'a, R>>, E>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0.next().map(|r| r.map(|t| t.map(Cow::Borrowed)))
+	}
+}
+
+/// Wraps an iterator over `Result<Quad<&'a R>, E>` into one over `Result<Quad<Cow<'a, R>>, E>`.
+pub struct BorrowedResultQuads<I>(pub I);
+
+impl<'a, R: ToOwned + 'a, E, I: Iterator<Item = Result<Quad<&'a R>, E>>> Iterator
+	for BorrowedResultQuads<I>
+{
+	type Item = Result<Quad<Cow<'a, R>>, E>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.0.next().map(|r| r.map(|q| q.map(Cow::Borrowed)))
+	}
+}
+
 pub struct OptionIterator<I>(pub Option<I>);
 
 impl<I: Iterator> Iterator for OptionIterator<I> {

@@ -42,8 +42,8 @@ where
 		return None;
 	}
 
-	let a_blank_count = a.quads().fold(0, |c, q| c + blank_count(q.as_deref()));
-	let b_blank_count = b.quads().fold(0, |c, q| c + blank_count(q.as_deref()));
+	let a_blank_count = a.quads().fold(0, |c, q| c + blank_count(q));
+	let b_blank_count = b.quads().fold(0, |c, q| c + blank_count(q));
 
 	if a_blank_count != b_blank_count {
 		return None;
@@ -160,20 +160,28 @@ where
 {
 	for quad in ds.quads() {
 		if quad.0.is_var() {
-			map.entry(quad.0.clone()).or_default().insert(quad.clone());
+			map.entry(Cow::Borrowed(quad.0))
+				.or_default()
+				.insert(quad.map(Cow::Borrowed));
 		}
 
 		if quad.1.is_var() {
-			map.entry(quad.1.clone()).or_default().insert(quad.clone());
+			map.entry(Cow::Borrowed(quad.1))
+				.or_default()
+				.insert(quad.map(Cow::Borrowed));
 		}
 
 		if quad.2.is_var() {
-			map.entry(quad.2.clone()).or_default().insert(quad.clone());
+			map.entry(Cow::Borrowed(quad.2))
+				.or_default()
+				.insert(quad.map(Cow::Borrowed));
 		}
 
-		if let Some(g) = quad.3.clone() {
+		if let Some(g) = quad.3 {
 			if g.is_var() {
-				map.entry(g).or_default().insert(quad);
+				map.entry(Cow::Borrowed(g))
+					.or_default()
+					.insert(quad.map(Cow::Borrowed));
 			}
 		}
 	}

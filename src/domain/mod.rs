@@ -6,12 +6,12 @@ pub use std::borrow::Cow;
 
 /// RDF resource domain.
 pub trait Domain {
-	type Resource: ToOwned;
+	type Resource;
 }
 
 /// Finite domain.
 pub trait FiniteDomain: Domain {
-	type Resources<'a>: Iterator<Item = Cow<'a, Self::Resource>>
+	type Resources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 

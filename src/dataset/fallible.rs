@@ -1,12 +1,11 @@
 use crate::{pattern::CanonicalQuadPattern, utils::InfallibleIterator, Quad, Triple};
-use std::borrow::Cow;
 
 use super::{Dataset, DatasetMut, FiniteDataset, PatternMatchingDataset};
 
 /// Fallible dataset.
 pub trait TryDataset {
 	/// Resource type.
-	type Resource: ToOwned;
+	type Resource;
 
 	/// Error type.
 	type Error;
@@ -20,7 +19,7 @@ impl<D: Dataset> TryDataset for D {
 /// Fallible traversable dataset.
 pub trait TryFiniteDataset: TryDataset {
 	/// Fallible quads iterator.
-	type TryQuads<'a>: Iterator<Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>>
+	type TryQuads<'a>: Iterator<Item = Result<Quad<&'a Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -41,7 +40,7 @@ impl<D: FiniteDataset> TryFiniteDataset for D {
 /// Pattern-matching-capable fallible dataset.
 pub trait TryPatternMatchingDataset: TryDataset {
 	type TryQuadPatternMatching<'a, 'p>: Iterator<
-		Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>,
+		Item = Result<Quad<&'a Self::Resource>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -49,12 +48,12 @@ pub trait TryPatternMatchingDataset: TryDataset {
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Self::TryQuadPatternMatching<'_, 'p>;
 
 	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
 		Ok(self
-			.try_quad_pattern_matching(triple.map(Cow::Borrowed).into())
+			.try_quad_pattern_matching(triple.into())
 			.next()
 			.transpose()?
 			.is_some())
@@ -70,7 +69,7 @@ impl<D: PatternMatchingDataset> TryPatternMatchingDataset for D {
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Self::TryQuadPatternMatching<'_, 'p> {
 		InfallibleIterator(self.quad_pattern_matching(pattern))
 	}

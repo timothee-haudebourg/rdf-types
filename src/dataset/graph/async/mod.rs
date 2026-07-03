@@ -5,14 +5,19 @@ use futures_lite::{stream, Stream};
 
 use super::{FiniteGraph, GraphMut, PatternMatchingGraph};
 use crate::{
-	dataset::fallible_graph::TryGraph, pattern::CanonicalTriplePattern, utils::InfallibleIterator,
+	dataset::fallible_graph::TryGraph,
+	pattern::CanonicalTriplePattern,
+	utils::{BorrowedTriples, InfallibleIterator},
 	Triple,
 };
 
 pub mod fallible;
 
 /// Async finite graph.
-pub trait AsyncFiniteGraph: TryGraph {
+pub trait AsyncFiniteGraph: TryGraph
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncTriples<'a>: Stream<Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>>
 	where
 		Self: 'a;
@@ -20,19 +25,25 @@ pub trait AsyncFiniteGraph: TryGraph {
 	fn async_triples(&self) -> Self::AsyncTriples<'_>;
 }
 
-impl<D: FiniteGraph> AsyncFiniteGraph for D {
+impl<D: FiniteGraph> AsyncFiniteGraph for D
+where
+	D::Resource: ToOwned,
+{
 	type AsyncTriples<'a>
-		= stream::Iter<InfallibleIterator<D::Triples<'a>>>
+		= stream::Iter<InfallibleIterator<BorrowedTriples<D::Triples<'a>>>>
 	where
 		Self: 'a;
 
 	fn async_triples(&self) -> Self::AsyncTriples<'_> {
-		stream::iter(InfallibleIterator(self.triples()))
+		stream::iter(InfallibleIterator(BorrowedTriples(self.triples())))
 	}
 }
 
 /// Async pattern-matching-capable graph.
-pub trait AsyncPatternMatchingGraph: TryGraph {
+pub trait AsyncPatternMatchingGraph: TryGraph
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncTriplePatternMatching<'a, 'p>: Stream<
 		Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>,
 	>
@@ -42,7 +53,7 @@ pub trait AsyncPatternMatchingGraph: TryGraph {
 
 	fn async_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::AsyncTriplePatternMatching<'_, 'p>;
 
 	fn async_contains_triple(
@@ -51,26 +62,29 @@ pub trait AsyncPatternMatchingGraph: TryGraph {
 	) -> impl Future<Output = Result<bool, Self::Error>> {
 		async move {
 			use futures_lite::StreamExt;
-			let mut stream = std::pin::pin!(
-				self.async_triple_pattern_matching(triple.map(Cow::Borrowed).into())
-			);
+			let mut stream = std::pin::pin!(self.async_triple_pattern_matching(triple.into()));
 			Ok(stream.next().await.transpose()?.is_some())
 		}
 	}
 }
 
-impl<D: PatternMatchingGraph> AsyncPatternMatchingGraph for D {
+impl<D: PatternMatchingGraph> AsyncPatternMatchingGraph for D
+where
+	D::Resource: ToOwned,
+{
 	type AsyncTriplePatternMatching<'a, 'p>
-		= stream::Iter<InfallibleIterator<D::TriplePatternMatching<'a, 'p>>>
+		= stream::Iter<InfallibleIterator<BorrowedTriples<D::TriplePatternMatching<'a, 'p>>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
 	fn async_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::AsyncTriplePatternMatching<'_, 'p> {
-		stream::iter(InfallibleIterator(self.triple_pattern_matching(pattern)))
+		stream::iter(InfallibleIterator(BorrowedTriples(
+			self.triple_pattern_matching(pattern),
+		)))
 	}
 }
 

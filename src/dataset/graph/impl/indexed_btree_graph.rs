@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::{cmp::Ordering, collections::BTreeSet, fmt::Debug, hash::Hash};
 
 use educe::Educe;
@@ -362,29 +361,29 @@ impl<R: Clone + Ord> Extend<Triple<R>> for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: ToOwned> Graph for IndexedBTreeGraph<R> {
+impl<R> Graph for IndexedBTreeGraph<R> {
 	type Resource = R;
 }
 
-impl<R: ToOwned> FiniteGraph for IndexedBTreeGraph<R> {
+impl<R> FiniteGraph for IndexedBTreeGraph<R> {
 	type Triples<'a>
-		= crate::utils::BorrowedTriples<Triples<'a, R>>
+		= Triples<'a, R>
 	where
 		R: 'a;
 
 	fn triples(&self) -> Self::Triples<'_> {
-		crate::utils::BorrowedTriples(self.iter())
+		self.iter()
 	}
 }
 
-impl<R: ToOwned> ResourceFiniteGraph for IndexedBTreeGraph<R> {
+impl<R> ResourceFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphResources<'a>
-		= crate::utils::BorrowedResources<Resources<'a, R>>
+		= Resources<'a, R>
 	where
 		R: 'a;
 
 	fn graph_resources(&self) -> Self::GraphResources<'_> {
-		crate::utils::BorrowedResources(self.resources())
+		self.resources()
 	}
 
 	fn graph_resource_count(&self) -> usize {
@@ -392,14 +391,14 @@ impl<R: ToOwned> ResourceFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: ToOwned> SubjectFiniteGraph for IndexedBTreeGraph<R> {
+impl<R> SubjectFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphSubjects<'a>
-		= crate::utils::BorrowedResources<Subjects<'a, R>>
+		= Subjects<'a, R>
 	where
 		R: 'a;
 
 	fn graph_subjects(&self) -> Self::GraphSubjects<'_> {
-		crate::utils::BorrowedResources(self.subjects())
+		self.subjects()
 	}
 
 	fn graph_subject_count(&self) -> usize {
@@ -407,14 +406,14 @@ impl<R: ToOwned> SubjectFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: ToOwned> PredicateFiniteGraph for IndexedBTreeGraph<R> {
+impl<R> PredicateFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphPredicates<'a>
-		= crate::utils::BorrowedResources<Predicates<'a, R>>
+		= Predicates<'a, R>
 	where
 		R: 'a;
 
 	fn graph_predicates(&self) -> Self::GraphPredicates<'_> {
-		crate::utils::BorrowedResources(self.predicates())
+		self.predicates()
 	}
 
 	fn graph_predicate_count(&self) -> usize {
@@ -422,14 +421,14 @@ impl<R: ToOwned> PredicateFiniteGraph for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: ToOwned> ObjectFiniteGraph for IndexedBTreeGraph<R> {
+impl<R> ObjectFiniteGraph for IndexedBTreeGraph<R> {
 	type GraphObjects<'a>
-		= crate::utils::BorrowedResources<Objects<'a, R>>
+		= Objects<'a, R>
 	where
 		R: 'a;
 
 	fn graph_objects(&self) -> Self::GraphObjects<'_> {
-		crate::utils::BorrowedResources(self.objects())
+		self.objects()
 	}
 
 	fn graph_object_count(&self) -> usize {
@@ -447,18 +446,18 @@ impl<R: Clone + Ord> GraphMut for IndexedBTreeGraph<R> {
 	}
 }
 
-impl<R: ToOwned + Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
+impl<R: Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
 	type TriplePatternMatching<'a, 'p>
-		= crate::utils::BorrowedTriples<PatternMatching<'a, R>>
+		= PatternMatching<'a, R>
 	where
 		R: 'a,
 		Self::Resource: 'p;
 
 	fn triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::TriplePatternMatching<'_, 'p> {
-		crate::utils::BorrowedTriples(self.pattern_matching(pattern.as_deref()))
+		self.pattern_matching(pattern)
 	}
 
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {

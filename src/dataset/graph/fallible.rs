@@ -1,11 +1,10 @@
 use crate::{pattern::CanonicalTriplePattern, utils::InfallibleIterator, Triple};
-use std::borrow::Cow;
 
 use super::{FiniteGraph, Graph, GraphMut, PatternMatchingGraph};
 
 /// Fallible graph.
 pub trait TryGraph {
-	type Resource: ToOwned;
+	type Resource;
 	type Error;
 }
 
@@ -15,7 +14,7 @@ impl<D: Graph> TryGraph for D {
 }
 
 pub trait TryFiniteGraph: TryGraph {
-	type TryTriples<'a>: Iterator<Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>>
+	type TryTriples<'a>: Iterator<Item = Result<Triple<&'a Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 
@@ -36,7 +35,7 @@ impl<D: FiniteGraph> TryFiniteGraph for D {
 /// Pattern-matching-capable fallible graph.
 pub trait TryPatternMatchingGraph: TryGraph {
 	type TryTriplePatternMatching<'a, 'p>: Iterator<
-		Item = Result<Triple<Cow<'a, Self::Resource>>, Self::Error>,
+		Item = Result<Triple<&'a Self::Resource>, Self::Error>,
 	>
 	where
 		Self: 'a,
@@ -44,12 +43,12 @@ pub trait TryPatternMatchingGraph: TryGraph {
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::TryTriplePatternMatching<'_, 'p>;
 
 	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
 		Ok(self
-			.try_triple_pattern_matching(triple.map(Cow::Borrowed).into())
+			.try_triple_pattern_matching(triple.into())
 			.next()
 			.transpose()?
 			.is_some())
@@ -65,7 +64,7 @@ impl<D: PatternMatchingGraph> TryPatternMatchingGraph for D {
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::TryTriplePatternMatching<'_, 'p> {
 		InfallibleIterator(self.triple_pattern_matching(pattern))
 	}

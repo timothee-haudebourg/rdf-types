@@ -1,5 +1,4 @@
 use crate::{pattern::CanonicalTriplePattern, Triple};
-use std::borrow::Cow;
 
 pub mod r#async;
 pub mod fallible;
@@ -10,11 +9,11 @@ pub use r#impl::*;
 
 /// RDF graph.
 pub trait Graph {
-	type Resource: ToOwned;
+	type Resource;
 }
 
 pub trait FiniteGraph: Graph {
-	type Triples<'a>: Iterator<Item = Triple<Cow<'a, Self::Resource>>>
+	type Triples<'a>: Iterator<Item = Triple<&'a Self::Resource>>
 	where
 		Self: 'a;
 
@@ -26,7 +25,7 @@ pub trait FiniteGraph: Graph {
 }
 
 pub trait ResourceFiniteGraph: Graph {
-	type GraphResources<'a>: Iterator<Item = Cow<'a, Self::Resource>>
+	type GraphResources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
@@ -38,7 +37,7 @@ pub trait ResourceFiniteGraph: Graph {
 }
 
 pub trait SubjectFiniteGraph: Graph {
-	type GraphSubjects<'a>: Iterator<Item = Cow<'a, Self::Resource>>
+	type GraphSubjects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
@@ -50,7 +49,7 @@ pub trait SubjectFiniteGraph: Graph {
 }
 
 pub trait PredicateFiniteGraph: Graph {
-	type GraphPredicates<'a>: Iterator<Item = Cow<'a, Self::Resource>>
+	type GraphPredicates<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
@@ -62,7 +61,7 @@ pub trait PredicateFiniteGraph: Graph {
 }
 
 pub trait ObjectFiniteGraph: Graph {
-	type GraphObjects<'a>: Iterator<Item = Cow<'a, Self::Resource>>
+	type GraphObjects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
@@ -75,27 +74,25 @@ pub trait ObjectFiniteGraph: Graph {
 
 /// Pattern-matching-capable dataset.
 pub trait PatternMatchingGraph: Graph {
-	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<Cow<'a, Self::Resource>>>
+	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
 	fn triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalTriplePattern<&'p Self::Resource>,
 	) -> Self::TriplePatternMatching<'_, 'p>;
 
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
-		self.triple_pattern_matching(triple.map(Cow::Borrowed).into())
-			.next()
-			.is_some()
+		self.triple_pattern_matching(triple.into()).next().is_some()
 	}
 
 	/// Checks if the graph contains the given subject.
 	fn contains_triple_subject(&self, subject: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::GivenSubject(
-			Cow::Borrowed(subject),
+			subject,
 			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject),
 		))
 		.next()
@@ -106,10 +103,7 @@ pub trait PatternMatchingGraph: Graph {
 	fn contains_triple_predicate(&self, predicate: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{AnySubject, AnySubjectGivenPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::GivenPredicate(
-				Cow::Borrowed(predicate),
-				AnySubjectGivenPredicate::AnyObject,
-			),
+			AnySubject::GivenPredicate(predicate, AnySubjectGivenPredicate::AnyObject),
 		))
 		.next()
 		.is_some()
@@ -119,7 +113,7 @@ pub trait PatternMatchingGraph: Graph {
 	fn contains_triple_object(&self, object: &Self::Resource) -> bool {
 		use crate::pattern::triple::canonical::{AnySubject, AnySubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(Cow::Borrowed(object))),
+			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(object)),
 		))
 		.next()
 		.is_some()
@@ -128,11 +122,11 @@ pub trait PatternMatchingGraph: Graph {
 	/// Returns an iterator over all the predicates `p` matching the triple `subject p o` present in the graph, for some `o`.
 	fn triple_predicates_objects<'p>(
 		&self,
-		subject: Cow<'p, Self::Resource>,
+		subject: &'p Self::Resource,
 	) -> TriplePredicatesObjects<'_, 'p, Self>
 	where
 		Self: PredicateFiniteGraph,
-		Self::Resource: Clone,
+		Self::Resource: 'p,
 	{
 		TriplePredicatesObjects {
 			subject,
@@ -144,8 +138,8 @@ pub trait PatternMatchingGraph: Graph {
 	/// Returns an iterator over all the objects `o` matching the triple `subject predicate o` present in the graph.
 	fn triple_objects<'p>(
 		&self,
-		subject: Cow<'p, Self::Resource>,
-		predicate: Cow<'p, Self::Resource>,
+		subject: &'p Self::Resource,
+		predicate: &'p Self::Resource,
 	) -> TripleObjects<'_, 'p, Self> {
 		TripleObjects {
 			first: None,
@@ -161,7 +155,7 @@ pub struct TriplePredicatesObjects<
 	'p,
 	G: 'a + ?Sized + PredicateFiniteGraph + PatternMatchingGraph,
 > {
-	subject: Cow<'p, G::Resource>,
+	subject: &'p G::Resource,
 	predicates: G::GraphPredicates<'a>,
 	graph: &'a G,
 }
@@ -169,19 +163,16 @@ pub struct TriplePredicatesObjects<
 impl<'a: 'p, 'p, G: 'a + ?Sized + PredicateFiniteGraph + PatternMatchingGraph> Iterator
 	for TriplePredicatesObjects<'a, 'p, G>
 where
-	G::Resource: 'p + Clone,
+	G::Resource: 'p,
 {
-	type Item = (Cow<'a, G::Resource>, TripleObjects<'p, 'p, G>);
+	type Item = (&'a G::Resource, TripleObjects<'p, 'p, G>);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
 			use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectGivenPredicate};
 			let pattern = CanonicalTriplePattern::GivenSubject(
-				self.subject.clone(),
-				GivenSubject::GivenPredicate(
-					predicate.clone(),
-					GivenSubjectGivenPredicate::AnyObject,
-				),
+				self.subject,
+				GivenSubject::GivenPredicate(predicate, GivenSubjectGivenPredicate::AnyObject),
 			);
 
 			let mut iter = self.graph.triple_pattern_matching(pattern);
@@ -204,7 +195,7 @@ pub struct TripleObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph>
 where
 	D::Resource: 'p,
 {
-	first: Option<Cow<'a, D::Resource>>,
+	first: Option<&'a D::Resource>,
 	inner: D::TriplePatternMatching<'a, 'p>,
 }
 
@@ -212,7 +203,7 @@ impl<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph> Iterator for TripleObjects<'
 where
 	D::Resource: 'p,
 {
-	type Item = Cow<'a, D::Resource>;
+	type Item = &'a D::Resource;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.first

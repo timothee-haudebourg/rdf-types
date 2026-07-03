@@ -5,14 +5,19 @@ use futures_lite::{stream, Stream};
 
 use super::{DatasetMut, FiniteDataset, PatternMatchingDataset};
 use crate::{
-	dataset::fallible::TryDataset, pattern::CanonicalQuadPattern, utils::InfallibleIterator, Quad,
-	Triple,
+	dataset::fallible::TryDataset,
+	pattern::CanonicalQuadPattern,
+	utils::{BorrowedQuads, InfallibleIterator},
+	Quad, Triple,
 };
 
 pub mod fallible;
 
 /// Async finite dataset.
-pub trait AsyncFiniteDataset: TryDataset {
+pub trait AsyncFiniteDataset: TryDataset
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncQuads<'a>: Stream<Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>>
 	where
 		Self: 'a;
@@ -20,19 +25,25 @@ pub trait AsyncFiniteDataset: TryDataset {
 	fn async_quads(&self) -> Self::AsyncQuads<'_>;
 }
 
-impl<D: FiniteDataset> AsyncFiniteDataset for D {
+impl<D: FiniteDataset> AsyncFiniteDataset for D
+where
+	D::Resource: ToOwned,
+{
 	type AsyncQuads<'a>
-		= stream::Iter<InfallibleIterator<D::Quads<'a>>>
+		= stream::Iter<InfallibleIterator<BorrowedQuads<D::Quads<'a>>>>
 	where
 		Self: 'a;
 
 	fn async_quads(&self) -> Self::AsyncQuads<'_> {
-		stream::iter(InfallibleIterator(self.quads()))
+		stream::iter(InfallibleIterator(BorrowedQuads(self.quads())))
 	}
 }
 
 /// Async pattern-matching-capable dataset.
-pub trait AsyncPatternMatchingDataset: TryDataset {
+pub trait AsyncPatternMatchingDataset: TryDataset
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncQuadPatternMatching<'a, 'p>: Stream<
 		Item = Result<Quad<Cow<'a, Self::Resource>>, Self::Error>,
 	>
@@ -42,7 +53,7 @@ pub trait AsyncPatternMatchingDataset: TryDataset {
 
 	fn async_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Self::AsyncQuadPatternMatching<'_, 'p>;
 
 	fn async_contains_triple(
@@ -51,25 +62,29 @@ pub trait AsyncPatternMatchingDataset: TryDataset {
 	) -> impl Future<Output = Result<bool, Self::Error>> {
 		async move {
 			use futures_lite::StreamExt;
-			let mut stream =
-				std::pin::pin!(self.async_quad_pattern_matching(triple.map(Cow::Borrowed).into()));
+			let mut stream = std::pin::pin!(self.async_quad_pattern_matching(triple.into()));
 			Ok(stream.next().await.transpose()?.is_some())
 		}
 	}
 }
 
-impl<D: PatternMatchingDataset> AsyncPatternMatchingDataset for D {
+impl<D: PatternMatchingDataset> AsyncPatternMatchingDataset for D
+where
+	D::Resource: ToOwned,
+{
 	type AsyncQuadPatternMatching<'a, 'p>
-		= stream::Iter<InfallibleIterator<D::QuadPatternMatching<'a, 'p>>>
+		= stream::Iter<InfallibleIterator<BorrowedQuads<D::QuadPatternMatching<'a, 'p>>>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
 	fn async_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Self::AsyncQuadPatternMatching<'_, 'p> {
-		stream::iter(InfallibleIterator(self.quad_pattern_matching(pattern)))
+		stream::iter(InfallibleIterator(BorrowedQuads(
+			self.quad_pattern_matching(pattern),
+		)))
 	}
 }
 

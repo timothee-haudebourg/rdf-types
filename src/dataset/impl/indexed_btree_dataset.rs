@@ -1,5 +1,4 @@
 use core::fmt;
-use std::borrow::Cow;
 use std::{cmp::Ordering, collections::BTreeSet, fmt::Debug, hash::Hash};
 
 use educe::Educe;
@@ -553,29 +552,29 @@ impl<R: Clone + Ord> Extend<Quad<R>> for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned> Dataset for IndexedBTreeDataset<R> {
+impl<R> Dataset for IndexedBTreeDataset<R> {
 	type Resource = R;
 }
 
-impl<R: ToOwned> FiniteDataset for IndexedBTreeDataset<R> {
+impl<R> FiniteDataset for IndexedBTreeDataset<R> {
 	type Quads<'a>
-		= crate::utils::BorrowedQuads<Quads<'a, R>>
+		= Quads<'a, R>
 	where
 		R: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
-		crate::utils::BorrowedQuads(self.iter())
+		self.iter()
 	}
 }
 
-impl<R: ToOwned> ResourceFiniteDataset for IndexedBTreeDataset<R> {
+impl<R> ResourceFiniteDataset for IndexedBTreeDataset<R> {
 	type Resources<'a>
-		= crate::utils::BorrowedResources<Resources<'a, R>>
+		= Resources<'a, R>
 	where
 		R: 'a;
 
 	fn resources(&self) -> Self::Resources<'_> {
-		crate::utils::BorrowedResources(self.resources())
+		self.resources()
 	}
 
 	fn resource_count(&self) -> usize {
@@ -583,14 +582,14 @@ impl<R: ToOwned> ResourceFiniteDataset for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned> SubjectFiniteDataset for IndexedBTreeDataset<R> {
+impl<R> SubjectFiniteDataset for IndexedBTreeDataset<R> {
 	type Subjects<'a>
-		= crate::utils::BorrowedResources<Subjects<'a, R>>
+		= Subjects<'a, R>
 	where
 		R: 'a;
 
 	fn subjects(&self) -> Self::Subjects<'_> {
-		crate::utils::BorrowedResources(self.subjects())
+		self.subjects()
 	}
 
 	fn subject_count(&self) -> usize {
@@ -598,14 +597,14 @@ impl<R: ToOwned> SubjectFiniteDataset for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned> PredicateFiniteDataset for IndexedBTreeDataset<R> {
+impl<R> PredicateFiniteDataset for IndexedBTreeDataset<R> {
 	type Predicates<'a>
-		= crate::utils::BorrowedResources<Predicates<'a, R>>
+		= Predicates<'a, R>
 	where
 		R: 'a;
 
 	fn predicates(&self) -> Self::Predicates<'_> {
-		crate::utils::BorrowedResources(self.predicates())
+		self.predicates()
 	}
 
 	fn predicate_count(&self) -> usize {
@@ -613,14 +612,14 @@ impl<R: ToOwned> PredicateFiniteDataset for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned> ObjectFiniteDataset for IndexedBTreeDataset<R> {
+impl<R> ObjectFiniteDataset for IndexedBTreeDataset<R> {
 	type Objects<'a>
-		= crate::utils::BorrowedResources<Objects<'a, R>>
+		= Objects<'a, R>
 	where
 		R: 'a;
 
 	fn objects(&self) -> Self::Objects<'_> {
-		crate::utils::BorrowedResources(self.objects())
+		self.objects()
 	}
 
 	fn object_count(&self) -> usize {
@@ -628,14 +627,14 @@ impl<R: ToOwned> ObjectFiniteDataset for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned> NamedGraphFiniteDataset for IndexedBTreeDataset<R> {
+impl<R> NamedGraphFiniteDataset for IndexedBTreeDataset<R> {
 	type NamedGraphs<'a>
-		= crate::utils::BorrowedResources<NamedGraphs<'a, R>>
+		= NamedGraphs<'a, R>
 	where
 		R: 'a;
 
 	fn named_graphs(&self) -> Self::NamedGraphs<'_> {
-		crate::utils::BorrowedResources(self.named_graphs())
+		self.named_graphs()
 	}
 
 	fn named_graph_count(&self) -> usize {
@@ -653,18 +652,18 @@ impl<R: Clone + Ord> DatasetMut for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned + Ord> PatternMatchingDataset for IndexedBTreeDataset<R> {
+impl<R: Ord> PatternMatchingDataset for IndexedBTreeDataset<R> {
 	type QuadPatternMatching<'a, 'p>
-		= crate::utils::BorrowedQuads<PatternMatching<'a, R>>
+		= PatternMatching<'a, R>
 	where
 		R: 'a,
 		Self::Resource: 'p;
 
 	fn quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<Cow<'p, Self::Resource>>,
+		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Self::QuadPatternMatching<'_, 'p> {
-		crate::utils::BorrowedQuads(self.pattern_matching(pattern.as_deref()))
+		self.pattern_matching(pattern)
 	}
 
 	fn contains_quad(&self, quad: Quad<&Self::Resource>) -> bool {
@@ -672,9 +671,9 @@ impl<R: ToOwned + Ord> PatternMatchingDataset for IndexedBTreeDataset<R> {
 	}
 }
 
-impl<R: ToOwned + Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
+impl<R: Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
 	type QuadMultiPatternMatching<'a, 'p>
-		= crate::utils::BorrowedQuads<MultiPatternMatching<'a, R>>
+		= MultiPatternMatching<'a, R>
 	where
 		R: 'a,
 		Self::Resource: 'p;
@@ -687,7 +686,7 @@ impl<R: ToOwned + Ord> MultiPatternMatchingDataset for IndexedBTreeDataset<R> {
 		P: IntoIterator<Item = &'p R>,
 		R: 'p,
 	{
-		crate::utils::BorrowedQuads(self.multi_pattern_matching(pattern))
+		self.multi_pattern_matching(pattern)
 	}
 }
 
@@ -700,12 +699,12 @@ impl<R: Clone + Ord> PatternMatchingDatasetMut for IndexedBTreeDataset<R> {
 
 	fn extract_matching_quads<'p>(
 		&mut self,
-		pattern: impl Into<CanonicalQuadPattern<Cow<'p, Self::Resource>>>,
+		pattern: impl Into<CanonicalQuadPattern<&'p Self::Resource>>,
 	) -> Self::ExtractMatchingQuads<'_, 'p>
 	where
 		R: 'p,
 	{
-		self.extract_pattern_matching(pattern.into().as_deref())
+		self.extract_pattern_matching(pattern.into())
 	}
 }
 

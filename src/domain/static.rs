@@ -16,6 +16,6 @@ impl<R> StaticDomain<R> {
 	}
 }
 
-impl<R: ToOwned> Domain for StaticDomain<R> {
+impl<R> Domain for StaticDomain<R> {
 	type Resource = R;
 }

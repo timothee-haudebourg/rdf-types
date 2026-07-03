@@ -4,9 +4,13 @@ use futures_lite::{stream, Stream};
 
 use super::{ConstGenDomain, Cow, FiniteDomain};
 use crate::domain::fallible::{TryConstGenDomain, TryDomain, TryFiniteDomain};
+use crate::utils::{BorrowedResources, BorrowedResultResources, InfallibleIterator};
 
 /// Finite domain.
-pub trait AsyncFiniteDomain: TryDomain {
+pub trait AsyncFiniteDomain: TryDomain
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncResources<'a>: Stream<Item = Result<Cow<'a, Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
@@ -41,14 +45,12 @@ impl<I: AsyncConstGenDomain> AsyncGenDomain for I {
 	}
 }
 
-impl<I: FiniteDomain> AsyncFiniteDomain for I {
+impl<I: FiniteDomain> AsyncFiniteDomain for I
+where
+	I::Resource: ToOwned,
+{
 	type AsyncResources<'a>
-		= stream::Iter<
-		std::iter::Map<
-			I::Resources<'a>,
-			fn(Cow<'a, Self::Resource>) -> Result<Cow<'a, Self::Resource>, Self::Error>,
-		>,
-	>
+		= stream::Iter<InfallibleIterator<BorrowedResources<I::Resources<'a>>>>
 	where
 		Self: 'a;
 
@@ -65,7 +67,7 @@ impl<I: FiniteDomain> AsyncFiniteDomain for I {
 	}
 
 	fn async_resources(&self) -> Self::AsyncResources<'_> {
-		stream::iter(self.resources().map(Ok as fn(_) -> _))
+		stream::iter(InfallibleIterator(BorrowedResources(self.resources())))
 	}
 }
 
@@ -76,7 +78,10 @@ impl<I: ConstGenDomain> AsyncConstGenDomain for I {
 }
 
 /// Async fallible finite domain.
-pub trait AsyncTryFiniteDomain: TryDomain {
+pub trait AsyncTryFiniteDomain: TryDomain
+where
+	Self::Resource: ToOwned,
+{
 	type AsyncTryResources<'a>: Stream<Item = Result<Cow<'a, Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
@@ -115,9 +120,12 @@ impl<I: AsyncTryConstGenDomain> AsyncTryGenDomain for I {
 	}
 }
 
-impl<I: TryFiniteDomain> AsyncTryFiniteDomain for I {
+impl<I: TryFiniteDomain> AsyncTryFiniteDomain for I
+where
+	I::Resource: ToOwned,
+{
 	type AsyncTryResources<'a>
-		= stream::Iter<I::TryResources<'a>>
+		= stream::Iter<BorrowedResultResources<I::TryResources<'a>>>
 	where
 		Self: 'a;
 
@@ -134,7 +142,7 @@ impl<I: TryFiniteDomain> AsyncTryFiniteDomain for I {
 	}
 
 	fn async_try_resources(&self) -> Self::AsyncTryResources<'_> {
-		stream::iter(self.try_resources())
+		stream::iter(BorrowedResultResources(self.try_resources()))
 	}
 }
 
