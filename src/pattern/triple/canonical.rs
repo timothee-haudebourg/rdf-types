@@ -1,7 +1,7 @@
 use replace_with::replace_with_or_abort_and_return;
 
 use crate::{
-	pattern::{quad, CanonicalQuadPattern, ResourceOrVar, TriplePattern},
+	pattern::{quad, CanonicalQuadPattern, Pattern, TriplePattern},
 	Triple,
 };
 
@@ -56,12 +56,10 @@ impl<T> CanonicalTriplePattern<T> {
 
 	pub fn from_pattern<X: PartialEq>(pattern: TriplePattern<T, X>) -> Self {
 		match pattern.0 {
-			ResourceOrVar::Resource(s) => {
+			Pattern::Ground(s) => {
 				Self::GivenSubject(s, GivenSubject::from_pattern(pattern.1, pattern.2))
 			}
-			ResourceOrVar::Var(s) => {
-				Self::AnySubject(AnySubject::from_pattern(s, pattern.1, pattern.2))
-			}
+			Pattern::Var(s) => Self::AnySubject(AnySubject::from_pattern(s, pattern.1, pattern.2)),
 		}
 	}
 
@@ -535,16 +533,12 @@ impl<T> AnySubject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(
-		s: X,
-		p: ResourceOrVar<T, X>,
-		o: ResourceOrVar<T, X>,
-	) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, p: Pattern<T, X>, o: Pattern<T, X>) -> Self {
 		match p {
-			ResourceOrVar::Resource(p) => {
+			Pattern::Ground(p) => {
 				Self::GivenPredicate(p, AnySubjectGivenPredicate::from_pattern(s, o))
 			}
-			ResourceOrVar::Var(p) => {
+			Pattern::Var(p) => {
 				if p == s {
 					Self::SameAsSubject(AnySubjectGivenPredicate::from_pattern(s, o))
 				} else {
@@ -702,10 +696,10 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, p: X, o: ResourceOrVar<T, X>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, p: X, o: Pattern<T, X>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => Self::GivenObject(o),
-			ResourceOrVar::Var(o) => {
+			Pattern::Ground(o) => Self::GivenObject(o),
+			Pattern::Var(o) => {
 				if o == s {
 					Self::SameAsSubject
 				} else if o == p {
@@ -783,10 +777,10 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, o: ResourceOrVar<T, X>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, o: Pattern<T, X>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => Self::GivenObject(o),
-			ResourceOrVar::Var(o) => {
+			Pattern::Ground(o) => Self::GivenObject(o),
+			Pattern::Var(o) => {
 				if o == s {
 					Self::SameAsSubject
 				} else {
@@ -855,14 +849,12 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(p: ResourceOrVar<T, X>, o: ResourceOrVar<T, X>) -> Self {
+	pub fn from_pattern<X: PartialEq>(p: Pattern<T, X>, o: Pattern<T, X>) -> Self {
 		match p {
-			ResourceOrVar::Resource(p) => {
+			Pattern::Ground(p) => {
 				Self::GivenPredicate(p, GivenSubjectGivenPredicate::from_pattern(o))
 			}
-			ResourceOrVar::Var(p) => {
-				Self::AnyPredicate(GivenSubjectAnyPredicate::from_pattern(p, o))
-			}
+			Pattern::Var(p) => Self::AnyPredicate(GivenSubjectAnyPredicate::from_pattern(p, o)),
 		}
 	}
 
@@ -982,10 +974,10 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(p: X, o: ResourceOrVar<T, X>) -> Self {
+	pub fn from_pattern<X: PartialEq>(p: X, o: Pattern<T, X>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => Self::GivenObject(o),
-			ResourceOrVar::Var(o) => {
+			Pattern::Ground(o) => Self::GivenObject(o),
+			Pattern::Var(o) => {
 				if p == o {
 					Self::SameAsPredicate
 				} else {
@@ -1061,10 +1053,10 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X>(o: ResourceOrVar<T, X>) -> Self {
+	pub fn from_pattern<X>(o: Pattern<T, X>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => Self::GivenObject(o),
-			ResourceOrVar::Var(_) => Self::AnyObject,
+			Pattern::Ground(o) => Self::GivenObject(o),
+			Pattern::Var(_) => Self::AnyObject,
 		}
 	}
 

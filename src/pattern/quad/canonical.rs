@@ -1,7 +1,9 @@
+use std::borrow::Cow;
+
 use crate::{
 	pattern::{
 		triple::{self, CanonicalTriplePattern},
-		QuadPattern, ResourceOrVar, TriplePattern,
+		Pattern, QuadPattern, TriplePattern,
 	},
 	Quad, Triple,
 };
@@ -33,45 +35,7 @@ impl<T> CanonicalQuadPattern<T> {
 			Self::GivenSubject(s, p) => quad.subject() == s && p.matches(quad),
 		}
 	}
-}
 
-impl<T> From<Triple<T>> for CanonicalQuadPattern<T> {
-	fn from(value: Triple<T>) -> Self {
-		Self::from_triple(value)
-	}
-}
-
-impl<T> From<Quad<T>> for CanonicalQuadPattern<T> {
-	fn from(value: Quad<T>) -> Self {
-		Self::from_quad(value)
-	}
-}
-
-impl<T> From<Triple<Option<T>>> for CanonicalQuadPattern<T> {
-	fn from(value: Triple<Option<T>>) -> Self {
-		Self::from_option_triple(value)
-	}
-}
-
-impl<T> From<Quad<Option<T>>> for CanonicalQuadPattern<T> {
-	fn from(value: Quad<Option<T>>) -> Self {
-		Self::from_option_quad(value)
-	}
-}
-
-impl<T, X: PartialEq> From<TriplePattern<T, X>> for CanonicalQuadPattern<T> {
-	fn from(value: TriplePattern<T, X>) -> Self {
-		Self::from_triple_pattern(value)
-	}
-}
-
-impl<T, X: PartialEq> From<QuadPattern<T, X>> for CanonicalQuadPattern<T> {
-	fn from(value: QuadPattern<T, X>) -> Self {
-		Self::from_pattern(value)
-	}
-}
-
-impl<T> CanonicalQuadPattern<T> {
 	pub fn from_triple(triple: Triple<T>) -> Self {
 		Self::GivenSubject(
 			triple.0,
@@ -118,10 +82,10 @@ impl<T> CanonicalQuadPattern<T> {
 
 	pub fn from_triple_pattern<X: PartialEq>(pattern: TriplePattern<T, X>) -> Self {
 		match pattern.0 {
-			ResourceOrVar::Resource(s) => {
+			Pattern::Ground(s) => {
 				Self::GivenSubject(s, GivenSubject::from_pattern(pattern.1, pattern.2, None))
 			}
-			ResourceOrVar::Var(s) => {
+			Pattern::Var(s) => {
 				Self::AnySubject(AnySubject::from_pattern(s, pattern.1, pattern.2, None))
 			}
 		}
@@ -129,11 +93,11 @@ impl<T> CanonicalQuadPattern<T> {
 
 	pub fn from_pattern<X: PartialEq>(pattern: QuadPattern<T, X>) -> Self {
 		match pattern.0 {
-			ResourceOrVar::Resource(s) => Self::GivenSubject(
+			Pattern::Ground(s) => Self::GivenSubject(
 				s,
 				GivenSubject::from_pattern(pattern.1, pattern.2, pattern.3),
 			),
-			ResourceOrVar::Var(s) => {
+			Pattern::Var(s) => {
 				Self::AnySubject(AnySubject::from_pattern(s, pattern.1, pattern.2, pattern.3))
 			}
 		}
@@ -263,6 +227,72 @@ impl<T> CanonicalQuadPattern<T> {
 				)
 			}
 		}
+	}
+}
+
+impl<T> From<Triple<T>> for CanonicalQuadPattern<T> {
+	fn from(value: Triple<T>) -> Self {
+		Self::from_triple(value)
+	}
+}
+
+impl<'a, T: ToOwned> From<Triple<&'a T>> for CanonicalQuadPattern<Cow<'a, T>> {
+	fn from(value: Triple<&'a T>) -> Self {
+		Self::from_triple(value.map(Cow::Borrowed))
+	}
+}
+
+impl<T> From<Quad<T>> for CanonicalQuadPattern<T> {
+	fn from(value: Quad<T>) -> Self {
+		Self::from_quad(value)
+	}
+}
+
+impl<'a, T: ToOwned> From<Quad<&'a T>> for CanonicalQuadPattern<Cow<'a, T>> {
+	fn from(value: Quad<&'a T>) -> Self {
+		Self::from_quad(value.map(Cow::Borrowed))
+	}
+}
+
+impl<T> From<Triple<Option<T>>> for CanonicalQuadPattern<T> {
+	fn from(value: Triple<Option<T>>) -> Self {
+		Self::from_option_triple(value)
+	}
+}
+
+impl<'a, T: ToOwned> From<Triple<Option<&'a T>>> for CanonicalQuadPattern<Cow<'a, T>> {
+	fn from(value: Triple<Option<&'a T>>) -> Self {
+		Self::from_option_triple(value.map(|r| r.map(Cow::Borrowed)))
+	}
+}
+
+impl<T> From<Quad<Option<T>>> for CanonicalQuadPattern<T> {
+	fn from(value: Quad<Option<T>>) -> Self {
+		Self::from_option_quad(value)
+	}
+}
+
+impl<'a, T: ToOwned> From<Quad<Option<&'a T>>> for CanonicalQuadPattern<Cow<'a, T>> {
+	fn from(value: Quad<Option<&'a T>>) -> Self {
+		Self::from_option_quad(value.map(|r| r.map(Cow::Borrowed)))
+	}
+}
+
+impl<T, X: PartialEq> From<TriplePattern<T, X>> for CanonicalQuadPattern<T> {
+	fn from(value: TriplePattern<T, X>) -> Self {
+		Self::from_triple_pattern(value)
+	}
+}
+
+impl<T, X: PartialEq> From<QuadPattern<T, X>> for CanonicalQuadPattern<T> {
+	fn from(value: QuadPattern<T, X>) -> Self {
+		Self::from_pattern(value)
+	}
+}
+
+impl<'a, T: ToOwned> From<CanonicalQuadPattern<&'a T>> for CanonicalQuadPattern<Cow<'a, T>> {
+	fn from(value: CanonicalQuadPattern<&'a T>) -> Self {
+		value.map(Cow::Borrowed)
 	}
 }
 
@@ -404,15 +434,15 @@ impl<T> AnySubject<T> {
 
 	pub fn from_pattern<X: PartialEq>(
 		s: X,
-		p: ResourceOrVar<T, X>,
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
+		p: Pattern<T, X>,
+		o: Pattern<T, X>,
+		g: Option<Pattern<T, X>>,
 	) -> Self {
 		match p {
-			ResourceOrVar::Resource(p) => {
+			Pattern::Ground(p) => {
 				Self::GivenPredicate(p, AnySubjectGivenPredicate::from_pattern(s, o, g))
 			}
-			ResourceOrVar::Var(p) => {
+			Pattern::Var(p) => {
 				if p == s {
 					Self::SameAsSubject(AnySubjectGivenPredicate::from_pattern(s, o, g))
 				} else {
@@ -580,14 +610,14 @@ impl<T> AnySubjectAnyPredicate<T> {
 	pub fn from_pattern<X: PartialEq>(
 		s: X,
 		p: X,
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
+		o: Pattern<T, X>,
+		g: Option<Pattern<T, X>>,
 	) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => {
+			Pattern::Ground(o) => {
 				Self::GivenObject(o, AnySubjectAnyPredicateGivenObject::from_pattern(s, p, g))
 			}
-			ResourceOrVar::Var(o) => {
+			Pattern::Var(o) => {
 				if o == s {
 					Self::SameAsSubject(AnySubjectAnyPredicateGivenObject::from_pattern(s, p, g))
 				} else if o == p {
@@ -757,16 +787,12 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(
-		s: X,
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
-	) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, o: Pattern<T, X>, g: Option<Pattern<T, X>>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => {
+			Pattern::Ground(o) => {
 				Self::GivenObject(o, AnySubjectGivenPredicateGivenObject::from_pattern(s, g))
 			}
-			ResourceOrVar::Var(o) => {
+			Pattern::Var(o) => {
 				if o == s {
 					Self::SameAsSubject(AnySubjectGivenPredicateGivenObject::from_pattern(s, g))
 				} else {
@@ -913,17 +939,15 @@ impl<T> GivenSubject<T> {
 	}
 
 	pub fn from_pattern<X: PartialEq>(
-		p: ResourceOrVar<T, X>,
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
+		p: Pattern<T, X>,
+		o: Pattern<T, X>,
+		g: Option<Pattern<T, X>>,
 	) -> Self {
 		match p {
-			ResourceOrVar::Resource(p) => {
+			Pattern::Ground(p) => {
 				Self::GivenPredicate(p, GivenSubjectGivenPredicate::from_pattern(o, g))
 			}
-			ResourceOrVar::Var(p) => {
-				Self::AnyPredicate(GivenSubjectAnyPredicate::from_pattern(p, o, g))
-			}
+			Pattern::Var(p) => Self::AnyPredicate(GivenSubjectAnyPredicate::from_pattern(p, o, g)),
 		}
 	}
 
@@ -1055,16 +1079,12 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(
-		p: X,
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
-	) -> Self {
+	pub fn from_pattern<X: PartialEq>(p: X, o: Pattern<T, X>, g: Option<Pattern<T, X>>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => {
+			Pattern::Ground(o) => {
 				Self::GivenObject(o, GivenSubjectAnyPredicateGivenObject::from_pattern(p, g))
 			}
-			ResourceOrVar::Var(o) => {
+			Pattern::Var(o) => {
 				if p == o {
 					Self::SameAsPredicate(GivenSubjectAnyPredicateGivenObject::from_pattern(p, g))
 				} else {
@@ -1210,15 +1230,12 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(
-		o: ResourceOrVar<T, X>,
-		g: Option<ResourceOrVar<T, X>>,
-	) -> Self {
+	pub fn from_pattern<X: PartialEq>(o: Pattern<T, X>, g: Option<Pattern<T, X>>) -> Self {
 		match o {
-			ResourceOrVar::Resource(o) => {
+			Pattern::Ground(o) => {
 				Self::GivenObject(o, GivenSubjectGivenPredicateGivenObject::from_pattern(g))
 			}
-			ResourceOrVar::Var(o) => {
+			Pattern::Var(o) => {
 				Self::AnyObject(GivenSubjectGivenPredicateAnyObject::from_pattern(o, g))
 			}
 		}
@@ -1351,11 +1368,11 @@ impl<T> AnySubjectAnyPredicateAnyObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, p: X, o: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, p: X, o: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == s {
 					Self::SameAsSubject
 				} else if g == p {
@@ -1479,11 +1496,11 @@ impl<T> GivenSubjectAnyPredicateAnyObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(p: X, o: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(p: X, o: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == p {
 					Self::SameAsPredicate
 				} else if g == o {
@@ -1596,11 +1613,11 @@ impl<T> AnySubjectGivenPredicateAnyObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, o: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, o: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == s {
 					Self::SameAsSubject
 				} else if g == o {
@@ -1713,11 +1730,11 @@ impl<T> AnySubjectAnyPredicateGivenObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, p: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, p: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == s {
 					Self::SameAsSubject
 				} else if g == p {
@@ -1829,11 +1846,11 @@ impl<T> AnySubjectGivenPredicateGivenObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(s: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(s: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == s {
 					Self::SameAsSubject
 				} else {
@@ -1934,11 +1951,11 @@ impl<T> GivenSubjectAnyPredicateGivenObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(p: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(p: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == p {
 					Self::SameAsPredicate
 				} else {
@@ -2039,11 +2056,11 @@ impl<T> GivenSubjectGivenPredicateAnyObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X: PartialEq>(o: X, g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X: PartialEq>(o: X, g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(g)) => {
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(g)) => {
 				if g == o {
 					Self::SameAsObject
 				} else {
@@ -2143,11 +2160,11 @@ impl<T> GivenSubjectGivenPredicateGivenObject<T> {
 		}
 	}
 
-	pub fn from_pattern<X>(g: Option<ResourceOrVar<T, X>>) -> Self {
+	pub fn from_pattern<X>(g: Option<Pattern<T, X>>) -> Self {
 		match g {
 			None => Self::GivenGraph(None),
-			Some(ResourceOrVar::Resource(g)) => Self::GivenGraph(Some(g)),
-			Some(ResourceOrVar::Var(_)) => Self::AnyGraph,
+			Some(Pattern::Ground(g)) => Self::GivenGraph(Some(g)),
+			Some(Pattern::Var(_)) => Self::AnyGraph,
 		}
 	}
 
