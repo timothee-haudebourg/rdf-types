@@ -1,4 +1,6 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, iter::Cloned};
+
+use crate::util::InfallibleIterator;
 
 use super::{ConstGenDomain, Domain, FiniteDomain};
 
@@ -8,7 +10,7 @@ pub trait TryDomain: Domain {
 
 /// Finite domain.
 pub trait TryFiniteDomain: TryDomain {
-	type TryResources<'a>: Iterator<Item = Result<&'a Self::Resource, Self::Error>>
+	type TryResources<'a>: 'a + Iterator<Item = Result<Self::Resource, Self::Error>>
 	where
 		Self: 'a;
 
@@ -20,7 +22,7 @@ pub trait TryFiniteDomain: TryDomain {
 
 	fn try_contains(&self, a: &Self::Resource) -> Result<bool, Self::Error>;
 
-	fn try_resources(&self) -> Self::TryResources<'_>;
+	fn try_resources(&self) -> Result<Self::TryResources<'_>, Self::Error>;
 }
 
 /// Domain that can spawn fresh new resources.
@@ -45,12 +47,12 @@ impl<I: Domain> TryDomain for I {
 	type Error = Infallible;
 }
 
-impl<I: FiniteDomain> TryFiniteDomain for I {
+impl<I: FiniteDomain> TryFiniteDomain for I
+where
+	I::Resource: Clone,
+{
 	type TryResources<'a>
-		= std::iter::Map<
-		I::Resources<'a>,
-		fn(&'a Self::Resource) -> Result<&'a Self::Resource, Infallible>,
-	>
+		= InfallibleIterator<Cloned<I::Resources<'a>>>
 	where
 		Self: 'a;
 
@@ -66,8 +68,8 @@ impl<I: FiniteDomain> TryFiniteDomain for I {
 		Ok(self.contains(a))
 	}
 
-	fn try_resources(&self) -> Self::TryResources<'_> {
-		self.resources().map(Ok as fn(_) -> _)
+	fn try_resources(&self) -> Result<Self::TryResources<'_>, Self::Error> {
+		Ok(InfallibleIterator(self.resources().cloned()))
 	}
 }
 

@@ -15,6 +15,7 @@
 //!
 //! [rdf]: <https://w3c.github.io/rdf-primer/spec/>
 //! [w3c]: <https://www.w3.org/>
+#![allow(async_fn_in_trait)]
 pub mod dataset;
 pub mod diff;
 pub mod domain;
@@ -22,7 +23,7 @@ mod isomorphism;
 pub mod pattern;
 mod quad;
 mod triple;
-pub mod utils;
+pub mod util;
 
 pub use dataset::Dataset;
 pub use domain::Domain;

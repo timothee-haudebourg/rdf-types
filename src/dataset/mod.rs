@@ -1,7 +1,7 @@
 //! Dataset traits and implementations.
 use crate::{
 	pattern::{quad::canonical::PatternGraph, CanonicalQuadPattern},
-	utils::{OptionIterator, TripleToQuadIterator},
+	util::{OptionIterator, TriplesIntoQuads},
 	Quad,
 };
 pub mod r#async;
@@ -42,12 +42,12 @@ pub trait FiniteDataset: Dataset {
 
 impl<G: FiniteGraph> FiniteDataset for G {
 	type Quads<'a>
-		= TripleToQuadIterator<G::Triples<'a>, &'a G::Resource>
+		= TriplesIntoQuads<G::Triples<'a>, &'a G::Resource>
 	where
 		Self: 'a;
 
 	fn quads(&self) -> Self::Quads<'_> {
-		TripleToQuadIterator::new(self.triples())
+		TriplesIntoQuads::new(self.triples())
 	}
 
 	fn quads_count(&self) -> usize {
@@ -323,7 +323,7 @@ pub trait PatternMatchingDataset: Dataset {
 
 impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 	type QuadPatternMatching<'a, 'p>
-		= OptionIterator<TripleToQuadIterator<G::TriplePatternMatching<'a, 'p>, &'a G::Resource>>
+		= OptionIterator<TriplesIntoQuads<G::TriplePatternMatching<'a, 'p>, &'a G::Resource>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
@@ -335,7 +335,7 @@ impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 		let (pattern, g) = pattern.into_triple();
 		match g {
 			PatternGraph::Given(None) | PatternGraph::Any => OptionIterator(Some(
-				TripleToQuadIterator::new(self.triple_pattern_matching(pattern)),
+				TriplesIntoQuads::new(self.triple_pattern_matching(pattern)),
 			)),
 			_ => OptionIterator(None),
 		}
