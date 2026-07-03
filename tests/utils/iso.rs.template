@@ -6,20 +6,17 @@ type Term = Pattern<u32, u32>;
 fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
 	match rdf_types::find_bijection(&a, &b) {
 		Some(bijection) => {
-			let substitution: BTreeMap<_, _> = bijection
+			let substitution: BTreeMap<u32, u32> = bijection
 				.forward
 				.into_iter()
-				.map(|(a, b)| (a.into_owned(), b))
+				.map(|(a, b)| (*a, *b))
 				.collect();
 			let c: BTreeDataset<Term> = a
 				.into_iter()
 				.map(|q| {
-					q.map(|t| {
-						if matches!(t, Term::Var(_)) {
-							**substitution.get(&t).unwrap()
-						} else {
-							t
-						}
+					q.map(|t| match t {
+						Term::Var(x) => Term::Var(*substitution.get(&x).unwrap()),
+						Term::Ground(_) => t,
 					})
 				})
 				.collect();

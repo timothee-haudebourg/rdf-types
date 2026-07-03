@@ -1,7 +1,5 @@
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
-use std::borrow::Cow;
-
 use crate::pattern::{AsPattern, Pattern};
 use crate::{dataset::FiniteDataset, Quad};
 
@@ -12,8 +10,7 @@ use crate::{dataset::FiniteDataset, Quad};
 /// This is equivalent to `find_bijection(a, b).is_some()`.
 pub fn are_isomorphic<R, A, B>(a: &A, b: &B) -> bool
 where
-	R: AsPattern + Clone + Ord,
-	R::Ground: PartialEq,
+	R: Ord + AsPattern<Var: Ord, Ground: PartialEq>,
 	A: FiniteDataset<Resource = R>,
 	B: FiniteDataset<Resource = R>,
 {
@@ -22,19 +19,19 @@ where
 
 /// Maps every blank node identifier (or variable) found in a dataset to its
 /// [`BlankSignature`].
-type BlankSignatureMap<'d, R> = BTreeMap<Cow<'d, R>, BlankSignature<'d, R>>;
+type BlankSignatureMap<'d, R> = BTreeMap<&'d <R as AsPattern>::Var, BlankSignature<'d, R>>;
 
 /// Variant of [`BlankSignatureMap`] borrowing its signatures rather than
 /// owning them, as produced by [`split_by_size`].
-type BlankSignatureMapRef<'s, 'd, R> = BTreeMap<Cow<'d, R>, &'s BlankSignature<'d, R>>;
+type BlankSignatureMapRef<'s, 'd, R> =
+	BTreeMap<&'d <R as AsPattern>::Var, &'s BlankSignature<'d, R>>;
 
 /// Finds a blank node identifier bijection from `a` to `b`.
 /// If such bijection exists,
 /// there is an isomorphism between `a` and `b`.
-pub fn find_bijection<'a, 'b, R, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b, R>>
+pub fn find_bijection<'a, 'b, R, A, B>(a: &'a A, b: &'b B) -> Option<BTreeBijection<'a, 'b, R::Var>>
 where
-	R: AsPattern + Clone + Ord,
-	R::Ground: PartialEq,
+	R: 'a + 'b + Ord + AsPattern<Var: Ord, Ground: PartialEq>,
 	A: FiniteDataset<Resource = R>,
 	B: FiniteDataset<Resource = R>,
 {
@@ -80,7 +77,7 @@ where
 			let mut a_blank_id_candidates = BTreeSet::new();
 			for (b_blank_id, b_sig) in b_group {
 				if a_sig.matches(b_sig) {
-					a_blank_id_candidates.insert(b_blank_id.clone());
+					a_blank_id_candidates.insert(*b_blank_id);
 				}
 			}
 
@@ -99,9 +96,9 @@ where
 ///
 /// Two ground values match if they are equal, and any two variables always
 /// match (since either can be substituted for the other by the bijection).
-fn resource_matches<R: AsPattern>(a: &R, b: &R) -> bool
+fn resource_matches<R>(a: &R, b: &R) -> bool
 where
-	R::Ground: PartialEq,
+	R: AsPattern<Ground: PartialEq>,
 {
 	match (a.as_pattern(), b.as_pattern()) {
 		(Pattern::Ground(a), Pattern::Ground(b)) => a == b,
@@ -112,9 +109,9 @@ where
 
 /// Checks whether `a` and `b` can denote the same quad, component-wise, using
 /// [`resource_matches`].
-fn quad_matches<R: AsPattern>(a: Quad<&R>, b: Quad<&R>) -> bool
+fn quad_matches<R>(a: Quad<&R>, b: Quad<&R>) -> bool
 where
-	R::Ground: PartialEq,
+	R: AsPattern<Ground: PartialEq>,
 {
 	resource_matches(a.0, b.0)
 		&& resource_matches(a.1, b.1)
@@ -155,33 +152,25 @@ fn blank_count<R: AsPattern>(Quad(s, p, o, g): Quad<&R>) -> usize {
 /// `map`.
 fn collect_signatures<'d, R, D>(map: &mut BlankSignatureMap<'d, R>, ds: &'d D)
 where
-	R: AsPattern + Clone + Ord,
+	R: Ord + AsPattern<Var: Ord>,
 	D: FiniteDataset<Resource = R>,
 {
 	for quad in ds.quads() {
-		if quad.0.is_var() {
-			map.entry(Cow::Borrowed(quad.0))
-				.or_default()
-				.insert(quad.map(Cow::Borrowed));
+		if let Pattern::Var(x) = quad.0.as_pattern() {
+			map.entry(x).or_default().insert(quad);
 		}
 
-		if quad.1.is_var() {
-			map.entry(Cow::Borrowed(quad.1))
-				.or_default()
-				.insert(quad.map(Cow::Borrowed));
+		if let Pattern::Var(x) = quad.1.as_pattern() {
+			map.entry(x).or_default().insert(quad);
 		}
 
-		if quad.2.is_var() {
-			map.entry(Cow::Borrowed(quad.2))
-				.or_default()
-				.insert(quad.map(Cow::Borrowed));
+		if let Pattern::Var(x) = quad.2.as_pattern() {
+			map.entry(x).or_default().insert(quad);
 		}
 
 		if let Some(g) = quad.3 {
-			if g.is_var() {
-				map.entry(Cow::Borrowed(g))
-					.or_default()
-					.insert(quad.map(Cow::Borrowed));
+			if let Pattern::Var(x) = g.as_pattern() {
+				map.entry(x).or_default().insert(quad);
 			}
 		}
 	}
@@ -197,7 +186,7 @@ fn split_by_size<'s, 'd, R>(
 	blanks: &'s BlankSignatureMap<'d, R>,
 ) -> BTreeMap<usize, BlankSignatureMapRef<'s, 'd, R>>
 where
-	R: ToOwned + Ord,
+	R: AsPattern<Var: Ord>,
 {
 	let mut result = BTreeMap::new();
 
@@ -205,11 +194,11 @@ where
 		match result.entry(sig.len()) {
 			Entry::Vacant(entry) => {
 				let mut map = BTreeMap::new();
-				map.insert(blank_id.clone(), sig);
+				map.insert(*blank_id, sig);
 				entry.insert(map);
 			}
 			Entry::Occupied(mut entry) => {
-				entry.get_mut().insert(blank_id.clone(), sig);
+				entry.get_mut().insert(*blank_id, sig);
 			}
 		}
 	}
@@ -219,17 +208,17 @@ where
 
 /// Blank node identifier bijection
 /// between two (isomorphic) datasets.
-pub struct BTreeBijection<'a, 'b, R: ToOwned> {
+pub struct BTreeBijection<'a, 'b, T> {
 	/// Maps each blank node identifier of the first dataset to the
 	/// corresponding blank node identifier of the second dataset.
-	pub forward: BTreeMap<Cow<'a, R>, Cow<'b, R>>,
+	pub forward: BTreeMap<&'a T, &'b T>,
 
 	/// Maps each blank node identifier of the second dataset to the
 	/// corresponding blank node identifier of the first dataset.
-	pub backward: BTreeMap<Cow<'b, R>, Cow<'a, R>>,
+	pub backward: BTreeMap<&'b T, &'a T>,
 }
 
-impl<R: ToOwned> Clone for BTreeBijection<'_, '_, R> {
+impl<T> Clone for BTreeBijection<'_, '_, T> {
 	fn clone(&self) -> Self {
 		Self {
 			forward: self.forward.clone(),
@@ -238,7 +227,7 @@ impl<R: ToOwned> Clone for BTreeBijection<'_, '_, R> {
 	}
 }
 
-impl<R: ToOwned> BTreeBijection<'_, '_, R> {
+impl<T> BTreeBijection<'_, '_, T> {
 	fn new() -> Self {
 		Self {
 			forward: BTreeMap::new(),
@@ -247,33 +236,42 @@ impl<R: ToOwned> BTreeBijection<'_, '_, R> {
 	}
 }
 
-impl<'a, 'b, R: ToOwned + Ord> BTreeBijection<'a, 'b, R> {
+impl<'a, 'b, T: Ord> BTreeBijection<'a, 'b, T> {
 	/// Extends the bijection with a new `a <-> b` blank node identifier pair.
-	fn insert(&mut self, a: Cow<'a, R>, b: Cow<'b, R>) {
-		self.forward.insert(a.clone(), b.clone());
+	fn insert(&mut self, a: &'a T, b: &'b T) {
+		self.forward.insert(a, b);
 		self.backward.insert(b, a);
 	}
 
 	/// Checks whether `a` and `b` are consistent with this (partial)
 	/// bijection: either they are equal, or the bijection already maps one
 	/// to the other, or neither is mapped yet.
-	fn resource_matches_with(&self, a: &R, b: &R) -> bool {
+	fn resource_matches_with<R>(&self, a: &R, b: &R) -> bool
+	where
+		R: PartialEq + AsPattern<Var = T>,
+	{
 		if a == b {
 			return true;
 		}
 
-		match self.forward.get(a) {
-			Some(c) => **c == *b,
-			None => match self.backward.get(b) {
-				Some(c) => *a == **c,
-				None => true,
+		match (a.as_pattern(), b.as_pattern()) {
+			(Pattern::Var(a), Pattern::Var(b)) => match self.forward.get(a) {
+				Some(c) => **c == *b,
+				None => match self.backward.get(b) {
+					Some(c) => *a == **c,
+					None => true,
+				},
 			},
+			_ => false,
 		}
 	}
 
 	/// Checks whether `a` and `b` are consistent with this (partial)
 	/// bijection, component-wise, using [`Self::resource_matches_with`].
-	fn quad_matches_with(&self, a: Quad<&R>, b: Quad<&R>) -> bool {
+	fn quad_matches_with<R>(&self, a: Quad<&R>, b: Quad<&R>) -> bool
+	where
+		R: PartialEq + AsPattern<Var = T>,
+	{
 		self.resource_matches_with(a.0, b.0)
 			&& self.resource_matches_with(a.1, b.1)
 			&& self.resource_matches_with(a.2, b.2)
@@ -287,7 +285,14 @@ impl<'a, 'b, R: ToOwned + Ord> BTreeBijection<'a, 'b, R> {
 	/// Checks whether the quads of `a` and `b` are consistent with this
 	/// (partial) bijection, matching each quad of `a` with a distinct quad of
 	/// `b` using [`Self::quad_matches_with`].
-	fn signature_matches_with(&self, a: &BlankSignature<'a, R>, b: &BlankSignature<'b, R>) -> bool {
+	fn signature_matches_with<R>(
+		&self,
+		a: &BlankSignature<'a, R>,
+		b: &BlankSignature<'b, R>,
+	) -> bool
+	where
+		R: PartialEq + AsPattern<Var = T>,
+	{
 		if a.len() == b.len() {
 			let mut other: Vec<_> = b.0.iter().cloned().map(Some).collect();
 			'next_quad: for quad in a.0.iter() {
@@ -313,18 +318,21 @@ impl<'a, 'b, R: ToOwned + Ord> BTreeBijection<'a, 'b, R> {
 	/// each remaining `(a_blank_id, b_candidates)` pair, a candidate that is
 	/// consistent with the bijection built so far, backtracking whenever a
 	/// choice leads to a dead end.
-	fn find_from_candidates(
+	fn find_from_candidates<R>(
 		self,
-		mut candidates: std::collections::btree_map::Iter<Cow<'a, R>, BTreeSet<Cow<'b, R>>>,
-		a: &BTreeMap<Cow<'a, R>, BlankSignature<'a, R>>,
-		b: &BTreeMap<Cow<'b, R>, BlankSignature<'b, R>>,
-	) -> Option<Self> {
+		mut candidates: std::collections::btree_map::Iter<&'a T, BTreeSet<&'b T>>,
+		a: &BTreeMap<&'a T, BlankSignature<'a, R>>,
+		b: &BTreeMap<&'b T, BlankSignature<'b, R>>,
+	) -> Option<Self>
+	where
+		R: PartialEq + AsPattern<Var = T>,
+	{
 		match candidates.next() {
 			Some((a_blank_id, b_candidates)) => {
 				for b_candidate in b_candidates {
 					if !self.backward.contains_key(b_candidate) {
 						let mut new_sigma = self.clone();
-						new_sigma.insert(a_blank_id.clone(), b_candidate.clone());
+						new_sigma.insert(a_blank_id, b_candidate);
 						if new_sigma.signature_matches_with(
 							a.get(a_blank_id).unwrap(),
 							b.get(b_candidate).unwrap(),
@@ -350,16 +358,16 @@ impl<'a, 'b, R: ToOwned + Ord> BTreeBijection<'a, 'b, R> {
 /// Used to narrow down, for each blank node identifier of a dataset, the set
 /// of candidate blank node identifiers it could be mapped to in the other
 /// dataset.
-struct BlankSignature<'a, R: ToOwned>(Vec<Quad<Cow<'a, R>>>);
+struct BlankSignature<'a, R>(Vec<Quad<&'a R>>);
 
-impl<R: ToOwned> Default for BlankSignature<'_, R> {
+impl<R> Default for BlankSignature<'_, R> {
 	fn default() -> Self {
 		Self(Vec::new())
 	}
 }
 
-impl<'a, R: ToOwned> BlankSignature<'a, R> {
-	fn insert(&mut self, quad: Quad<Cow<'a, R>>) {
+impl<'a, R> BlankSignature<'a, R> {
+	fn insert(&mut self, quad: Quad<&'a R>) {
 		self.0.push(quad)
 	}
 
@@ -370,8 +378,7 @@ impl<'a, R: ToOwned> BlankSignature<'a, R> {
 
 impl<'a, R> BlankSignature<'a, R>
 where
-	R: AsPattern + Clone,
-	R::Ground: PartialEq,
+	R: AsPattern<Ground: PartialEq>,
 {
 	/// Checks whether `self` and `other` could be the signatures of two
 	/// blank node identifiers mapped to one another, ignoring any bijection
