@@ -1,21 +1,9 @@
 use std::convert::Infallible;
 
-use super::{ConstGenDomain, Cow, Domain, EqDomain, FiniteDomain, VariableDomain};
+use super::{ConstGenDomain, Cow, Domain, FiniteDomain};
 
 pub trait TryDomain: Domain {
 	type Error;
-}
-
-pub trait TryEqDomain: TryDomain {
-	fn try_is_eq(&self, a: &Self::Resource, b: &Self::Resource) -> Result<bool, Self::Error>;
-}
-
-pub trait TryVariableDomain: TryDomain {
-	fn try_is_ground(&self, a: &Self::Resource) -> Result<bool, Self::Error>;
-
-	fn try_is_variable(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(!self.try_is_ground(a)?)
-	}
 }
 
 /// Finite domain.
@@ -55,22 +43,6 @@ impl<I: TryConstGenDomain> TryGenDomain for I {
 
 impl<I: Domain> TryDomain for I {
 	type Error = Infallible;
-}
-
-impl<I: EqDomain> TryEqDomain for I {
-	fn try_is_eq(&self, a: &Self::Resource, b: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(self.is_eq(a, b))
-	}
-}
-
-impl<I: VariableDomain> TryVariableDomain for I {
-	fn try_is_ground(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(self.is_ground(a))
-	}
-
-	fn try_is_variable(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(self.is_variable(a))
-	}
 }
 
 impl<I: FiniteDomain> TryFiniteDomain for I {

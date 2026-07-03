@@ -1,19 +1,9 @@
 //! This file is auto generated using the
 //! `tests/utils/generate-iso-test.rb` script.
-use rdf_types::{dataset::BTreeDataset, domain::sealed::MaybeVariable, Quad};
+use rdf_types::{dataset::BTreeDataset, pattern::Pattern, Quad};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum Term {
-	Ground(u32),
-	Var(u32),
-}
-
-impl MaybeVariable for Term {
-	fn is_ground(&self) -> bool {
-		matches!(self, Term::Ground(_))
-	}
-}
+type Term = Pattern<u32, u32>;
 
 fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
 	match rdf_types::find_bijection(&a, &b) {
@@ -28,7 +18,7 @@ fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
 				.map(|q| {
 					q.map(|t| {
 						if matches!(t, Term::Var(_)) {
-							(**substitution.get(&t).unwrap()).clone()
+							**substitution.get(&t).unwrap()
 						} else {
 							t
 						}

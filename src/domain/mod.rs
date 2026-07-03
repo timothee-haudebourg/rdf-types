@@ -1,24 +1,12 @@
 pub mod r#async;
 pub mod fallible;
-pub mod sealed;
+pub mod r#static;
 
 pub use std::borrow::Cow;
 
 /// RDF resource domain.
 pub trait Domain {
 	type Resource: ToOwned;
-}
-
-pub trait EqDomain: Domain {
-	fn is_eq(&self, a: &Self::Resource, b: &Self::Resource) -> bool;
-}
-
-pub trait VariableDomain: Domain {
-	fn is_ground(&self, a: &Self::Resource) -> bool;
-
-	fn is_variable(&self, a: &Self::Resource) -> bool {
-		!self.is_ground(a)
-	}
 }
 
 /// Finite domain.

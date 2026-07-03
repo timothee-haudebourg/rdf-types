@@ -2,32 +2,8 @@ use std::future::Future;
 
 use futures_lite::{stream, Stream};
 
-use super::{ConstGenDomain, Cow, EqDomain, FiniteDomain, VariableDomain};
-use crate::domain::fallible::{
-	TryConstGenDomain, TryDomain, TryEqDomain, TryFiniteDomain, TryVariableDomain,
-};
-
-pub trait AsyncEqDomain: TryDomain {
-	fn async_is_eq(
-		&self,
-		a: &Self::Resource,
-		b: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>>;
-}
-
-pub trait AsyncVariableDomain: TryDomain {
-	fn async_is_ground(
-		&self,
-		a: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>>;
-
-	fn async_is_variable(
-		&self,
-		a: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>> {
-		async { Ok(!self.async_is_ground(a).await?) }
-	}
-}
+use super::{ConstGenDomain, Cow, FiniteDomain};
+use crate::domain::fallible::{TryConstGenDomain, TryDomain, TryFiniteDomain};
 
 /// Finite domain.
 pub trait AsyncFiniteDomain: TryDomain {
@@ -65,28 +41,6 @@ impl<I: AsyncConstGenDomain> AsyncGenDomain for I {
 	}
 }
 
-// Blanket implementations for infallible domains.
-
-impl<I: EqDomain> AsyncEqDomain for I {
-	async fn async_is_eq(
-		&self,
-		a: &Self::Resource,
-		b: &Self::Resource,
-	) -> Result<bool, Self::Error> {
-		Ok(self.is_eq(a, b))
-	}
-}
-
-impl<I: VariableDomain> AsyncVariableDomain for I {
-	async fn async_is_ground(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(self.is_ground(a))
-	}
-
-	async fn async_is_variable(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		Ok(self.is_variable(a))
-	}
-}
-
 impl<I: FiniteDomain> AsyncFiniteDomain for I {
 	type AsyncResources<'a>
 		= stream::Iter<
@@ -118,30 +72,6 @@ impl<I: FiniteDomain> AsyncFiniteDomain for I {
 impl<I: ConstGenDomain> AsyncConstGenDomain for I {
 	async fn async_new_resource(&self) -> Result<Self::Resource, Self::Error> {
 		Ok(ConstGenDomain::new_resource(self))
-	}
-}
-
-// Async fallible traits (async version of Try*), with blanket impls from Try*.
-
-pub trait AsyncTryEqDomain: TryDomain {
-	fn async_try_is_eq(
-		&self,
-		a: &Self::Resource,
-		b: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>>;
-}
-
-pub trait AsyncTryVariableDomain: TryDomain {
-	fn async_try_is_ground(
-		&self,
-		a: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>>;
-
-	fn async_try_is_variable(
-		&self,
-		a: &Self::Resource,
-	) -> impl Future<Output = Result<bool, Self::Error>> {
-		async { Ok(!self.async_try_is_ground(a).await?) }
 	}
 }
 
@@ -182,28 +112,6 @@ impl<I: AsyncTryConstGenDomain> AsyncTryGenDomain for I {
 		&mut self,
 	) -> impl Future<Output = Result<Self::Resource, Self::Error>> {
 		AsyncTryConstGenDomain::async_try_new_resource(self)
-	}
-}
-
-// Blanket implementations from Try* to AsyncTry*.
-
-impl<I: TryEqDomain> AsyncTryEqDomain for I {
-	async fn async_try_is_eq(
-		&self,
-		a: &Self::Resource,
-		b: &Self::Resource,
-	) -> Result<bool, Self::Error> {
-		self.try_is_eq(a, b)
-	}
-}
-
-impl<I: TryVariableDomain> AsyncTryVariableDomain for I {
-	async fn async_try_is_ground(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		self.try_is_ground(a)
-	}
-
-	async fn async_try_is_variable(&self, a: &Self::Resource) -> Result<bool, Self::Error> {
-		self.try_is_variable(a)
 	}
 }
 
