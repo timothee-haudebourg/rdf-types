@@ -1,4 +1,6 @@
-use std::{cmp::Ordering, fmt};
+use std::{cmp::Ordering, fmt, ops::Deref};
+
+use into_owned_trait::IntoOwned;
 
 use crate::Triple;
 
@@ -8,75 +10,14 @@ use crate::Triple;
 pub struct Quad<S, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
 
 impl<S, P, O, G> Quad<S, P, O, G> {
-	#[deprecated(since = "0.18.4", note = "please use `as_ref` instead")]
-	pub fn borrow_components(&self) -> Quad<&S, &P, &O, &G> {
-		self.as_ref()
+	/// Creates a new quad.
+	pub fn new(subject: S, predicate: P, object: O, graph: Option<G>) -> Self {
+		Self(subject, predicate, object, graph)
 	}
 
 	/// Borrows each component of the quad.
 	pub fn as_ref(&self) -> Quad<&S, &P, &O, &G> {
 		Quad(&self.0, &self.1, &self.2, self.3.as_ref())
-	}
-}
-
-impl<S, P, O, G> Quad<&S, &P, &O, &G> {
-	pub fn cloned(&self) -> Quad<S, P, O, G>
-	where
-		S: Clone,
-		P: Clone,
-		O: Clone,
-		G: Clone,
-	{
-		Quad(
-			self.0.clone(),
-			self.1.clone(),
-			self.2.clone(),
-			self.3.cloned(),
-		)
-	}
-
-	pub fn into_cloned(self) -> Quad<S, P, O, G>
-	where
-		S: Clone,
-		P: Clone,
-		O: Clone,
-		G: Clone,
-	{
-		Quad(
-			self.0.clone(),
-			self.1.clone(),
-			self.2.clone(),
-			self.3.cloned(),
-		)
-	}
-}
-
-impl<S, P, O, G> Quad<&S, &P, &O, &G> {
-	pub fn copied(&self) -> Quad<S, P, O, G>
-	where
-		S: Copy,
-		P: Copy,
-		O: Copy,
-		G: Copy,
-	{
-		Quad(*self.0, *self.1, *self.2, self.3.copied())
-	}
-
-	pub fn into_copied(self) -> Quad<S, P, O, G>
-	where
-		S: Copy,
-		P: Copy,
-		O: Copy,
-		G: Copy,
-	{
-		Quad(*self.0, *self.1, *self.2, self.3.copied())
-	}
-}
-
-impl<S, P, O, G> Quad<S, P, O, G> {
-	/// Creates a new quad.
-	pub fn new(subject: S, predicate: P, object: O, graph: Option<G>) -> Self {
-		Self(subject, predicate, object, graph)
 	}
 
 	/// Returns a reference to the subject of the quad,
@@ -151,10 +92,6 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		self.3
 	}
 
-	pub fn into_parts(self) -> (S, P, O, Option<G>) {
-		(self.0, self.1, self.2, self.3)
-	}
-
 	/// Turns this quad into a triple and its graph component.
 	pub fn into_triple(self) -> (Triple<S, P, O>, Option<G>) {
 		(Triple(self.0, self.1, self.2), self.3)
@@ -165,12 +102,12 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		Quad(f(self.0), self.1, self.2, self.3)
 	}
 
-	/// Maps the subject with the given function.
+	/// Maps the predicate with the given function.
 	pub fn map_predicate<U>(self, f: impl FnOnce(P) -> U) -> Quad<S, U, O, G> {
 		Quad(self.0, f(self.1), self.2, self.3)
 	}
 
-	/// Maps the subject with the given function.
+	/// Maps the object with the given function.
 	pub fn map_object<U>(self, f: impl FnOnce(O) -> U) -> Quad<S, P, U, G> {
 		Quad(self.0, self.1, f(self.2), self.3)
 	}
@@ -197,30 +134,69 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 	}
 }
 
+impl<S, P, O, G> Quad<&S, &P, &O, &G> {
+	pub fn cloned(&self) -> Quad<S, P, O, G>
+	where
+		S: Clone,
+		P: Clone,
+		O: Clone,
+		G: Clone,
+	{
+		Quad(
+			self.0.clone(),
+			self.1.clone(),
+			self.2.clone(),
+			self.3.cloned(),
+		)
+	}
+
+	pub fn copied(&self) -> Quad<S, P, O, G>
+	where
+		S: Copy,
+		P: Copy,
+		O: Copy,
+		G: Copy,
+	{
+		Quad(*self.0, *self.1, *self.2, self.3.copied())
+	}
+}
+
 impl<T> Quad<T, T, T, T> {
 	/// Maps the components with the given function.
 	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Quad<U, U, U, U> {
 		Quad(f(self.0), f(self.1), f(self.2), self.3.map(f))
 	}
-}
 
-impl<T: std::ops::Deref> Quad<T, T, T, T> {
 	/// Dereferences each component of the quad.
-	pub fn as_deref(&self) -> Quad<&T::Target, &T::Target, &T::Target, &T::Target> {
+	pub fn as_deref(&self) -> Quad<&T::Target, &T::Target, &T::Target, &T::Target>
+	where
+		T: Deref,
+	{
 		Quad(&*self.0, &*self.1, &*self.2, self.3.as_deref())
 	}
 }
 
-impl<
-		S1: PartialEq<S2>,
-		P1: PartialEq<P2>,
-		O1: PartialEq<O2>,
-		G1: PartialEq<G2>,
-		S2,
-		P2,
-		O2,
-		G2,
-	> PartialEq<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
+impl<S, P, O, G> IntoOwned for Quad<S, P, O, G>
+where
+	S: IntoOwned,
+	P: IntoOwned,
+	O: IntoOwned,
+	G: IntoOwned,
+{
+	type Owned = Quad<S::Owned, P::Owned, O::Owned, G::Owned>;
+
+	fn into_owned(self) -> Self::Owned {
+		Quad(
+			self.0.into_owned(),
+			self.1.into_owned(),
+			self.2.into_owned(),
+			self.3.map(IntoOwned::into_owned),
+		)
+	}
+}
+
+impl<S1: PartialEq<S2>, P1: PartialEq<P2>, O1: PartialEq<O2>, G1: PartialEq<G2>, S2, P2, O2, G2>
+	PartialEq<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
 {
 	fn eq(&self, other: &Quad<S2, P2, O2, G2>) -> bool {
 		self.0 == other.0
@@ -234,16 +210,8 @@ impl<
 	}
 }
 
-impl<
-		S1: PartialOrd<S2>,
-		P1: PartialOrd<P2>,
-		O1: PartialOrd<O2>,
-		G1: PartialOrd<G2>,
-		S2,
-		P2,
-		O2,
-		G2,
-	> PartialOrd<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
+impl<S1: PartialOrd<S2>, P1: PartialOrd<P2>, O1: PartialOrd<O2>, G1: PartialOrd<G2>, S2, P2, O2, G2>
+	PartialOrd<Quad<S2, P2, O2, G2>> for Quad<S1, P1, O1, G1>
 {
 	fn partial_cmp(&self, other: &Quad<S2, P2, O2, G2>) -> Option<Ordering> {
 		match self.0.partial_cmp(&other.0) {
