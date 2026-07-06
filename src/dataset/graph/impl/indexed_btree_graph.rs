@@ -4,17 +4,19 @@ use educe::Educe;
 use raw_btree::RawBTree;
 use slab::Slab;
 
-use super::super::{Graph, PatternMatchingGraph};
+use super::super::{
+	Graph, MultiPatternMatchingGraph, PatternMatchingGraph, PatternMatchingGraphMut,
+};
 use crate::{
+	Triple,
 	dataset::{
 		BTreeGraph, FiniteGraph, GraphMut, ObjectFiniteGraph, PredicateFiniteGraph,
 		ResourceFiniteGraph, SubjectFiniteGraph,
 	},
 	pattern::{
-		triple::canonical::{PatternObject, PatternPredicate, PatternSubject},
 		CanonicalTriplePattern,
+		triple::{PatternObject, PatternPredicate, PatternSubject},
 	},
-	Triple,
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -289,39 +291,56 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 			.remove(triple_cmp(&self.resources, &self.triples), &triple)
 		{
 			Some(i) => {
-				let Triple(s_i, p_i, o_i) = self.triples.remove(i);
-
-				self.subjects.remove(&s_i);
-				self.predicates.remove(&p_i);
-				self.objects.remove(&o_i);
-
-				let s = &mut self.resources[s_i];
-				s.as_subject.remove(&i);
-				if s.is_empty() {
-					self.resources_indexes
-						.remove(resource_cmp(&self.resources), triple.0);
-					self.resources.remove(s_i);
-				}
-
-				let p = &mut self.resources[p_i];
-				p.as_predicate.remove(&i);
-				if p.is_empty() {
-					self.resources_indexes
-						.remove(resource_cmp(&self.resources), triple.1);
-					self.resources.remove(p_i);
-				}
-
-				let o = &mut self.resources[o_i];
-				o.as_object.remove(&i);
-				if o.is_empty() {
-					self.resources_indexes
-						.remove(resource_cmp(&self.resources), triple.2);
-					self.resources.remove(o_i);
-				}
-
+				self.remove_by_index(i, false);
 				true
 			}
 			None => false,
+		}
+	}
+
+	/// Removes the given triple from the graph.
+	///
+	/// If `remove_index` is set to `false`, this function will assume that
+	/// the triple has already been removed from `self.triples_indexes`.
+	fn remove_by_index(&mut self, i: usize, remove_index: bool) {
+		if remove_index {
+			self.triples_indexes
+				.remove(triple_index_cmp(&self.resources, &self.triples), &i);
+		}
+
+		let Triple(s_i, p_i, o_i) = self.triples.remove(i);
+
+		let s = &mut self.resources[s_i];
+		s.as_subject.remove(&i);
+		if s.as_subject.is_empty() {
+			self.subjects.remove(&s_i);
+			if s.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &s_i);
+				self.resources.remove(s_i);
+			}
+		}
+
+		let p = &mut self.resources[p_i];
+		p.as_predicate.remove(&i);
+		if p.as_predicate.is_empty() {
+			self.predicates.remove(&p_i);
+			if p.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &p_i);
+				self.resources.remove(p_i);
+			}
+		}
+
+		let o = &mut self.resources[o_i];
+		o.as_object.remove(&i);
+		if o.as_object.is_empty() {
+			self.objects.remove(&o_i);
+			if o.is_empty() {
+				self.resources_indexes
+					.remove(resource_index_cmp(&self.resources), &o_i);
+				self.resources.remove(o_i);
+			}
 		}
 	}
 
@@ -334,6 +353,51 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 			subject: SubjectConstraints::new(self, pattern.into_subject()),
 			predicate: PredicateConstraints::new(self, pattern.into_predicate()),
 			object: ObjectConstraints::new(self, pattern.into_object()),
+			i: 0,
+		}
+	}
+
+	/// Returns an iterator over all the triples matching the given canonical
+	/// triple pattern.
+	pub fn multi_pattern_matching<'a, P>(
+		&self,
+		pattern: CanonicalTriplePattern<P>,
+	) -> MultiPatternMatching<'_, R>
+	where
+		P: IntoIterator<Item = &'a R>,
+		R: 'a,
+	{
+		let (s, p, o) = pattern.into_parts();
+
+		MultiPatternMatching {
+			resources: &self.resources,
+			triples: &self.triples,
+			subject: SubjectConstraints::new_multi(self, s),
+			predicate: PredicateConstraints::new_multi(self, p),
+			object: ObjectConstraints::new_multi(self, o),
+			i: 0,
+		}
+	}
+
+	/// Returns an iterator over all the triples matching the given canonical
+	/// triple pattern.
+	///
+	/// Each matching triple returned by [`Iterator::next`] are removed from
+	/// the graph. Matching triples that are not iterated on are kept in the
+	/// graph, even when the iterator is dropped.
+	pub fn extract_pattern_matching(
+		&mut self,
+		pattern: CanonicalTriplePattern<&R>,
+	) -> ExtractPatternMatching<'_, R> {
+		let subject = SubjectConstraints::new_owned(self, pattern.into_subject());
+		let predicate = PredicateConstraints::new_owned(self, pattern.into_predicate());
+		let object = ObjectConstraints::new_owned(self, pattern.into_object());
+
+		ExtractPatternMatching {
+			graph: self,
+			subject,
+			predicate,
+			object,
 			i: 0,
 		}
 	}
@@ -462,6 +526,43 @@ impl<R: Ord> PatternMatchingGraph for IndexedBTreeGraph<R> {
 
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
 		self.contains(triple)
+	}
+}
+
+impl<R: Ord> MultiPatternMatchingGraph for IndexedBTreeGraph<R> {
+	type TripleMultiPatternMatching<'a, 'p>
+		= MultiPatternMatching<'a, R>
+	where
+		R: 'a,
+		Self::Resource: 'p;
+
+	fn triple_multi_pattern_matching<'p, P>(
+		&self,
+		pattern: CanonicalTriplePattern<P>,
+	) -> Self::TripleMultiPatternMatching<'_, 'p>
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p,
+	{
+		self.multi_pattern_matching(pattern)
+	}
+}
+
+impl<R: Clone + Ord> PatternMatchingGraphMut for IndexedBTreeGraph<R> {
+	type ExtractMatchingTriples<'a, 'p>
+		= ExtractPatternMatching<'a, R>
+	where
+		Self: 'a,
+		R: 'p;
+
+	fn extract_matching_triples<'p>(
+		&mut self,
+		pattern: impl Into<CanonicalTriplePattern<&'p Self::Resource>>,
+	) -> Self::ExtractMatchingTriples<'_, 'p>
+	where
+		R: 'p,
+	{
+		self.extract_pattern_matching(pattern.into())
 	}
 }
 
@@ -608,9 +709,9 @@ impl<R: Hash> Hash for IndexedBTreeGraph<R> {
 pub struct PatternMatching<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	triples: &'a Slab<Triple<usize>>,
-	subject: SubjectConstraints<'a>,
-	predicate: PredicateConstraints<'a>,
-	object: ObjectConstraints<'a>,
+	subject: SubjectConstraints<TripleIndexes<'a>>,
+	predicate: PredicateConstraints<TripleIndexes<'a>>,
+	object: ObjectConstraints<TripleIndexes<'a>>,
 	i: usize,
 }
 
@@ -620,16 +721,24 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.i < self.triples.capacity() {
 			let i = self.subject.next(self.i)?;
-			let triple = *self.triples.get(i)?;
-			match self.predicate.next(i, triple) {
-				Ok(()) => match self.object.next(i, triple) {
-					Ok(()) => {
-						self.i = i + 1;
-						return Some(triple_with_resources(self.resources, triple));
-					}
+			match self.triples.get(i) {
+				Some(&triple) => match self.predicate.next(i, triple) {
+					Ok(()) => match self.object.next(i, triple) {
+						Ok(()) => {
+							if let Some(j) = i.checked_add(1) {
+								self.i = j;
+							}
+							return Some(triple_with_resources(self.resources, triple));
+						}
+						Err(j) => self.i = j?,
+					},
 					Err(j) => self.i = j?,
 				},
-				Err(j) => self.i = j?,
+				None => {
+					// If `subject` is `Any`, the selected triple might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
 			}
 		}
 
@@ -637,13 +746,104 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 	}
 }
 
-enum SubjectConstraints<'a> {
-	None,
-	Any,
-	Fixed(std::iter::Peekable<std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>>),
+/// Iterator over the triples of an [`IndexedBTreeGraph`] matching some given
+/// pattern, where the pattern components can each match multiple resources.
+pub struct MultiPatternMatching<'a, R> {
+	resources: &'a Slab<Resource<R>>,
+	triples: &'a Slab<Triple<usize>>,
+	subject: SubjectConstraints<OwnedTripleIndexes>,
+	predicate: PredicateConstraints<OwnedTripleIndexes>,
+	object: ObjectConstraints<OwnedTripleIndexes>,
+	i: usize,
 }
 
-impl<'a> SubjectConstraints<'a> {
+impl<'a, R> Iterator for MultiPatternMatching<'a, R> {
+	type Item = Triple<&'a R>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		while self.i < self.triples.capacity() {
+			let i = self.subject.next(self.i)?;
+			match self.triples.get(i) {
+				Some(&triple) => match self.predicate.next(i, triple) {
+					Ok(()) => match self.object.next(i, triple) {
+						Ok(()) => {
+							if let Some(j) = i.checked_add(1) {
+								self.i = j;
+							}
+							return Some(triple_with_resources(self.resources, triple));
+						}
+						Err(j) => self.i = j?,
+					},
+					Err(j) => self.i = j?,
+				},
+				None => {
+					// If `subject` is `Any`, the selected triple might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
+			}
+		}
+
+		None
+	}
+}
+
+/// Iterator over the triples of an [`IndexedBTreeGraph`] matching some given
+/// pattern.
+///
+/// Dropping this iterator will *not* extract the remaining matching triples.
+pub struct ExtractPatternMatching<'a, R> {
+	graph: &'a mut IndexedBTreeGraph<R>,
+	subject: SubjectConstraints<OwnedTripleIndexes>,
+	predicate: PredicateConstraints<OwnedTripleIndexes>,
+	object: ObjectConstraints<OwnedTripleIndexes>,
+	i: usize,
+}
+
+impl<R: Clone + Ord> Iterator for ExtractPatternMatching<'_, R> {
+	type Item = Triple<R>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		while self.i < self.graph.triples.capacity() {
+			let i = self.subject.next(self.i)?;
+			match self.graph.triples.get(i) {
+				Some(&triple) => match self.predicate.next(i, triple) {
+					Ok(()) => match self.object.next(i, triple) {
+						Ok(()) => {
+							let value =
+								triple_with_resources(&self.graph.resources, triple).cloned();
+							self.graph.remove_by_index(i, true);
+							if let Some(j) = i.checked_add(1) {
+								self.i = j;
+							}
+							return Some(value);
+						}
+						Err(j) => self.i = j?,
+					},
+					Err(j) => self.i = j?,
+				},
+				None => {
+					// If `subject` is `Any`, the selected triple might not even
+					// exist.
+					self.i = self.i.checked_add(1)?;
+				}
+			}
+		}
+
+		None
+	}
+}
+
+type TripleIndexes<'a> = std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>;
+type OwnedTripleIndexes = std::vec::IntoIter<usize>;
+
+enum SubjectConstraints<I: Iterator> {
+	None,
+	Any,
+	Fixed(std::iter::Peekable<I>),
+}
+
+impl<'a> SubjectConstraints<TripleIndexes<'a>> {
 	fn new<R: Ord>(graph: &'a IndexedBTreeGraph<R>, s: PatternSubject<&R>) -> Self {
 		match s {
 			PatternSubject::Any => Self::Any,
@@ -653,7 +853,54 @@ impl<'a> SubjectConstraints<'a> {
 			},
 		}
 	}
+}
 
+impl SubjectConstraints<OwnedTripleIndexes> {
+	fn new_owned<R: Ord>(graph: &IndexedBTreeGraph<R>, s: PatternSubject<&R>) -> Self {
+		match s {
+			PatternSubject::Any => Self::Any,
+			PatternSubject::Given(s) => match graph.get_resource(s) {
+				Some(subject) => Self::Fixed(
+					subject
+						.as_subject
+						.iter()
+						.copied()
+						.collect::<Vec<_>>()
+						.into_iter()
+						.peekable(),
+				),
+				None => Self::None,
+			},
+		}
+	}
+
+	fn new_multi<'p, R, P>(graph: &IndexedBTreeGraph<R>, s: PatternSubject<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p + Ord,
+	{
+		match s {
+			PatternSubject::Any => Self::Any,
+			PatternSubject::Given(multi_s) => {
+				let mut indexes = Vec::new();
+				for s in multi_s {
+					if let Some(subject) = graph.get_resource(s) {
+						indexes.extend(subject.as_subject.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
+		}
+	}
+}
+
+impl<I: Iterator<Item = usize>> SubjectConstraints<I> {
 	fn next(&mut self, i: usize) -> Option<usize> {
 		match self {
 			Self::None => None,
@@ -673,14 +920,14 @@ impl<'a> SubjectConstraints<'a> {
 	}
 }
 
-enum PredicateConstraints<'a> {
+enum PredicateConstraints<I: Iterator> {
 	None,
 	Any,
 	SameAsSubject,
-	Fixed(std::iter::Peekable<std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>>),
+	Fixed(std::iter::Peekable<I>),
 }
 
-impl<'a> PredicateConstraints<'a> {
+impl<'a> PredicateConstraints<TripleIndexes<'a>> {
 	fn new<R: Ord>(graph: &'a IndexedBTreeGraph<R>, p: PatternPredicate<&R>) -> Self {
 		match p {
 			PatternPredicate::Any => Self::Any,
@@ -691,7 +938,56 @@ impl<'a> PredicateConstraints<'a> {
 			},
 		}
 	}
+}
 
+impl PredicateConstraints<OwnedTripleIndexes> {
+	fn new_owned<R: Ord>(graph: &IndexedBTreeGraph<R>, p: PatternPredicate<&R>) -> Self {
+		match p {
+			PatternPredicate::Any => Self::Any,
+			PatternPredicate::SameAsSubject => Self::SameAsSubject,
+			PatternPredicate::Given(s) => match graph.get_resource(s) {
+				Some(subject) => Self::Fixed(
+					subject
+						.as_predicate
+						.iter()
+						.copied()
+						.collect::<Vec<_>>()
+						.into_iter()
+						.peekable(),
+				),
+				None => Self::None,
+			},
+		}
+	}
+
+	fn new_multi<'p, R, P>(graph: &IndexedBTreeGraph<R>, p: PatternPredicate<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p + Ord,
+	{
+		match p {
+			PatternPredicate::Any => Self::Any,
+			PatternPredicate::SameAsSubject => Self::SameAsSubject,
+			PatternPredicate::Given(multi_p) => {
+				let mut indexes = Vec::new();
+				for p in multi_p {
+					if let Some(predicate) = graph.get_resource(p) {
+						indexes.extend(predicate.as_predicate.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
+		}
+	}
+}
+
+impl<I: Iterator<Item = usize>> PredicateConstraints<I> {
 	fn next(&mut self, i: usize, triple: Triple<usize>) -> Result<(), Option<usize>> {
 		match self {
 			Self::None => Err(None),
@@ -720,15 +1016,15 @@ impl<'a> PredicateConstraints<'a> {
 	}
 }
 
-enum ObjectConstraints<'a> {
+enum ObjectConstraints<I: Iterator> {
 	None,
 	Any,
 	SameAsSubject,
 	SameAsPredicate,
-	Fixed(std::iter::Peekable<std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>>),
+	Fixed(std::iter::Peekable<I>),
 }
 
-impl<'a> ObjectConstraints<'a> {
+impl<'a> ObjectConstraints<TripleIndexes<'a>> {
 	fn new<R: Ord>(graph: &'a IndexedBTreeGraph<R>, p: PatternObject<&R>) -> Self {
 		match p {
 			PatternObject::Any => Self::Any,
@@ -740,7 +1036,58 @@ impl<'a> ObjectConstraints<'a> {
 			},
 		}
 	}
+}
 
+impl ObjectConstraints<OwnedTripleIndexes> {
+	fn new_owned<R: Ord>(graph: &IndexedBTreeGraph<R>, p: PatternObject<&R>) -> Self {
+		match p {
+			PatternObject::Any => Self::Any,
+			PatternObject::SameAsSubject => Self::SameAsSubject,
+			PatternObject::SameAsPredicate => Self::SameAsPredicate,
+			PatternObject::Given(s) => match graph.get_resource(s) {
+				Some(subject) => Self::Fixed(
+					subject
+						.as_object
+						.iter()
+						.copied()
+						.collect::<Vec<_>>()
+						.into_iter()
+						.peekable(),
+				),
+				None => Self::None,
+			},
+		}
+	}
+
+	fn new_multi<'p, R, P>(graph: &IndexedBTreeGraph<R>, o: PatternObject<P>) -> Self
+	where
+		P: IntoIterator<Item = &'p R>,
+		R: 'p + Ord,
+	{
+		match o {
+			PatternObject::Any => Self::Any,
+			PatternObject::SameAsSubject => Self::SameAsSubject,
+			PatternObject::SameAsPredicate => Self::SameAsPredicate,
+			PatternObject::Given(multi_o) => {
+				let mut indexes = Vec::new();
+				for o in multi_o {
+					if let Some(object) = graph.get_resource(o) {
+						indexes.extend(object.as_object.iter().copied());
+					}
+				}
+
+				if indexes.is_empty() {
+					Self::None
+				} else {
+					indexes.sort_unstable();
+					Self::Fixed(indexes.into_iter().peekable())
+				}
+			}
+		}
+	}
+}
+
+impl<I: Iterator<Item = usize>> ObjectConstraints<I> {
 	fn next(&mut self, i: usize, triple: Triple<usize>) -> Result<(), Option<usize>> {
 		match self {
 			Self::None => Err(None),
@@ -871,7 +1218,8 @@ impl<'de, R: Clone + Ord + serde::Deserialize<'de>> serde::Deserialize<'de>
 
 #[cfg(test)]
 mod tests {
-	use rand::{rngs::SmallRng, RngCore, SeedableRng};
+	use into_owned_trait::IntoOwned;
+	use rand::{RngCore, SeedableRng, rngs::SmallRng};
 
 	use crate::Triple;
 
@@ -923,7 +1271,7 @@ mod tests {
 		assert_eq!(graph.len(), triples.len());
 
 		let mut a = triples.iter().copied();
-		let mut b = graph.iter().map(Triple::into_copied);
+		let mut b = graph.iter().map(IntoOwned::into_owned);
 
 		loop {
 			match (a.next(), b.next()) {
@@ -946,5 +1294,106 @@ mod tests {
 		for i in 0u8..32 {
 			remove_test(i as usize * 11, [i; 32]);
 		}
+	}
+
+	#[test]
+	fn remove_keeps_shared_resource_indexed() {
+		let mut graph = IndexedBTreeGraph::<u32>::new();
+		graph.insert(Triple(1, 2, 3));
+		graph.insert(Triple(1, 4, 5));
+		graph.insert(Triple(6, 2, 7));
+		graph.insert(Triple(8, 9, 3));
+
+		graph.remove(Triple(&1, &2, &3));
+
+		assert!(
+			graph.subjects().any(|s| *s == 1),
+			"subject 1 is still used by Triple(1, 4, 5) and should remain indexed"
+		);
+		assert!(
+			graph.predicates().any(|p| *p == 2),
+			"predicate 2 is still used by Triple(6, 2, 7) and should remain indexed"
+		);
+		assert!(
+			graph.objects().any(|o| *o == 3),
+			"object 3 is still used by Triple(8, 9, 3) and should remain indexed"
+		);
+	}
+
+	#[test]
+	fn pattern_matching_skips_removed_triples() {
+		use crate::pattern::CanonicalTriplePattern;
+
+		let mut graph = IndexedBTreeGraph::<u32>::new();
+		graph.insert(Triple(1, 2, 3));
+		graph.insert(Triple(4, 5, 6));
+		graph.insert(Triple(7, 8, 9));
+
+		// Leaves a hole in the underlying slab at a lower index than the two
+		// remaining triples.
+		graph.remove(Triple(&1, &2, &3));
+
+		let mut results: Vec<_> = graph
+			.pattern_matching(CanonicalTriplePattern::from_option_triple(Triple(
+				None, None, None,
+			)))
+			.map(|t| t.copied())
+			.collect();
+		results.sort_unstable();
+
+		assert_eq!(results, vec![Triple(4, 5, 6), Triple(7, 8, 9)]);
+	}
+
+	#[test]
+	fn multi_pattern_matching_matches_multiple_objects() {
+		use crate::pattern::{
+			CanonicalTriplePattern,
+			triple::{AnySubject, AnySubjectAnyPredicate},
+		};
+
+		let mut graph = IndexedBTreeGraph::<u32>::new();
+		graph.insert(Triple(1, 2, 3));
+		graph.insert(Triple(4, 5, 6));
+		graph.insert(Triple(7, 8, 9));
+
+		let targets = [3u32, 9];
+		let pattern = CanonicalTriplePattern::AnySubject(AnySubject::AnyPredicate(
+			AnySubjectAnyPredicate::GivenObject(targets.iter()),
+		));
+
+		let mut results: Vec<_> = graph
+			.multi_pattern_matching(pattern)
+			.map(|t| t.copied())
+			.collect();
+		results.sort_unstable();
+
+		assert_eq!(results, vec![Triple(1, 2, 3), Triple(7, 8, 9)]);
+	}
+
+	#[test]
+	fn extract_pattern_matching_removes_matching_triples() {
+		use crate::pattern::CanonicalTriplePattern;
+
+		let mut graph = IndexedBTreeGraph::<u32>::new();
+		graph.insert(Triple(1, 2, 3));
+		graph.insert(Triple(1, 4, 5));
+		graph.insert(Triple(6, 2, 7));
+
+		let mut extracted: Vec<_> = graph
+			.extract_pattern_matching(CanonicalTriplePattern::from_option_triple(Triple(
+				Some(&1u32),
+				None,
+				None,
+			)))
+			.collect();
+		extracted.sort_unstable();
+
+		assert_eq!(extracted, vec![Triple(1, 2, 3), Triple(1, 4, 5)]);
+		assert_eq!(graph.len(), 1);
+		assert!(graph.contains(Triple(&6, &2, &7)));
+
+		// Subject `1` was only used by the extracted triples, so it should no
+		// longer be indexed.
+		assert!(!graph.contains_resource(&1));
 	}
 }

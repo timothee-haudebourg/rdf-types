@@ -7,8 +7,8 @@ use slab::Slab;
 
 use super::super::Dataset;
 use crate::{
-	dataset::{DatasetMut, FiniteDataset, IndexedBTreeDataset, ResourceFiniteDataset},
 	Quad,
+	dataset::{DatasetMut, FiniteDataset, IndexedBTreeDataset, ResourceFiniteDataset},
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -84,8 +84,8 @@ impl<R> BTreeDataset<R> {
 	}
 
 	/// Returns an iterator over the quads of the dataset.
-	pub fn iter(&self) -> Quads<'_, R> {
-		Quads {
+	pub fn iter(&self) -> Iter<'_, R> {
+		Iter {
 			resources: &self.resources,
 			quads: &self.quads,
 			indexes: self.quads_indexes.iter(),
@@ -289,7 +289,7 @@ impl<R> Dataset for BTreeDataset<R> {
 
 impl<R> FiniteDataset for BTreeDataset<R> {
 	type Quads<'a>
-		= Quads<'a, R>
+		= Iter<'a, R>
 	where
 		R: 'a;
 
@@ -332,13 +332,13 @@ impl<R: fmt::Display> fmt::Display for BTreeDataset<R> {
 /// Iterator over the quads of a [`BTreeDataset`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
-pub struct Quads<'a, R> {
+pub struct Iter<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	quads: &'a Slab<Quad<usize>>,
 	indexes: raw_btree::Iter<'a, usize>,
 }
 
-impl<'a, R> Iterator for Quads<'a, R> {
+impl<'a, R> Iterator for Iter<'a, R> {
 	type Item = Quad<&'a R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -349,13 +349,13 @@ impl<'a, R> Iterator for Quads<'a, R> {
 }
 
 /// Iterator over the quads of a [`BTreeDataset`].
-pub struct IntoQuads<R> {
+pub struct IntoIter<R> {
 	resources: Slab<Resource<R>>,
 	quads: Slab<Quad<usize>>,
 	indexes: raw_btree::IntoIter<usize>,
 }
 
-impl<R: Clone> Iterator for IntoQuads<R> {
+impl<R: Clone> Iterator for IntoIter<R> {
 	type Item = Quad<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -367,7 +367,7 @@ impl<R: Clone> Iterator for IntoQuads<R> {
 
 impl<'a, R> IntoIterator for &'a BTreeDataset<R> {
 	type Item = Quad<&'a R>;
-	type IntoIter = Quads<'a, R>;
+	type IntoIter = Iter<'a, R>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.iter()
@@ -376,10 +376,10 @@ impl<'a, R> IntoIterator for &'a BTreeDataset<R> {
 
 impl<R: Clone> IntoIterator for BTreeDataset<R> {
 	type Item = Quad<R>;
-	type IntoIter = IntoQuads<R>;
+	type IntoIter = IntoIter<R>;
 
 	fn into_iter(self) -> Self::IntoIter {
-		IntoQuads {
+		IntoIter {
 			resources: self.resources,
 			quads: self.quads,
 			indexes: self.quads_indexes.into_iter(),
@@ -500,7 +500,7 @@ impl<'de, R: Clone + Ord + serde::Deserialize<'de>> serde::Deserialize<'de> for 
 
 #[cfg(test)]
 mod tests {
-	use rand::{rngs::SmallRng, RngCore, SeedableRng};
+	use rand::{RngCore, SeedableRng, rngs::SmallRng};
 
 	use crate::Quad;
 
@@ -508,11 +508,7 @@ mod tests {
 
 	fn rng_graph(rng: &mut SmallRng) -> Option<u32> {
 		let g = rng.next_u32();
-		if g % 2 == 0 {
-			Some(g)
-		} else {
-			None
-		}
+		if g % 2 == 0 { Some(g) } else { None }
 	}
 
 	fn insert_test(n: usize, seed: [u8; 32]) {

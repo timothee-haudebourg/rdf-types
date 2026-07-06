@@ -6,8 +6,8 @@ use slab::Slab;
 
 use super::{super::Graph, IndexedBTreeGraph};
 use crate::{
-	dataset::{FiniteGraph, GraphMut, ResourceFiniteGraph},
 	Triple,
+	dataset::{FiniteGraph, GraphMut, ResourceFiniteGraph},
 };
 
 fn resource_cmp<R: Ord>(resources: &Slab<Resource<R>>) -> impl '_ + Fn(&usize, &R) -> Ordering {
@@ -463,7 +463,7 @@ impl<'de, R: Clone + Ord + serde::Deserialize<'de>> serde::Deserialize<'de> for 
 
 #[cfg(test)]
 mod tests {
-	use rand::{rngs::SmallRng, RngCore, SeedableRng};
+	use rand::{RngCore, SeedableRng, rngs::SmallRng};
 
 	use crate::Triple;
 
