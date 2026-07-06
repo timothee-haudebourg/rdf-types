@@ -1,11 +1,12 @@
 use std::ops::Deref;
 
+use into_owned_trait::IntoOwned;
+
 use crate::{Quad, Triple};
 
 pub mod quad;
 pub mod triple;
 
-use into_owned_trait::IntoOwned;
 pub use quad::CanonicalQuadPattern;
 pub use triple::{CanonicalTriplePattern, TriplePatternMap};
 
@@ -18,7 +19,6 @@ pub type QuadPattern<T, X> = Quad<Pattern<T, X>>;
 /// Resource or variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Pattern<T, X> {
 	Ground(T),
 	Var(X),
@@ -48,7 +48,7 @@ impl<T, X> Pattern<T, X> {
 		matches!(self, Self::Ground(_))
 	}
 
-	pub fn is_ground_or(&self, f: impl FnOnce(&T) -> bool) -> bool {
+	pub fn is_ground_and(&self, f: impl FnOnce(&T) -> bool) -> bool {
 		match self {
 			Self::Ground(t) => f(t),
 			Self::Var(_) => false,
@@ -59,17 +59,33 @@ impl<T, X> Pattern<T, X> {
 		matches!(self, Self::Var(_))
 	}
 
-	pub fn is_var_or(&self, f: impl FnOnce(&X) -> bool) -> bool {
+	/// Returns `true` if this pattern is a ground value, or if it is a
+	/// variable satisfying the given predicate.
+	///
+	/// Mirrors [`Option::is_none_or`], with [`Self::Ground`] playing the role
+	/// of [`None`].
+	pub fn is_ground_or(&self, f: impl FnOnce(&X) -> bool) -> bool {
 		match self {
 			Self::Ground(_) => true,
 			Self::Var(x) => f(x),
 		}
 	}
 
-	pub fn map<U>(self, f: impl Fn(T) -> U) -> Pattern<U, X> {
+	/// Maps the ground value with the given function, leaving a variable
+	/// untouched.
+	pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Pattern<U, X> {
 		match self {
 			Self::Ground(t) => Pattern::Ground(f(t)),
 			Self::Var(x) => Pattern::Var(x),
+		}
+	}
+
+	/// Maps the variable with the given function, leaving a ground value
+	/// untouched.
+	pub fn map_var<Y>(self, f: impl FnOnce(X) -> Y) -> Pattern<T, Y> {
+		match self {
+			Self::Ground(t) => Pattern::Ground(t),
+			Self::Var(x) => Pattern::Var(f(x)),
 		}
 	}
 }
@@ -105,8 +121,8 @@ impl<T, X> AsPattern for Pattern<T, X> {
 }
 
 pub trait AsPattern {
-	type Ground;
-	type Var;
+	type Ground: ?Sized;
+	type Var: ?Sized;
 
 	fn as_pattern(&self) -> Pattern<&Self::Ground, &Self::Var>;
 
