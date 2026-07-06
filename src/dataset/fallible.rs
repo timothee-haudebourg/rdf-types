@@ -1,6 +1,6 @@
 use crate::{
 	Quad,
-	pattern::CanonicalQuadPattern,
+	pattern::LinearQuadPattern,
 	util::{InfallibleIterator, QuadsIntoOwned},
 };
 
@@ -53,7 +53,7 @@ pub trait TryPatternMatchingDataset: TryDataset {
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::TryQuadPatternMatching<'_, 'p>, Self::Error>;
 
 	fn try_contains_quad(&self, quad: Quad<&Self::Resource>) -> Result<bool, Self::Error> {
@@ -77,7 +77,7 @@ where
 
 	fn try_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::TryQuadPatternMatching<'_, 'p>, Self::Error> {
 		Ok(InfallibleIterator(QuadsIntoOwned(
 			self.quad_pattern_matching(pattern),

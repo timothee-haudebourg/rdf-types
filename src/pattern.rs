@@ -4,17 +4,29 @@ use into_owned_trait::IntoOwned;
 
 use crate::{Quad, Triple};
 
-pub mod quad;
-pub mod triple;
-
-pub use quad::CanonicalQuadPattern;
-pub use triple::{CanonicalTriplePattern, TriplePatternMap};
-
 /// Triple pattern.
 pub type TriplePattern<T, X> = Triple<Pattern<T, X>>;
 
-/// Triple pattern.
+/// Quad pattern.
 pub type QuadPattern<T, X> = Quad<Pattern<T, X>>;
+
+/// Linear triple pattern.
+pub type LinearTriplePattern<T> = Triple<Option<T>>;
+
+impl<T> From<Triple<T>> for LinearTriplePattern<T> {
+	fn from(value: Triple<T>) -> Self {
+		value.map(Some)
+	}
+}
+
+/// Linear quad pattern.
+pub type LinearQuadPattern<T> = Quad<Option<T>>;
+
+impl<T> From<Quad<T>> for LinearQuadPattern<T> {
+	fn from(value: Quad<T>) -> Self {
+		value.map(Some)
+	}
+}
 
 /// Resource or variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

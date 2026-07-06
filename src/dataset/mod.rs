@@ -1,7 +1,7 @@
 //! Dataset traits and implementations.
 use crate::{
 	Quad,
-	pattern::{CanonicalQuadPattern, quad::PatternGraph},
+	pattern::LinearQuadPattern,
 	util::{OptionIterator, TriplesIntoQuads},
 };
 
@@ -201,7 +201,7 @@ pub trait MultiPatternMatchingDataset: Dataset {
 	/// pattern.
 	fn quad_multi_pattern_matching<'p, P: IntoIterator<Item = &'p Self::Resource>>(
 		&self,
-		pattern: CanonicalQuadPattern<P>,
+		pattern: LinearQuadPattern<P>,
 	) -> Self::QuadMultiPatternMatching<'_, 'p>;
 }
 
@@ -217,7 +217,7 @@ pub trait PatternMatchingDataset: Dataset {
 	/// pattern.
 	fn quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Self::QuadPatternMatching<'_, 'p>;
 
 	/// Checks if the dataset contains the given quad.
@@ -227,61 +227,30 @@ pub trait PatternMatchingDataset: Dataset {
 
 	/// Checks if the dataset contains the given subject.
 	fn contains_quad_subject(&self, subject: &Self::Resource) -> bool {
-		use crate::pattern::quad::{
-			GivenSubject, GivenSubjectAnyPredicate, GivenSubjectAnyPredicateAnyObject,
-		};
-		self.quad_pattern_matching(CanonicalQuadPattern::GivenSubject(
-			subject,
-			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject(
-				GivenSubjectAnyPredicateAnyObject::AnyGraph,
-			)),
-		))
-		.next()
-		.is_some()
+		self.quad_pattern_matching(Quad(Some(subject), None, None, None))
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the dataset contains the given predicate.
 	fn contains_quad_predicate(&self, predicate: &Self::Resource) -> bool {
-		use crate::pattern::quad::{
-			AnySubject, AnySubjectGivenPredicate, AnySubjectGivenPredicateAnyObject,
-		};
-		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(
-			AnySubject::GivenPredicate(
-				predicate,
-				AnySubjectGivenPredicate::AnyObject(AnySubjectGivenPredicateAnyObject::AnyGraph),
-			),
-		))
-		.next()
-		.is_some()
+		self.quad_pattern_matching(Quad(None, Some(predicate), None, None))
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the dataset contains the given object.
 	fn contains_quad_object(&self, object: &Self::Resource) -> bool {
-		use crate::pattern::quad::{
-			AnySubject, AnySubjectAnyPredicate, AnySubjectAnyPredicateGivenObject,
-		};
-		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
-			AnySubjectAnyPredicate::GivenObject(
-				object,
-				AnySubjectAnyPredicateGivenObject::AnyGraph,
-			),
-		)))
-		.next()
-		.is_some()
+		self.quad_pattern_matching(Quad(None, None, Some(object), None))
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the dataset contains the given named graph.
 	fn contains_named_graph(&self, named_graph: &Self::Resource) -> bool {
-		use crate::pattern::quad::{
-			AnySubject, AnySubjectAnyPredicate, AnySubjectAnyPredicateAnyObject,
-		};
-		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
-			AnySubjectAnyPredicate::AnyObject(AnySubjectAnyPredicateAnyObject::GivenGraph(Some(
-				named_graph,
-			))),
-		)))
-		.next()
-		.is_some()
+		self.quad_pattern_matching(Quad(None, None, None, Some(Some(named_graph))))
+			.next()
+			.is_some()
 	}
 
 	/// Returns an iterator over all the predicates `p` matching any quad
@@ -311,12 +280,12 @@ pub trait PatternMatchingDataset: Dataset {
 	) -> QuadObjects<'_, 'p, Self> {
 		QuadObjects {
 			first: None,
-			inner: self.quad_pattern_matching(CanonicalQuadPattern::from_option_quad(Quad(
+			inner: self.quad_pattern_matching(Quad(
 				Some(subject),
 				Some(predicate),
 				None,
 				Some(graph),
-			))),
+			)),
 		}
 	}
 }
@@ -330,14 +299,14 @@ impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 
 	fn quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Self::QuadPatternMatching<'_, 'p> {
 		let (pattern, g) = pattern.into_triple();
 		match g {
-			PatternGraph::Given(None) | PatternGraph::Any => OptionIterator(Some(
-				TriplesIntoQuads::new(self.triple_pattern_matching(pattern)),
-			)),
-			_ => OptionIterator(None),
+			Some(Some(_)) => OptionIterator(None),
+			_ => OptionIterator(Some(TriplesIntoQuads::new(
+				self.triple_pattern_matching(pattern),
+			))),
 		}
 	}
 }
@@ -362,20 +331,12 @@ where
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
-			use crate::pattern::quad::{
-				GivenSubject, GivenSubjectGivenPredicate, GivenSubjectGivenPredicateAnyObject,
-			};
-			let mut iter = self
-				.dataset
-				.quad_pattern_matching(CanonicalQuadPattern::GivenSubject(
-					self.subject,
-					GivenSubject::GivenPredicate(
-						predicate,
-						GivenSubjectGivenPredicate::AnyObject(
-							GivenSubjectGivenPredicateAnyObject::GivenGraph(self.graph),
-						),
-					),
-				));
+			let mut iter = self.dataset.quad_pattern_matching(Quad(
+				Some(self.subject),
+				Some(predicate),
+				None,
+				Some(self.graph),
+			));
 
 			if let Some(Quad(_, _, o, _)) = iter.next() {
 				return Some((
@@ -421,7 +382,7 @@ pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
 		Self: 'a,
 		Self::Resource: 'p;
 
-	/// Returns an iterator over all the quads matching the given canonical
+	/// Returns an iterator over all the quads matching the given linear
 	/// quad pattern.
 	///
 	/// Each matching quad returned by [`Iterator::next`] are removed from the
@@ -429,7 +390,7 @@ pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
 	/// dataset, even when the iterator is dropped.
 	fn extract_matching_quads<'p>(
 		&mut self,
-		pattern: impl Into<CanonicalQuadPattern<&'p Self::Resource>>,
+		pattern: impl Into<LinearQuadPattern<&'p Self::Resource>>,
 	) -> Self::ExtractMatchingQuads<'_, 'p>
 	where
 		Self::Resource: 'p;

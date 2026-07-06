@@ -1,6 +1,6 @@
 use crate::{
 	Triple,
-	pattern::CanonicalTriplePattern,
+	pattern::LinearTriplePattern,
 	util::{InfallibleIterator, TriplesIntoOwned},
 };
 
@@ -50,7 +50,7 @@ pub trait TryPatternMatchingGraph: TryGraph {
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Result<Self::TryTriplePatternMatching<'_, 'p>, Self::Error>;
 
 	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
@@ -74,7 +74,7 @@ where
 
 	fn try_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Result<Self::TryTriplePatternMatching<'_, 'p>, Self::Error> {
 		Ok(InfallibleIterator(TriplesIntoOwned(
 			self.triple_pattern_matching(pattern),

@@ -1,4 +1,4 @@
-use crate::{Triple, pattern::CanonicalTriplePattern};
+use crate::{Triple, pattern::LinearTriplePattern};
 
 mod r#async;
 mod fallible;
@@ -85,7 +85,7 @@ pub trait MultiPatternMatchingGraph: Graph {
 	/// given pattern.
 	fn triple_multi_pattern_matching<'p, P: IntoIterator<Item = &'p Self::Resource>>(
 		&self,
-		pattern: CanonicalTriplePattern<P>,
+		pattern: LinearTriplePattern<P>,
 	) -> Self::TripleMultiPatternMatching<'_, 'p>;
 }
 
@@ -98,7 +98,7 @@ pub trait PatternMatchingGraph: Graph {
 
 	fn triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Self::TriplePatternMatching<'_, 'p>;
 
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
@@ -107,33 +107,23 @@ pub trait PatternMatchingGraph: Graph {
 
 	/// Checks if the graph contains the given subject.
 	fn contains_triple_subject(&self, subject: &Self::Resource) -> bool {
-		use crate::pattern::triple::{GivenSubject, GivenSubjectAnyPredicate};
-		self.triple_pattern_matching(CanonicalTriplePattern::GivenSubject(
-			subject,
-			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject),
-		))
-		.next()
-		.is_some()
+		self.triple_pattern_matching(Triple(Some(subject), None, None))
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the graph contains the given predicate.
 	fn contains_triple_predicate(&self, predicate: &Self::Resource) -> bool {
-		use crate::pattern::triple::{AnySubject, AnySubjectGivenPredicate};
-		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::GivenPredicate(predicate, AnySubjectGivenPredicate::AnyObject),
-		))
-		.next()
-		.is_some()
+		self.triple_pattern_matching(Triple(None, Some(predicate), None))
+			.next()
+			.is_some()
 	}
 
 	/// Checks if the graph contains the given object.
 	fn contains_triple_object(&self, object: &Self::Resource) -> bool {
-		use crate::pattern::triple::{AnySubject, AnySubjectAnyPredicate};
-		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
-			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(object)),
-		))
-		.next()
-		.is_some()
+		self.triple_pattern_matching(Triple(None, None, Some(object)))
+			.next()
+			.is_some()
 	}
 
 	/// Returns an iterator over all the predicates `p` matching the triple `subject p o` present in the graph, for some `o`.
@@ -160,9 +150,7 @@ pub trait PatternMatchingGraph: Graph {
 	) -> TripleObjects<'_, 'p, Self> {
 		TripleObjects {
 			first: None,
-			inner: self.triple_pattern_matching(CanonicalTriplePattern::from_option_triple(
-				Triple(Some(subject), Some(predicate), None),
-			)),
+			inner: self.triple_pattern_matching(Triple(Some(subject), Some(predicate), None)),
 		}
 	}
 }
@@ -186,11 +174,7 @@ where
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
-			use crate::pattern::triple::{GivenSubject, GivenSubjectGivenPredicate};
-			let pattern = CanonicalTriplePattern::GivenSubject(
-				self.subject,
-				GivenSubject::GivenPredicate(predicate, GivenSubjectGivenPredicate::AnyObject),
-			);
+			let pattern = Triple(Some(self.subject), Some(predicate), None);
 
 			let mut iter = self.graph.triple_pattern_matching(pattern);
 			if let Some(Triple(_, _, o)) = iter.next() {
@@ -237,7 +221,7 @@ pub trait PatternMatchingGraphMut: PatternMatchingGraph {
 		Self: 'a,
 		Self::Resource: 'p;
 
-	/// Returns an iterator over all the triples matching the given canonical
+	/// Returns an iterator over all the triples matching the given linear
 	/// triple pattern.
 	///
 	/// Each matching triple returned by [`Iterator::next`] are removed from
@@ -245,7 +229,7 @@ pub trait PatternMatchingGraphMut: PatternMatchingGraph {
 	/// graph, even when the iterator is dropped.
 	fn extract_matching_triples<'p>(
 		&mut self,
-		pattern: impl Into<CanonicalTriplePattern<&'p Self::Resource>>,
+		pattern: impl Into<LinearTriplePattern<&'p Self::Resource>>,
 	) -> Self::ExtractMatchingTriples<'_, 'p>
 	where
 		Self::Resource: 'p;

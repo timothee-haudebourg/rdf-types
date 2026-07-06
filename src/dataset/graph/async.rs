@@ -5,7 +5,7 @@ use futures_lite::{Stream, StreamExt, stream};
 use crate::{
 	Triple,
 	dataset::{TryFiniteGraph, TryGraph, TryGraphMut, TryPatternMatchingGraph},
-	pattern::CanonicalTriplePattern,
+	pattern::LinearTriplePattern,
 };
 
 /// Async finite graph.
@@ -39,7 +39,7 @@ pub trait AsyncPatternMatchingGraph: TryGraph {
 
 	async fn async_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncTriplePatternMatching<'_, 'p>, Self::Error>;
 
 	async fn async_contains_triple(
@@ -60,7 +60,7 @@ impl<D: TryPatternMatchingGraph> AsyncPatternMatchingGraph for D {
 
 	async fn async_triple_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalTriplePattern<&'p Self::Resource>,
+		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncTriplePatternMatching<'_, 'p>, Self::Error> {
 		self.try_triple_pattern_matching(pattern).map(stream::iter)
 	}

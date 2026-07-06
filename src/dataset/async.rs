@@ -3,7 +3,7 @@ use futures_lite::{Stream, StreamExt, stream};
 use crate::{
 	Quad,
 	dataset::fallible::{TryDataset, TryDatasetMut, TryFiniteDataset, TryPatternMatchingDataset},
-	pattern::CanonicalQuadPattern,
+	pattern::LinearQuadPattern,
 };
 
 /// Async finite dataset.
@@ -35,7 +35,7 @@ pub trait AsyncPatternMatchingDataset: TryDataset {
 
 	async fn async_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncQuadPatternMatching<'_, 'p>, Self::Error>;
 
 	async fn async_contains_quad(&self, quad: Quad<&Self::Resource>) -> Result<bool, Self::Error> {
@@ -53,7 +53,7 @@ impl<D: TryPatternMatchingDataset> AsyncPatternMatchingDataset for D {
 
 	async fn async_quad_pattern_matching<'p>(
 		&self,
-		pattern: CanonicalQuadPattern<&'p Self::Resource>,
+		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncQuadPatternMatching<'_, 'p>, Self::Error> {
 		self.try_quad_pattern_matching(pattern).map(stream::iter)
 	}
