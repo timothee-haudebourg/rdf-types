@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use crate::Quad;
 
 /// Diff between two RDF datasets.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RdfDiff<R> {
 	pub added: Vec<Quad<R>>,
 	pub removed: Vec<Quad<R>>,
@@ -20,6 +21,26 @@ impl<R> Default for RdfDiff<R> {
 
 impl<R> RdfDiff<R> {
 	pub fn new(
+		a: impl IntoIterator<Item = Quad<R>>,
+		b: impl IntoIterator<Item = Quad<R>>,
+	) -> RdfDiff<R>
+	where
+		R: Ord,
+	{
+		Self::new_with(a, b, false)
+	}
+
+	pub fn new_dedup(
+		a: impl IntoIterator<Item = Quad<R>>,
+		b: impl IntoIterator<Item = Quad<R>>,
+	) -> RdfDiff<R>
+	where
+		R: Ord,
+	{
+		Self::new_with(a, b, true)
+	}
+
+	pub fn new_with(
 		a: impl IntoIterator<Item = Quad<R>>,
 		b: impl IntoIterator<Item = Quad<R>>,
 		dedup: bool,
