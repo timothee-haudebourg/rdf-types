@@ -1,2 +1,3 @@
-pub mod canonical;
-pub use canonical::CanonicalQuadPattern;
+mod canonical;
+
+pub use canonical::*;

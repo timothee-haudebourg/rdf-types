@@ -1,11 +1,11 @@
 use std::pin::pin;
 
-use futures_lite::{stream, Stream, StreamExt};
+use futures_lite::{Stream, StreamExt, stream};
 
 use crate::{
-	dataset::fallible_graph::{TryFiniteGraph, TryGraph, TryGraphMut, TryPatternMatchingGraph},
-	pattern::CanonicalTriplePattern,
 	Triple,
+	dataset::{TryFiniteGraph, TryGraph, TryGraphMut, TryPatternMatchingGraph},
+	pattern::CanonicalTriplePattern,
 };
 
 /// Async finite graph.

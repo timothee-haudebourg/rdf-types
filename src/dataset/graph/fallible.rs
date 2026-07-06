@@ -1,7 +1,7 @@
 use crate::{
+	Triple,
 	pattern::CanonicalTriplePattern,
 	util::{InfallibleIterator, TriplesIntoOwned},
-	Triple,
 };
 
 use super::{FiniteGraph, Graph, GraphMut, PatternMatchingGraph};
@@ -18,7 +18,7 @@ impl<D: Graph> TryGraph for D {
 }
 
 pub trait TryFiniteGraph: TryGraph {
-	type TryTriples<'a>: 'a + Iterator<Item = Result<Triple<Self::Resource>, Self::Error>>
+	type TryTriples<'a>: Iterator<Item = Result<Triple<Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 

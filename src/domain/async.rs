@@ -1,10 +1,10 @@
-use futures_lite::{stream, Stream};
+use futures_lite::{Stream, stream};
 
 use crate::domain::fallible::{TryConstGenDomain, TryDomain, TryFiniteDomain};
 
 /// Finite domain.
 pub trait AsyncFiniteDomain: TryDomain {
-	type AsyncResources<'a>: 'a + Stream<Item = Result<Self::Resource, Self::Error>>
+	type AsyncResources<'a>: Stream<Item = Result<Self::Resource, Self::Error>>
 	where
 		Self: 'a;
 
@@ -71,7 +71,7 @@ impl<I: TryConstGenDomain> AsyncConstGenDomain for I {
 
 /// Async fallible finite domain.
 pub trait AsyncTryFiniteDomain: TryDomain {
-	type AsyncTryResources<'a>: 'a + Stream<Item = Result<Self::Resource, Self::Error>>
+	type AsyncTryResources<'a>: Stream<Item = Result<Self::Resource, Self::Error>>
 	where
 		Self: 'a;
 

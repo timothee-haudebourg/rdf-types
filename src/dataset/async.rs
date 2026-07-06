@@ -1,9 +1,9 @@
-use futures_lite::{stream, Stream, StreamExt};
+use futures_lite::{Stream, StreamExt, stream};
 
 use crate::{
+	Quad,
 	dataset::fallible::{TryDataset, TryDatasetMut, TryFiniteDataset, TryPatternMatchingDataset},
 	pattern::CanonicalQuadPattern,
-	Quad, Triple,
 };
 
 /// Async finite dataset.
@@ -38,11 +38,8 @@ pub trait AsyncPatternMatchingDataset: TryDataset {
 		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncQuadPatternMatching<'_, 'p>, Self::Error>;
 
-	async fn async_contains_triple(
-		&self,
-		triple: Triple<&Self::Resource>,
-	) -> Result<bool, Self::Error> {
-		let mut stream = std::pin::pin!(self.async_quad_pattern_matching(triple.into()).await?);
+	async fn async_contains_quad(&self, quad: Quad<&Self::Resource>) -> Result<bool, Self::Error> {
+		let mut stream = std::pin::pin!(self.async_quad_pattern_matching(quad.into()).await?);
 		Ok(stream.next().await.transpose()?.is_some())
 	}
 }

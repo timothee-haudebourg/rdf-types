@@ -1,7 +1,7 @@
 use crate::{
+	Quad,
 	pattern::CanonicalQuadPattern,
 	util::{InfallibleIterator, QuadsIntoOwned},
-	Quad, Triple,
 };
 
 use super::{Dataset, DatasetMut, FiniteDataset, PatternMatchingDataset};
@@ -56,9 +56,9 @@ pub trait TryPatternMatchingDataset: TryDataset {
 		pattern: CanonicalQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::TryQuadPatternMatching<'_, 'p>, Self::Error>;
 
-	fn try_contains_triple(&self, triple: Triple<&Self::Resource>) -> Result<bool, Self::Error> {
+	fn try_contains_quad(&self, quad: Quad<&Self::Resource>) -> Result<bool, Self::Error> {
 		Ok(self
-			.try_quad_pattern_matching(triple.into())?
+			.try_quad_pattern_matching(quad.into())?
 			.next()
 			.transpose()?
 			.is_some())

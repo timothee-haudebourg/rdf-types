@@ -1,6 +1,6 @@
 //! This file is auto generated using the
 //! `tests/utils/generate-iso-test.rb` script.
-use rdf_types::{dataset::BTreeDataset, pattern::Pattern, Quad};
+use rdf_types::{BTreeDataset, Quad, pattern::Pattern};
 
 type Term = Pattern<u32, u32>;
 

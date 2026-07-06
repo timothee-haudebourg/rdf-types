@@ -1,8 +1,12 @@
-pub mod r#async;
-pub mod fallible;
-pub mod r#static;
-
 pub use std::borrow::Cow;
+
+mod r#async;
+mod fallible;
+mod r#static;
+
+pub use r#async::*;
+pub use fallible::*;
+pub use r#static::*;
 
 /// RDF resource domain.
 pub trait Domain {

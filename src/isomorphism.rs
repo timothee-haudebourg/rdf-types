@@ -1,7 +1,7 @@
-use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, btree_map::Entry};
 
 use crate::pattern::{AsPattern, Pattern};
-use crate::{dataset::FiniteDataset, Quad};
+use crate::{Quad, dataset::FiniteDataset};
 
 /// Checks that there is an isomorphism between the datasets `a` and `b`.
 ///
@@ -208,7 +208,7 @@ where
 
 /// Blank node identifier bijection
 /// between two (isomorphic) datasets.
-pub struct BTreeBijection<'a, 'b, T> {
+pub struct BTreeBijection<'a, 'b, T: ?Sized> {
 	/// Maps each blank node identifier of the first dataset to the
 	/// corresponding blank node identifier of the second dataset.
 	pub forward: BTreeMap<&'a T, &'b T>,
@@ -218,7 +218,7 @@ pub struct BTreeBijection<'a, 'b, T> {
 	pub backward: BTreeMap<&'b T, &'a T>,
 }
 
-impl<T> Clone for BTreeBijection<'_, '_, T> {
+impl<T: ?Sized> Clone for BTreeBijection<'_, '_, T> {
 	fn clone(&self) -> Self {
 		Self {
 			forward: self.forward.clone(),
@@ -227,7 +227,7 @@ impl<T> Clone for BTreeBijection<'_, '_, T> {
 	}
 }
 
-impl<T> BTreeBijection<'_, '_, T> {
+impl<T: ?Sized> BTreeBijection<'_, '_, T> {
 	fn new() -> Self {
 		Self {
 			forward: BTreeMap::new(),
@@ -236,7 +236,7 @@ impl<T> BTreeBijection<'_, '_, T> {
 	}
 }
 
-impl<'a, 'b, T: Ord> BTreeBijection<'a, 'b, T> {
+impl<'a, 'b, T: ?Sized + Ord> BTreeBijection<'a, 'b, T> {
 	/// Extends the bijection with a new `a <-> b` blank node identifier pair.
 	fn insert(&mut self, a: &'a T, b: &'b T) {
 		self.forward.insert(a, b);

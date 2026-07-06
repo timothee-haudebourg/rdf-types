@@ -1,18 +1,18 @@
 //! Dataset traits and implementations.
 use crate::{
-	pattern::{quad::canonical::PatternGraph, CanonicalQuadPattern},
-	util::{OptionIterator, TriplesIntoQuads},
 	Quad,
+	pattern::{CanonicalQuadPattern, quad::PatternGraph},
+	util::{OptionIterator, TriplesIntoQuads},
 };
-pub mod r#async;
 
-pub mod fallible;
-pub use fallible::TryDataset;
-
+mod r#async;
+mod fallible;
 mod graph;
-pub use graph::{fallible as fallible_graph, r#async as async_graph, *};
-
 mod r#impl;
+
+pub use r#async::*;
+pub use fallible::*;
+pub use graph::*;
 pub use r#impl::*;
 
 /// RDF dataset.
@@ -227,7 +227,7 @@ pub trait PatternMatchingDataset: Dataset {
 
 	/// Checks if the dataset contains the given subject.
 	fn contains_quad_subject(&self, subject: &Self::Resource) -> bool {
-		use crate::pattern::quad::canonical::{
+		use crate::pattern::quad::{
 			GivenSubject, GivenSubjectAnyPredicate, GivenSubjectAnyPredicateAnyObject,
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::GivenSubject(
@@ -242,7 +242,7 @@ pub trait PatternMatchingDataset: Dataset {
 
 	/// Checks if the dataset contains the given predicate.
 	fn contains_quad_predicate(&self, predicate: &Self::Resource) -> bool {
-		use crate::pattern::quad::canonical::{
+		use crate::pattern::quad::{
 			AnySubject, AnySubjectGivenPredicate, AnySubjectGivenPredicateAnyObject,
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(
@@ -257,7 +257,7 @@ pub trait PatternMatchingDataset: Dataset {
 
 	/// Checks if the dataset contains the given object.
 	fn contains_quad_object(&self, object: &Self::Resource) -> bool {
-		use crate::pattern::quad::canonical::{
+		use crate::pattern::quad::{
 			AnySubject, AnySubjectAnyPredicate, AnySubjectAnyPredicateGivenObject,
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
@@ -272,7 +272,7 @@ pub trait PatternMatchingDataset: Dataset {
 
 	/// Checks if the dataset contains the given named graph.
 	fn contains_named_graph(&self, named_graph: &Self::Resource) -> bool {
-		use crate::pattern::quad::canonical::{
+		use crate::pattern::quad::{
 			AnySubject, AnySubjectAnyPredicate, AnySubjectAnyPredicateAnyObject,
 		};
 		self.quad_pattern_matching(CanonicalQuadPattern::AnySubject(AnySubject::AnyPredicate(
@@ -362,7 +362,7 @@ where
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
-			use crate::pattern::quad::canonical::{
+			use crate::pattern::quad::{
 				GivenSubject, GivenSubjectGivenPredicate, GivenSubjectGivenPredicateAnyObject,
 			};
 			let mut iter = self
@@ -442,17 +442,4 @@ pub trait DatasetMut: Dataset {
 
 	/// Removes the given quad from the dataset.
 	fn remove(&mut self, quad: Quad<&Self::Resource>);
-}
-
-/// Dataset view focusing on a given graph.
-pub struct DatasetView<'a, D: Dataset> {
-	pub dataset: &'a D,
-	pub graph: Option<&'a D::Resource>,
-}
-
-/// Dataset view focusing on a given resource and restricted to the given graph.
-pub struct DatasetGraphView<'a, D: Dataset> {
-	pub dataset: &'a D,
-	pub graph: Option<&'a D::Resource>,
-	pub resource: &'a D::Resource,
 }

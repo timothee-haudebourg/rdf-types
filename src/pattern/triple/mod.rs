@@ -1,5 +1,5 @@
-pub mod canonical;
-pub use canonical::CanonicalTriplePattern;
+mod canonical;
+mod map;
 
-pub mod map;
-pub use map::TriplePatternMap;
+pub use canonical::*;
+pub use map::*;

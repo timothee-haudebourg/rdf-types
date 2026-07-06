@@ -1,10 +1,11 @@
-use crate::{pattern::CanonicalTriplePattern, Triple};
+use crate::{Triple, pattern::CanonicalTriplePattern};
 
-pub mod r#async;
-pub mod fallible;
+mod r#async;
+mod fallible;
 mod r#impl;
 
-pub use fallible::TryGraph;
+pub use r#async::*;
+pub use fallible::*;
 pub use r#impl::*;
 
 /// RDF graph.
@@ -72,6 +73,22 @@ pub trait ObjectFiniteGraph: Graph {
 	}
 }
 
+/// Multi-pattern-matching-capable graph.
+pub trait MultiPatternMatchingGraph: Graph {
+	/// Pattern-matching iterator.
+	type TripleMultiPatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
+
+	/// Returns an iterator over all the triples of the graph matching the
+	/// given pattern.
+	fn triple_multi_pattern_matching<'p, P: IntoIterator<Item = &'p Self::Resource>>(
+		&self,
+		pattern: CanonicalTriplePattern<P>,
+	) -> Self::TripleMultiPatternMatching<'_, 'p>;
+}
+
 /// Pattern-matching-capable dataset.
 pub trait PatternMatchingGraph: Graph {
 	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
@@ -90,7 +107,7 @@ pub trait PatternMatchingGraph: Graph {
 
 	/// Checks if the graph contains the given subject.
 	fn contains_triple_subject(&self, subject: &Self::Resource) -> bool {
-		use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectAnyPredicate};
+		use crate::pattern::triple::{GivenSubject, GivenSubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::GivenSubject(
 			subject,
 			GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::AnyObject),
@@ -101,7 +118,7 @@ pub trait PatternMatchingGraph: Graph {
 
 	/// Checks if the graph contains the given predicate.
 	fn contains_triple_predicate(&self, predicate: &Self::Resource) -> bool {
-		use crate::pattern::triple::canonical::{AnySubject, AnySubjectGivenPredicate};
+		use crate::pattern::triple::{AnySubject, AnySubjectGivenPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
 			AnySubject::GivenPredicate(predicate, AnySubjectGivenPredicate::AnyObject),
 		))
@@ -111,7 +128,7 @@ pub trait PatternMatchingGraph: Graph {
 
 	/// Checks if the graph contains the given object.
 	fn contains_triple_object(&self, object: &Self::Resource) -> bool {
-		use crate::pattern::triple::canonical::{AnySubject, AnySubjectAnyPredicate};
+		use crate::pattern::triple::{AnySubject, AnySubjectAnyPredicate};
 		self.triple_pattern_matching(CanonicalTriplePattern::AnySubject(
 			AnySubject::AnyPredicate(AnySubjectAnyPredicate::GivenObject(object)),
 		))
@@ -169,7 +186,7 @@ where
 
 	fn next(&mut self) -> Option<Self::Item> {
 		for predicate in &mut self.predicates {
-			use crate::pattern::triple::canonical::{GivenSubject, GivenSubjectGivenPredicate};
+			use crate::pattern::triple::{GivenSubject, GivenSubjectGivenPredicate};
 			let pattern = CanonicalTriplePattern::GivenSubject(
 				self.subject,
 				GivenSubject::GivenPredicate(predicate, GivenSubjectGivenPredicate::AnyObject),
@@ -212,15 +229,31 @@ where
 	}
 }
 
+/// Pattern-matching-capable mutable graph.
+pub trait PatternMatchingGraphMut: PatternMatchingGraph {
+	// Pattern-matching iterator.
+	type ExtractMatchingTriples<'a, 'p>: Iterator<Item = Triple<Self::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
+
+	/// Returns an iterator over all the triples matching the given canonical
+	/// triple pattern.
+	///
+	/// Each matching triple returned by [`Iterator::next`] are removed from
+	/// the graph. Matching triples that are not iterated on are kept in the
+	/// graph, even when the iterator is dropped.
+	fn extract_matching_triples<'p>(
+		&mut self,
+		pattern: impl Into<CanonicalTriplePattern<&'p Self::Resource>>,
+	) -> Self::ExtractMatchingTriples<'_, 'p>
+	where
+		Self::Resource: 'p;
+}
+
 /// Mutable dataset.
 pub trait GraphMut: Graph {
 	fn insert(&mut self, triple: Triple<Self::Resource>);
 
 	fn remove(&mut self, triple: Triple<&Self::Resource>);
-}
-
-/// Graph view focusing on a given resource.
-pub struct GraphView<'a, G: Graph> {
-	pub graph: &'a G,
-	pub resource: &'a G::Resource,
 }

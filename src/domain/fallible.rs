@@ -10,7 +10,7 @@ pub trait TryDomain: Domain {
 
 /// Finite domain.
 pub trait TryFiniteDomain: TryDomain {
-	type TryResources<'a>: 'a + Iterator<Item = Result<Self::Resource, Self::Error>>
+	type TryResources<'a>: Iterator<Item = Result<Self::Resource, Self::Error>>
 	where
 		Self: 'a;
 
