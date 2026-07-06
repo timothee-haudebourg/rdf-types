@@ -1,8 +1,10 @@
+use std::borrow::Cow;
+
 use replace_with::replace_with_or_abort_and_return;
 
 use crate::{
-	pattern::{quad, CanonicalQuadPattern, Pattern, TriplePattern},
 	Triple,
+	pattern::{CanonicalQuadPattern, Pattern, TriplePattern, quad},
 };
 
 /// Canonical triple pattern.
@@ -36,7 +38,38 @@ impl<T, X: PartialEq> From<TriplePattern<T, X>> for CanonicalTriplePattern<T> {
 	}
 }
 
+impl<'a, T: ToOwned> From<Triple<&'a T>> for CanonicalTriplePattern<Cow<'a, T>> {
+	fn from(value: Triple<&'a T>) -> Self {
+		Self::from_triple(value.map(Cow::Borrowed))
+	}
+}
+
+impl<'a, T: ToOwned> From<Triple<Option<&'a T>>> for CanonicalTriplePattern<Cow<'a, T>> {
+	fn from(value: Triple<Option<&'a T>>) -> Self {
+		Self::from_option_triple(value.map(|r| r.map(Cow::Borrowed)))
+	}
+}
+
+impl<'a, T: ToOwned> From<CanonicalTriplePattern<&'a T>> for CanonicalTriplePattern<Cow<'a, T>> {
+	fn from(value: CanonicalTriplePattern<&'a T>) -> Self {
+		value.map(Cow::Borrowed)
+	}
+}
+
 impl<T> CanonicalTriplePattern<T> {
+	pub const ANY: Self =
+		Self::AnySubject(AnySubject::AnyPredicate(AnySubjectAnyPredicate::AnyObject));
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnySubject(p) => p.matches(triple),
+			Self::GivenSubject(s, p) => triple.subject() == s && p.matches(triple),
+		}
+	}
+
 	pub fn from_triple(triple: Triple<T>) -> Self {
 		Self::GivenSubject(
 			triple.0,
@@ -124,6 +157,56 @@ impl<T> CanonicalTriplePattern<T> {
 			Self::GivenSubject(s, p) => {
 				let (pred, obj) = p.into_predicate_object();
 				Triple(Some(s), pred, obj)
+			}
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternSubject<T>, PatternPredicate<T>, PatternObject<T>) {
+		match self {
+			Self::AnySubject(pq) => {
+				let (p, o) = pq.into_parts();
+				(PatternSubject::Any, p, o)
+			}
+			Self::GivenSubject(s, pq) => {
+				let (p, o) = pq.into_parts();
+				(PatternSubject::Given(s), p, o)
+			}
+		}
+	}
+
+	pub fn as_ref(&self) -> CanonicalTriplePattern<&T> {
+		match self {
+			Self::AnySubject(p) => CanonicalTriplePattern::AnySubject(p.as_ref()),
+			Self::GivenSubject(s, p) => CanonicalTriplePattern::GivenSubject(s, p.as_ref()),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> CanonicalTriplePattern<U> {
+		match self {
+			Self::AnySubject(pq) => CanonicalTriplePattern::AnySubject(pq.map(f)),
+			Self::GivenSubject(s, pq) => CanonicalTriplePattern::GivenSubject(f(s), pq.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (CanonicalTriplePattern<U>, CanonicalTriplePattern<V>) {
+		match self {
+			Self::AnySubject(pq) => {
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					CanonicalTriplePattern::AnySubject(pq_u),
+					CanonicalTriplePattern::AnySubject(pq_v),
+				)
+			}
+			Self::GivenSubject(s, pq) => {
+				let (u, v) = f(s);
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					CanonicalTriplePattern::GivenSubject(u, pq_u),
+					CanonicalTriplePattern::GivenSubject(v, pq_v),
+				)
 			}
 		}
 	}
@@ -515,6 +598,16 @@ pub enum AnySubject<T> {
 	GivenPredicate(T, AnySubjectGivenPredicate<T>),
 }
 
+impl<T> AnySubject<T> {
+	pub fn as_ref(&self) -> AnySubject<&T> {
+		match self {
+			Self::AnyPredicate(p) => AnySubject::AnyPredicate(p.as_ref()),
+			Self::SameAsSubject(p) => AnySubject::SameAsSubject(p.as_ref()),
+			Self::GivenPredicate(t, p) => AnySubject::GivenPredicate(t, p.as_ref()),
+		}
+	}
+}
+
 impl<T: std::ops::Deref> AnySubject<T> {
 	pub fn as_deref(&self) -> AnySubject<&T::Target> {
 		match self {
@@ -548,15 +641,11 @@ impl<T> AnySubject<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::AnySubject<T> {
+	pub fn with_any_graph(self) -> quad::AnySubject<T> {
 		match self {
-			Self::AnyPredicate(o) => quad::canonical::AnySubject::AnyPredicate(o.with_any_graph()),
-			Self::SameAsSubject(o) => {
-				quad::canonical::AnySubject::SameAsSubject(o.with_any_graph())
-			}
-			Self::GivenPredicate(id, o) => {
-				quad::canonical::AnySubject::GivenPredicate(id, o.with_any_graph())
-			}
+			Self::AnyPredicate(o) => quad::AnySubject::AnyPredicate(o.with_any_graph()),
+			Self::SameAsSubject(o) => quad::AnySubject::SameAsSubject(o.with_any_graph()),
+			Self::GivenPredicate(id, o) => quad::AnySubject::GivenPredicate(id, o.with_any_graph()),
 		}
 	}
 
@@ -600,6 +689,62 @@ impl<T> AnySubject<T> {
 		}
 	}
 
+	pub fn into_parts(self) -> (PatternPredicate<T>, PatternObject<T>) {
+		match self {
+			Self::AnyPredicate(t) => (PatternPredicate::Any, t.into_object()),
+			Self::SameAsSubject(t) => (PatternPredicate::SameAsSubject, t.into_object()),
+			Self::GivenPredicate(id, t) => (PatternPredicate::Given(id), t.into_object()),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyPredicate(pattern) => pattern.matches(triple),
+			Self::SameAsSubject(pattern) => {
+				triple.predicate() == triple.subject() && pattern.matches(triple)
+			}
+			Self::GivenPredicate(p, pattern) => triple.predicate() == p && pattern.matches(triple),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubject<U> {
+		match self {
+			Self::AnyPredicate(pq) => AnySubject::AnyPredicate(pq.map(f)),
+			Self::SameAsSubject(pq) => AnySubject::SameAsSubject(pq.map(f)),
+			Self::GivenPredicate(p, pq) => AnySubject::GivenPredicate(f(p), pq.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(self, mut f: impl FnMut(T) -> (U, V)) -> (AnySubject<U>, AnySubject<V>) {
+		match self {
+			Self::AnyPredicate(pq) => {
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					AnySubject::AnyPredicate(pq_u),
+					AnySubject::AnyPredicate(pq_v),
+				)
+			}
+			Self::SameAsSubject(pq) => {
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					AnySubject::SameAsSubject(pq_u),
+					AnySubject::SameAsSubject(pq_v),
+				)
+			}
+			Self::GivenPredicate(p, pq) => {
+				let (u, v) = f(p);
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					AnySubject::GivenPredicate(u, pq_u),
+					AnySubject::GivenPredicate(v, pq_v),
+				)
+			}
+		}
+	}
+
 	pub fn set_predicate(&mut self, p: T) -> PatternPredicate<T>
 	where
 		T: Clone,
@@ -611,7 +756,7 @@ impl<T> AnySubject<T> {
 			),
 			Self::AnyPredicate(AnySubjectAnyPredicate::SameAsSubject) => (
 				PatternPredicate::Any,
-				Self::GivenPredicate(p, AnySubjectGivenPredicate::AnyObject),
+				Self::GivenPredicate(p, AnySubjectGivenPredicate::SameAsSubject),
 			),
 			Self::AnyPredicate(AnySubjectAnyPredicate::SameAsPredicate) => (
 				PatternPredicate::Any,
@@ -677,6 +822,65 @@ pub enum AnySubjectAnyPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T> AnySubjectAnyPredicate<T> {
+	pub fn as_ref(&self) -> AnySubjectAnyPredicate<&T> {
+		match self {
+			Self::AnyObject => AnySubjectAnyPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectAnyPredicate::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(t) => AnySubjectAnyPredicate::GivenObject(t),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject => true,
+			Self::SameAsSubject => triple.object() == triple.subject(),
+			Self::SameAsPredicate => triple.object() == triple.predicate(),
+			Self::GivenObject(o) => triple.object() == o,
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubjectAnyPredicate<U> {
+		match self {
+			Self::AnyObject => AnySubjectAnyPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectAnyPredicate::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(o) => AnySubjectAnyPredicate::GivenObject(f(o)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (AnySubjectAnyPredicate<U>, AnySubjectAnyPredicate<V>) {
+		match self {
+			Self::AnyObject => (
+				AnySubjectAnyPredicate::AnyObject,
+				AnySubjectAnyPredicate::AnyObject,
+			),
+			Self::SameAsSubject => (
+				AnySubjectAnyPredicate::SameAsSubject,
+				AnySubjectAnyPredicate::SameAsSubject,
+			),
+			Self::SameAsPredicate => (
+				AnySubjectAnyPredicate::SameAsPredicate,
+				AnySubjectAnyPredicate::SameAsPredicate,
+			),
+			Self::GivenObject(o) => {
+				let (u, v) = f(o);
+				(
+					AnySubjectAnyPredicate::GivenObject(u),
+					AnySubjectAnyPredicate::GivenObject(v),
+				)
+			}
+		}
+	}
+}
+
 impl<T: std::ops::Deref> AnySubjectAnyPredicate<T> {
 	pub fn as_deref(&self) -> AnySubjectAnyPredicate<&T::Target> {
 		match self {
@@ -711,20 +915,20 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::AnySubjectAnyPredicate<T> {
+	pub fn with_any_graph(self) -> quad::AnySubjectAnyPredicate<T> {
 		match self {
-			Self::AnyObject => quad::canonical::AnySubjectAnyPredicate::AnyObject(
-				quad::canonical::AnySubjectAnyPredicateAnyObject::AnyGraph,
+			Self::AnyObject => quad::AnySubjectAnyPredicate::AnyObject(
+				quad::AnySubjectAnyPredicateAnyObject::AnyGraph,
 			),
-			Self::SameAsSubject => quad::canonical::AnySubjectAnyPredicate::SameAsSubject(
-				quad::canonical::AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => quad::AnySubjectAnyPredicate::SameAsSubject(
+				quad::AnySubjectAnyPredicateGivenObject::AnyGraph,
 			),
-			Self::SameAsPredicate => quad::canonical::AnySubjectAnyPredicate::SameAsPredicate(
-				quad::canonical::AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => quad::AnySubjectAnyPredicate::SameAsPredicate(
+				quad::AnySubjectAnyPredicateGivenObject::AnyGraph,
 			),
-			Self::GivenObject(id) => quad::canonical::AnySubjectAnyPredicate::GivenObject(
+			Self::GivenObject(id) => quad::AnySubjectAnyPredicate::GivenObject(
 				id,
-				quad::canonical::AnySubjectAnyPredicateGivenObject::AnyGraph,
+				quad::AnySubjectAnyPredicateGivenObject::AnyGraph,
 			),
 		}
 	}
@@ -759,6 +963,58 @@ pub enum AnySubjectGivenPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T> AnySubjectGivenPredicate<T> {
+	pub fn as_ref(&self) -> AnySubjectGivenPredicate<&T> {
+		match self {
+			Self::AnyObject => AnySubjectGivenPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectGivenPredicate::SameAsSubject,
+			Self::GivenObject(t) => AnySubjectGivenPredicate::GivenObject(t),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject => true,
+			Self::SameAsSubject => triple.object() == triple.subject(),
+			Self::GivenObject(o) => triple.object() == o,
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> AnySubjectGivenPredicate<U> {
+		match self {
+			Self::AnyObject => AnySubjectGivenPredicate::AnyObject,
+			Self::SameAsSubject => AnySubjectGivenPredicate::SameAsSubject,
+			Self::GivenObject(o) => AnySubjectGivenPredicate::GivenObject(f(o)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (AnySubjectGivenPredicate<U>, AnySubjectGivenPredicate<V>) {
+		match self {
+			Self::AnyObject => (
+				AnySubjectGivenPredicate::AnyObject,
+				AnySubjectGivenPredicate::AnyObject,
+			),
+			Self::SameAsSubject => (
+				AnySubjectGivenPredicate::SameAsSubject,
+				AnySubjectGivenPredicate::SameAsSubject,
+			),
+			Self::GivenObject(o) => {
+				let (u, v) = f(o);
+				(
+					AnySubjectGivenPredicate::GivenObject(u),
+					AnySubjectGivenPredicate::GivenObject(v),
+				)
+			}
+		}
+	}
+}
+
 impl<T: std::ops::Deref> AnySubjectGivenPredicate<T> {
 	pub fn as_deref(&self) -> AnySubjectGivenPredicate<&T::Target> {
 		match self {
@@ -790,17 +1046,17 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::AnySubjectGivenPredicate<T> {
+	pub fn with_any_graph(self) -> quad::AnySubjectGivenPredicate<T> {
 		match self {
-			Self::AnyObject => quad::canonical::AnySubjectGivenPredicate::AnyObject(
-				quad::canonical::AnySubjectGivenPredicateAnyObject::AnyGraph,
+			Self::AnyObject => quad::AnySubjectGivenPredicate::AnyObject(
+				quad::AnySubjectGivenPredicateAnyObject::AnyGraph,
 			),
-			Self::SameAsSubject => quad::canonical::AnySubjectGivenPredicate::SameAsSubject(
-				quad::canonical::AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => quad::AnySubjectGivenPredicate::SameAsSubject(
+				quad::AnySubjectGivenPredicateGivenObject::AnyGraph,
 			),
-			Self::GivenObject(id) => quad::canonical::AnySubjectGivenPredicate::GivenObject(
+			Self::GivenObject(id) => quad::AnySubjectGivenPredicate::GivenObject(
 				id,
-				quad::canonical::AnySubjectGivenPredicateGivenObject::AnyGraph,
+				quad::AnySubjectGivenPredicateGivenObject::AnyGraph,
 			),
 		}
 	}
@@ -832,6 +1088,15 @@ pub enum GivenSubject<T> {
 	GivenPredicate(T, GivenSubjectGivenPredicate<T>),
 }
 
+impl<T> GivenSubject<T> {
+	pub fn as_ref(&self) -> GivenSubject<&T> {
+		match self {
+			Self::AnyPredicate(p) => GivenSubject::AnyPredicate(p.as_ref()),
+			Self::GivenPredicate(t, p) => GivenSubject::GivenPredicate(t, p.as_ref()),
+		}
+	}
+}
+
 impl<T: std::ops::Deref> GivenSubject<T> {
 	pub fn as_deref(&self) -> GivenSubject<&T::Target> {
 		match self {
@@ -858,13 +1123,11 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::GivenSubject<T> {
+	pub fn with_any_graph(self) -> quad::GivenSubject<T> {
 		match self {
-			Self::AnyPredicate(o) => {
-				quad::canonical::GivenSubject::AnyPredicate(o.with_any_graph())
-			}
+			Self::AnyPredicate(o) => quad::GivenSubject::AnyPredicate(o.with_any_graph()),
 			Self::GivenPredicate(id, o) => {
-				quad::canonical::GivenSubject::GivenPredicate(id, o.with_any_graph())
+				quad::GivenSubject::GivenPredicate(id, o.with_any_graph())
 			}
 		}
 	}
@@ -901,6 +1164,50 @@ impl<T> GivenSubject<T> {
 		match self {
 			Self::AnyPredicate(o) => (None, o.into_object().into_id()),
 			Self::GivenPredicate(p, o) => (Some(p), o.into_object().into_id()),
+		}
+	}
+
+	pub fn into_parts(self) -> (PatternPredicate<T>, PatternObject<T>) {
+		match self {
+			Self::AnyPredicate(t) => (PatternPredicate::Any, t.into_object()),
+			Self::GivenPredicate(id, t) => (PatternPredicate::Given(id), t.into_object()),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyPredicate(pattern) => pattern.matches(triple),
+			Self::GivenPredicate(p, pattern) => triple.predicate() == p && pattern.matches(triple),
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubject<U> {
+		match self {
+			Self::AnyPredicate(pq) => GivenSubject::AnyPredicate(pq.map(f)),
+			Self::GivenPredicate(p, pq) => GivenSubject::GivenPredicate(f(p), pq.map(f)),
+		}
+	}
+
+	pub fn map2<U, V>(self, mut f: impl FnMut(T) -> (U, V)) -> (GivenSubject<U>, GivenSubject<V>) {
+		match self {
+			Self::AnyPredicate(pq) => {
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					GivenSubject::AnyPredicate(pq_u),
+					GivenSubject::AnyPredicate(pq_v),
+				)
+			}
+			Self::GivenPredicate(p, pq) => {
+				let (u, v) = f(p);
+				let (pq_u, pq_v) = pq.map2(f);
+				(
+					GivenSubject::GivenPredicate(u, pq_u),
+					GivenSubject::GivenPredicate(v, pq_v),
+				)
+			}
 		}
 	}
 
@@ -956,6 +1263,58 @@ pub enum GivenSubjectAnyPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T> GivenSubjectAnyPredicate<T> {
+	pub fn as_ref(&self) -> GivenSubjectAnyPredicate<&T> {
+		match self {
+			Self::AnyObject => GivenSubjectAnyPredicate::AnyObject,
+			Self::SameAsPredicate => GivenSubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(t) => GivenSubjectAnyPredicate::GivenObject(t),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject => true,
+			Self::SameAsPredicate => triple.object() == triple.predicate(),
+			Self::GivenObject(o) => triple.object() == o,
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubjectAnyPredicate<U> {
+		match self {
+			Self::AnyObject => GivenSubjectAnyPredicate::AnyObject,
+			Self::SameAsPredicate => GivenSubjectAnyPredicate::SameAsPredicate,
+			Self::GivenObject(o) => GivenSubjectAnyPredicate::GivenObject(f(o)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (GivenSubjectAnyPredicate<U>, GivenSubjectAnyPredicate<V>) {
+		match self {
+			Self::AnyObject => (
+				GivenSubjectAnyPredicate::AnyObject,
+				GivenSubjectAnyPredicate::AnyObject,
+			),
+			Self::SameAsPredicate => (
+				GivenSubjectAnyPredicate::SameAsPredicate,
+				GivenSubjectAnyPredicate::SameAsPredicate,
+			),
+			Self::GivenObject(o) => {
+				let (u, v) = f(o);
+				(
+					GivenSubjectAnyPredicate::GivenObject(u),
+					GivenSubjectAnyPredicate::GivenObject(v),
+				)
+			}
+		}
+	}
+}
+
 impl<T: std::ops::Deref> GivenSubjectAnyPredicate<T> {
 	pub fn as_deref(&self) -> GivenSubjectAnyPredicate<&T::Target> {
 		match self {
@@ -987,17 +1346,17 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::GivenSubjectAnyPredicate<T> {
+	pub fn with_any_graph(self) -> quad::GivenSubjectAnyPredicate<T> {
 		match self {
-			Self::AnyObject => quad::canonical::GivenSubjectAnyPredicate::AnyObject(
-				quad::canonical::GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			Self::AnyObject => quad::GivenSubjectAnyPredicate::AnyObject(
+				quad::GivenSubjectAnyPredicateAnyObject::AnyGraph,
 			),
-			Self::SameAsPredicate => quad::canonical::GivenSubjectAnyPredicate::SameAsPredicate(
-				quad::canonical::GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => quad::GivenSubjectAnyPredicate::SameAsPredicate(
+				quad::GivenSubjectAnyPredicateGivenObject::AnyGraph,
 			),
-			Self::GivenObject(id) => quad::canonical::GivenSubjectAnyPredicate::GivenObject(
+			Self::GivenObject(id) => quad::GivenSubjectAnyPredicate::GivenObject(
 				id,
-				quad::canonical::GivenSubjectAnyPredicateGivenObject::AnyGraph,
+				quad::GivenSubjectAnyPredicateGivenObject::AnyGraph,
 			),
 		}
 	}
@@ -1036,6 +1395,51 @@ pub enum GivenSubjectGivenPredicate<T> {
 	GivenObject(T),
 }
 
+impl<T> GivenSubjectGivenPredicate<T> {
+	pub fn as_ref(&self) -> GivenSubjectGivenPredicate<&T> {
+		match self {
+			Self::AnyObject => GivenSubjectGivenPredicate::AnyObject,
+			Self::GivenObject(t) => GivenSubjectGivenPredicate::GivenObject(t),
+		}
+	}
+
+	pub fn matches(&self, triple: Triple<T>) -> bool
+	where
+		T: PartialEq,
+	{
+		match self {
+			Self::AnyObject => true,
+			Self::GivenObject(o) => triple.object() == o,
+		}
+	}
+
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> GivenSubjectGivenPredicate<U> {
+		match self {
+			Self::AnyObject => GivenSubjectGivenPredicate::AnyObject,
+			Self::GivenObject(o) => GivenSubjectGivenPredicate::GivenObject(f(o)),
+		}
+	}
+
+	pub fn map2<U, V>(
+		self,
+		mut f: impl FnMut(T) -> (U, V),
+	) -> (GivenSubjectGivenPredicate<U>, GivenSubjectGivenPredicate<V>) {
+		match self {
+			Self::AnyObject => (
+				GivenSubjectGivenPredicate::AnyObject,
+				GivenSubjectGivenPredicate::AnyObject,
+			),
+			Self::GivenObject(o) => {
+				let (u, v) = f(o);
+				(
+					GivenSubjectGivenPredicate::GivenObject(u),
+					GivenSubjectGivenPredicate::GivenObject(v),
+				)
+			}
+		}
+	}
+}
+
 impl<T: std::ops::Deref> GivenSubjectGivenPredicate<T> {
 	pub fn as_deref(&self) -> GivenSubjectGivenPredicate<&T::Target> {
 		match self {
@@ -1060,14 +1464,14 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn with_any_graph(self) -> quad::canonical::GivenSubjectGivenPredicate<T> {
+	pub fn with_any_graph(self) -> quad::GivenSubjectGivenPredicate<T> {
 		match self {
-			Self::AnyObject => quad::canonical::GivenSubjectGivenPredicate::AnyObject(
-				quad::canonical::GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::AnyObject => quad::GivenSubjectGivenPredicate::AnyObject(
+				quad::GivenSubjectGivenPredicateAnyObject::AnyGraph,
 			),
-			Self::GivenObject(id) => quad::canonical::GivenSubjectGivenPredicate::GivenObject(
+			Self::GivenObject(id) => quad::GivenSubjectGivenPredicate::GivenObject(
 				id,
-				quad::canonical::GivenSubjectGivenPredicateGivenObject::AnyGraph,
+				quad::GivenSubjectGivenPredicateGivenObject::AnyGraph,
 			),
 		}
 	}
@@ -1095,5 +1499,128 @@ impl<T> GivenSubjectGivenPredicate<T> {
 
 	pub fn set_object(&mut self, t: T) -> PatternObject<T> {
 		std::mem::replace(self, Self::GivenObject(t)).into_object()
+	}
+}
+
+#[cfg(test)]
+mod extra_tests {
+	use super::*;
+	use std::borrow::Cow;
+
+	fn pattern(
+		s: Pattern<i32, u8>,
+		p: Pattern<i32, u8>,
+		o: Pattern<i32, u8>,
+	) -> CanonicalTriplePattern<i32> {
+		CanonicalTriplePattern::from_pattern(Triple(s, p, o))
+	}
+
+	#[test]
+	fn any_constant_matches_everything() {
+		let any = CanonicalTriplePattern::<i32>::ANY;
+		assert!(any.matches(Triple(1, 2, 3)));
+		assert!(any.matches(Triple(1, 1, 1)));
+	}
+
+	#[test]
+	fn matches_same_as_subject_object() {
+		// ?0 ?1 ?0 (object == subject)
+		let pat = pattern(Pattern::Var(0), Pattern::Var(1), Pattern::Var(0));
+		assert!(pat.matches(Triple(1, 2, 1)));
+		assert!(!pat.matches(Triple(1, 2, 3)));
+	}
+
+	#[test]
+	fn matches_given_subject() {
+		let pat = pattern(Pattern::Ground(1), Pattern::Var(1), Pattern::Var(2));
+		assert!(pat.matches(Triple(1, 2, 3)));
+		assert!(!pat.matches(Triple(9, 2, 3)));
+	}
+
+	#[test]
+	fn into_parts_round_trip() {
+		let pat = CanonicalTriplePattern::from_triple(Triple(1, 2, 3));
+		assert_eq!(
+			pat.into_parts(),
+			(
+				PatternSubject::Given(1),
+				PatternPredicate::Given(2),
+				PatternObject::Given(3),
+			)
+		);
+	}
+
+	#[test]
+	fn as_ref_borrows() {
+		let pat = CanonicalTriplePattern::from_triple(Triple(1, 2, 3));
+		let borrowed = pat.as_ref();
+		assert_eq!(
+			borrowed.into_parts(),
+			(
+				PatternSubject::Given(&1),
+				PatternPredicate::Given(&2),
+				PatternObject::Given(&3),
+			)
+		);
+	}
+
+	#[test]
+	fn map_and_map2() {
+		let pat = CanonicalTriplePattern::from_triple(Triple(1, 2, 3));
+		let mapped = pat.map(|x| x * 10);
+		assert_eq!(
+			mapped.into_parts(),
+			(
+				PatternSubject::Given(10),
+				PatternPredicate::Given(20),
+				PatternObject::Given(30),
+			)
+		);
+
+		let pat = CanonicalTriplePattern::from_triple(Triple(1, 2, 3));
+		let (a, b) = pat.map2(|x| (x, x * 100));
+		assert_eq!(
+			a.into_parts(),
+			(
+				PatternSubject::Given(1),
+				PatternPredicate::Given(2),
+				PatternObject::Given(3),
+			)
+		);
+		assert_eq!(
+			b.into_parts(),
+			(
+				PatternSubject::Given(100),
+				PatternPredicate::Given(200),
+				PatternObject::Given(300),
+			)
+		);
+	}
+
+	#[test]
+	fn from_borrowed_triple_and_pattern() {
+		let a = 1;
+		let b = 2;
+		let c = 3;
+		let pat: CanonicalTriplePattern<Cow<i32>> = Triple(&a, &b, &c).into();
+		assert_eq!(
+			pat.into_parts(),
+			(
+				PatternSubject::Given(Cow::Borrowed(&1)),
+				PatternPredicate::Given(Cow::Borrowed(&2)),
+				PatternObject::Given(Cow::Borrowed(&3)),
+			)
+		);
+
+		let base = CanonicalTriplePattern::from_triple(Triple(&a, &b, &c));
+		let owned: CanonicalTriplePattern<Cow<i32>> = base.into();
+		assert_eq!(
+			owned.into_parts(),
+			(
+				PatternSubject::Given(Cow::Borrowed(&1)),
+				PatternPredicate::Given(Cow::Borrowed(&2)),
+				PatternObject::Given(Cow::Borrowed(&3)),
+			)
+		);
 	}
 }

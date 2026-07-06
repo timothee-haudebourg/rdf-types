@@ -36,6 +36,15 @@ impl<V, T: Eq + Hash> TriplePatternMap<V, T> {
 	}
 }
 
+impl<V: Eq + Hash, T: Eq + Hash> TriplePatternMap<V, T> {
+	pub fn union_with(&mut self, other: Self) {
+		self.any.union_with(other.any);
+		for (id, map) in other.given {
+			self.given.entry(id).or_default().union_with(map);
+		}
+	}
+}
+
 pub struct Values<'a, V> {
 	any: AnySubjectValues<'a, V>,
 	given: Option<GivenSubjectValues<'a, V>>,
@@ -85,13 +94,6 @@ impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectMap<V, T> {
 	}
 }
 
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for GivenSubjectMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
-
 pub struct GivenSubjectValues<'a, V> {
 	any: GivenSubjectAnyPredicateValues<'a, V>,
 	given: Option<GivenSubjectGivenPredicateValues<'a, V>>,
@@ -140,14 +142,6 @@ impl<V, T: Eq + Hash> GivenSubjectAnyPredicateMap<V, T> {
 		}
 	}
 }
-
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for GivenSubjectAnyPredicateMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.same_as_predicate.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
 
 impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectAnyPredicateMap<V, T> {
 	pub fn union_with(&mut self, other: Self) {
@@ -200,13 +194,6 @@ impl<V, T: Eq + Hash> GivenSubjectGivenPredicateMap<V, T> {
 		}
 	}
 }
-
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for GivenSubjectGivenPredicateMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
 
 impl<V: Eq + Hash, T: Eq + Hash> GivenSubjectGivenPredicateMap<V, T> {
 	pub fn union_with(&mut self, other: Self) {
@@ -263,14 +250,6 @@ impl<V, T: Eq + Hash> AnySubjectMap<V, T> {
 		}
 	}
 }
-
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for AnySubjectMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.same_as_subject.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
 
 impl<V: Eq + Hash, T: Eq + Hash> AnySubjectMap<V, T> {
 	pub fn union_with(&mut self, other: Self) {
@@ -338,15 +317,6 @@ impl<V, T: Eq + Hash> AnySubjectAnyPredicateMap<V, T> {
 	}
 }
 
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for AnySubjectAnyPredicateMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.same_as_subject.replace_id(a, b);
-// 		self.same_as_predicate.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
-
 impl<V: Eq + Hash, T: Eq + Hash> AnySubjectAnyPredicateMap<V, T> {
 	pub fn union_with(&mut self, other: Self) {
 		self.any.extend(other.any);
@@ -408,14 +378,6 @@ impl<V, T: Eq + Hash> AnySubjectGivenPredicateMap<V, T> {
 		}
 	}
 }
-
-// impl<V: Eq + Hash + ReplaceId> ReplaceId for AnySubjectGivenPredicateMap<V, Id> {
-// 	fn replace_id(&mut self, a: Id, b: Id) {
-// 		self.any.replace_id(a, b);
-// 		self.same_as_subject.replace_id(a, b);
-// 		self.given.replace_id(a, b)
-// 	}
-// }
 
 impl<V: Eq + Hash, T: Eq + Hash> AnySubjectGivenPredicateMap<V, T> {
 	pub fn union_with(&mut self, other: Self) {

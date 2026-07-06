@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 
+use replace_with::replace_with_or_abort_and_return;
+
 use crate::{
-	pattern::{
-		triple::{self, CanonicalTriplePattern},
-		Pattern, QuadPattern, TriplePattern,
-	},
 	Quad, Triple,
+	pattern::{
+		Pattern, QuadPattern, TriplePattern,
+		triple::{self, CanonicalTriplePattern},
+	},
 };
 
 /// Canonical triple pattern.
@@ -227,6 +229,120 @@ impl<T> CanonicalQuadPattern<T> {
 				)
 			}
 		}
+	}
+
+	pub fn set_subject(&mut self, s: T) -> PatternSubject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnySubject(p) => (
+				PatternSubject::Any,
+				Self::GivenSubject(s.clone(), p.set_subject(s)),
+			),
+			Self::GivenSubject(old_s, p) => {
+				(PatternSubject::Given(old_s), Self::GivenSubject(s, p))
+			}
+		})
+	}
+
+	pub fn with_subject(mut self, s: T) -> Self
+	where
+		T: Clone,
+	{
+		self.set_subject(s);
+		self
+	}
+
+	pub fn set_predicate(&mut self, p: T) -> PatternPredicate<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnySubject(AnySubject::SameAsSubject(rest)) => (
+				PatternPredicate::SameAsSubject,
+				Self::GivenSubject(
+					p.clone(),
+					GivenSubject::GivenPredicate(p.clone(), rest.set_subject(p)),
+				),
+			),
+			Self::AnySubject(mut current) => {
+				let old_p = current.set_predicate(p);
+				(old_p, Self::AnySubject(current))
+			}
+			Self::GivenSubject(s, mut current) => {
+				let old_p = current.set_predicate(p);
+				(old_p, Self::GivenSubject(s, current))
+			}
+		})
+	}
+
+	pub fn with_predicate(mut self, p: T) -> Self
+	where
+		T: Clone,
+	{
+		self.set_predicate(p);
+		self
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnySubject(AnySubject::AnyPredicate(AnySubjectAnyPredicate::SameAsSubject(
+				g,
+			))) => (
+				PatternObject::SameAsSubject,
+				Self::GivenSubject(
+					o.clone(),
+					GivenSubject::AnyPredicate(GivenSubjectAnyPredicate::GivenObject(
+						o.clone(),
+						g.set_subject(o),
+					)),
+				),
+			),
+			Self::AnySubject(AnySubject::SameAsSubject(
+				AnySubjectGivenPredicate::SameAsSubject(g),
+			)) => (
+				PatternObject::SameAsSubject,
+				Self::GivenSubject(
+					o.clone(),
+					GivenSubject::GivenPredicate(
+						o.clone(),
+						GivenSubjectGivenPredicate::GivenObject(o.clone(), g.set_subject(o)),
+					),
+				),
+			),
+			Self::AnySubject(mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::AnySubject(current))
+			}
+			Self::GivenSubject(s, mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::GivenSubject(s, current))
+			}
+		})
+	}
+
+	pub fn with_object(mut self, o: T) -> Self
+	where
+		T: Clone,
+	{
+		self.set_object(o);
+		self
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnySubject(rest) => rest.set_graph(g),
+			Self::GivenSubject(_, rest) => rest.set_graph(g),
+		}
+	}
+
+	pub fn with_graph(mut self, g: Option<T>) -> Self {
+		self.set_graph(g);
+		self
 	}
 }
 
@@ -556,19 +672,19 @@ impl<T> AnySubject<T> {
 		}
 	}
 
-	pub fn into_triple(self) -> (triple::canonical::AnySubject<T>, PatternGraph<T>) {
+	pub fn into_triple(self) -> (triple::AnySubject<T>, PatternGraph<T>) {
 		match self {
 			Self::AnyPredicate(t) => {
 				let (u, g) = t.into_triple();
-				(triple::canonical::AnySubject::AnyPredicate(u), g)
+				(triple::AnySubject::AnyPredicate(u), g)
 			}
 			Self::SameAsSubject(t) => {
 				let (u, g) = t.into_triple();
-				(triple::canonical::AnySubject::SameAsSubject(u), g)
+				(triple::AnySubject::SameAsSubject(u), g)
 			}
 			Self::GivenPredicate(id, t) => {
 				let (u, g) = t.into_triple();
-				(triple::canonical::AnySubject::GivenPredicate(id, u), g)
+				(triple::AnySubject::GivenPredicate(id, u), g)
 			}
 		}
 	}
@@ -587,6 +703,108 @@ impl<T> AnySubject<T> {
 				let (o, g) = og.into_parts();
 				(PatternPredicate::Given(p), o, g)
 			}
+		}
+	}
+
+	pub fn set_subject(self, s: T) -> GivenSubject<T>
+	where
+		T: Clone,
+	{
+		match self {
+			Self::AnyPredicate(pog) => GivenSubject::AnyPredicate(pog.set_subject(s)),
+			Self::SameAsSubject(pog) => GivenSubject::GivenPredicate(s.clone(), pog.set_subject(s)),
+			Self::GivenPredicate(p, pog) => GivenSubject::GivenPredicate(p, pog.set_subject(s)),
+		}
+	}
+
+	pub fn set_predicate(&mut self, p: T) -> PatternPredicate<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyPredicate(AnySubjectAnyPredicate::SameAsPredicate(g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					AnySubjectGivenPredicate::GivenObject(p.clone(), g.set_predicate(p)),
+				),
+			),
+			Self::AnyPredicate(AnySubjectAnyPredicate::AnyObject(g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					AnySubjectGivenPredicate::AnyObject(g.set_predicate(p)),
+				),
+			),
+			Self::AnyPredicate(AnySubjectAnyPredicate::SameAsSubject(g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					AnySubjectGivenPredicate::SameAsSubject(g.set_predicate(p)),
+				),
+			),
+			Self::AnyPredicate(AnySubjectAnyPredicate::GivenObject(o, g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					AnySubjectGivenPredicate::GivenObject(o, g.set_predicate(p)),
+				),
+			),
+			Self::SameAsSubject(AnySubjectGivenPredicate::AnyObject(g)) => (
+				PatternPredicate::SameAsSubject,
+				Self::GivenPredicate(p, AnySubjectGivenPredicate::AnyObject(g)),
+			),
+			Self::SameAsSubject(AnySubjectGivenPredicate::SameAsSubject(g)) => (
+				PatternPredicate::SameAsSubject,
+				Self::GivenPredicate(p, AnySubjectGivenPredicate::SameAsSubject(g)),
+			),
+			Self::SameAsSubject(AnySubjectGivenPredicate::GivenObject(o, g)) => (
+				PatternPredicate::SameAsSubject,
+				Self::GivenPredicate(p, AnySubjectGivenPredicate::GivenObject(o, g)),
+			),
+			Self::GivenPredicate(old_p, rest) => (
+				PatternPredicate::Given(old_p),
+				Self::GivenPredicate(p, rest),
+			),
+		})
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyPredicate(AnySubjectAnyPredicate::SameAsPredicate(g)) => (
+				PatternObject::Any,
+				Self::GivenPredicate(
+					o.clone(),
+					AnySubjectGivenPredicate::GivenObject(o.clone(), g.set_predicate(o)),
+				),
+			),
+			Self::AnyPredicate(mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::AnyPredicate(current))
+			}
+			Self::SameAsSubject(AnySubjectGivenPredicate::SameAsSubject(g)) => (
+				PatternObject::SameAsSubject,
+				Self::GivenPredicate(o.clone(), AnySubjectGivenPredicate::GivenObject(o, g)),
+			),
+			Self::SameAsSubject(mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::SameAsSubject(current))
+			}
+			Self::GivenPredicate(p, mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::GivenPredicate(p, current))
+			}
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyPredicate(rest) => rest.set_graph(g),
+			Self::SameAsSubject(rest) => rest.set_graph(g),
+			Self::GivenPredicate(_, rest) => rest.set_graph(g),
 		}
 	}
 }
@@ -736,27 +954,19 @@ impl<T> AnySubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn into_triple(
-		self,
-	) -> (
-		triple::canonical::AnySubjectAnyPredicate<T>,
-		PatternGraph<T>,
-	) {
+	pub fn into_triple(self) -> (triple::AnySubjectAnyPredicate<T>, PatternGraph<T>) {
 		match self {
-			Self::AnyObject(t) => (
-				triple::canonical::AnySubjectAnyPredicate::AnyObject,
-				t.into_graph(),
-			),
+			Self::AnyObject(t) => (triple::AnySubjectAnyPredicate::AnyObject, t.into_graph()),
 			Self::SameAsSubject(t) => (
-				triple::canonical::AnySubjectAnyPredicate::SameAsSubject,
+				triple::AnySubjectAnyPredicate::SameAsSubject,
 				t.into_graph(),
 			),
 			Self::SameAsPredicate(t) => (
-				triple::canonical::AnySubjectAnyPredicate::SameAsPredicate,
+				triple::AnySubjectAnyPredicate::SameAsPredicate,
 				t.into_graph(),
 			),
 			Self::GivenObject(id, t) => (
-				triple::canonical::AnySubjectAnyPredicate::GivenObject(id),
+				triple::AnySubjectAnyPredicate::GivenObject(id),
 				t.into_graph(),
 			),
 		}
@@ -768,6 +978,44 @@ impl<T> AnySubjectAnyPredicate<T> {
 			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, g.into_graph()),
 			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, g.into_graph()),
 			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
+		}
+	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectAnyPredicate<T>
+	where
+		T: Clone,
+	{
+		match self {
+			Self::AnyObject(g) => GivenSubjectAnyPredicate::AnyObject(g.set_subject(s)),
+			Self::SameAsSubject(g) => {
+				GivenSubjectAnyPredicate::GivenObject(s.clone(), g.set_subject(s))
+			}
+			Self::SameAsPredicate(g) => GivenSubjectAnyPredicate::SameAsPredicate(g.set_subject(s)),
+			Self::GivenObject(o, g) => GivenSubjectAnyPredicate::GivenObject(o, g.set_subject(s)),
+		}
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyObject(g) => (
+				PatternObject::Any,
+				Self::GivenObject(o.clone(), g.set_object(o)),
+			),
+			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, Self::GivenObject(o, g)),
+			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, Self::GivenObject(o, g)),
+			Self::GivenObject(old_o, g) => (PatternObject::Given(old_o), Self::GivenObject(o, g)),
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(rest) => rest.set_graph(g),
+			Self::SameAsSubject(rest) => rest.set_graph(g),
+			Self::SameAsPredicate(rest) => rest.set_graph(g),
+			Self::GivenObject(_, rest) => rest.set_graph(g),
 		}
 	}
 }
@@ -893,23 +1141,15 @@ impl<T> AnySubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn into_triple(
-		self,
-	) -> (
-		triple::canonical::AnySubjectGivenPredicate<T>,
-		PatternGraph<T>,
-	) {
+	pub fn into_triple(self) -> (triple::AnySubjectGivenPredicate<T>, PatternGraph<T>) {
 		match self {
-			Self::AnyObject(t) => (
-				triple::canonical::AnySubjectGivenPredicate::AnyObject,
-				t.into_graph(),
-			),
+			Self::AnyObject(t) => (triple::AnySubjectGivenPredicate::AnyObject, t.into_graph()),
 			Self::SameAsSubject(t) => (
-				triple::canonical::AnySubjectGivenPredicate::SameAsSubject,
+				triple::AnySubjectGivenPredicate::SameAsSubject,
 				t.into_graph(),
 			),
 			Self::GivenObject(id, t) => (
-				triple::canonical::AnySubjectGivenPredicate::GivenObject(id),
+				triple::AnySubjectGivenPredicate::GivenObject(id),
 				t.into_graph(),
 			),
 		}
@@ -920,6 +1160,41 @@ impl<T> AnySubjectGivenPredicate<T> {
 			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
 			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, g.into_graph()),
 			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
+		}
+	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectGivenPredicate<T>
+	where
+		T: Clone,
+	{
+		match self {
+			Self::AnyObject(g) => GivenSubjectGivenPredicate::AnyObject(g.set_subject(s)),
+			Self::SameAsSubject(g) => {
+				GivenSubjectGivenPredicate::GivenObject(s.clone(), g.set_subject(s))
+			}
+			Self::GivenObject(o, g) => GivenSubjectGivenPredicate::GivenObject(o, g.set_subject(s)),
+		}
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyObject(g) => (
+				PatternObject::Any,
+				Self::GivenObject(o.clone(), g.set_object(o)),
+			),
+			Self::SameAsSubject(g) => (PatternObject::SameAsSubject, Self::GivenObject(o, g)),
+			Self::GivenObject(old_o, g) => (PatternObject::Given(old_o), Self::GivenObject(o, g)),
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(rest) => rest.set_graph(g),
+			Self::SameAsSubject(rest) => rest.set_graph(g),
+			Self::GivenObject(_, rest) => rest.set_graph(g),
 		}
 	}
 }
@@ -1037,15 +1312,15 @@ impl<T> GivenSubject<T> {
 		}
 	}
 
-	pub fn into_triple(self) -> (triple::canonical::GivenSubject<T>, PatternGraph<T>) {
+	pub fn into_triple(self) -> (triple::GivenSubject<T>, PatternGraph<T>) {
 		match self {
 			Self::AnyPredicate(t) => {
 				let (u, g) = t.into_triple();
-				(triple::canonical::GivenSubject::AnyPredicate(u), g)
+				(triple::GivenSubject::AnyPredicate(u), g)
 			}
 			Self::GivenPredicate(id, t) => {
 				let (u, g) = t.into_triple();
-				(triple::canonical::GivenSubject::GivenPredicate(id, u), g)
+				(triple::GivenSubject::GivenPredicate(id, u), g)
 			}
 		}
 	}
@@ -1060,6 +1335,69 @@ impl<T> GivenSubject<T> {
 				let (o, g) = og.into_parts();
 				(PatternPredicate::Given(p), o, g)
 			}
+		}
+	}
+
+	pub fn set_predicate(&mut self, p: T) -> PatternPredicate<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyPredicate(GivenSubjectAnyPredicate::AnyObject(g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					GivenSubjectGivenPredicate::AnyObject(g.set_predicate(p)),
+				),
+			),
+			Self::AnyPredicate(GivenSubjectAnyPredicate::SameAsPredicate(g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					GivenSubjectGivenPredicate::GivenObject(p.clone(), g.set_predicate(p)),
+				),
+			),
+			Self::AnyPredicate(GivenSubjectAnyPredicate::GivenObject(o, g)) => (
+				PatternPredicate::Any,
+				Self::GivenPredicate(
+					p.clone(),
+					GivenSubjectGivenPredicate::GivenObject(o, g.set_predicate(p)),
+				),
+			),
+			Self::GivenPredicate(old_p, rest) => (
+				PatternPredicate::Given(old_p),
+				Self::GivenPredicate(p, rest),
+			),
+		})
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyPredicate(GivenSubjectAnyPredicate::SameAsPredicate(g)) => (
+				PatternObject::Any,
+				Self::GivenPredicate(
+					o.clone(),
+					GivenSubjectGivenPredicate::GivenObject(o.clone(), g.set_predicate(o)),
+				),
+			),
+			Self::AnyPredicate(mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::AnyPredicate(current))
+			}
+			Self::GivenPredicate(p, mut current) => {
+				let old_o = current.set_object(o);
+				(old_o, Self::GivenPredicate(p, current))
+			}
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyPredicate(rest) => rest.set_graph(g),
+			Self::GivenPredicate(_, rest) => rest.set_graph(g),
 		}
 	}
 }
@@ -1185,23 +1523,15 @@ impl<T> GivenSubjectAnyPredicate<T> {
 		}
 	}
 
-	pub fn into_triple(
-		self,
-	) -> (
-		triple::canonical::GivenSubjectAnyPredicate<T>,
-		PatternGraph<T>,
-	) {
+	pub fn into_triple(self) -> (triple::GivenSubjectAnyPredicate<T>, PatternGraph<T>) {
 		match self {
-			Self::AnyObject(t) => (
-				triple::canonical::GivenSubjectAnyPredicate::AnyObject,
-				t.into_graph(),
-			),
+			Self::AnyObject(t) => (triple::GivenSubjectAnyPredicate::AnyObject, t.into_graph()),
 			Self::SameAsPredicate(t) => (
-				triple::canonical::GivenSubjectAnyPredicate::SameAsPredicate,
+				triple::GivenSubjectAnyPredicate::SameAsPredicate,
 				t.into_graph(),
 			),
 			Self::GivenObject(id, t) => (
-				triple::canonical::GivenSubjectAnyPredicate::GivenObject(id),
+				triple::GivenSubjectAnyPredicate::GivenObject(id),
 				t.into_graph(),
 			),
 		}
@@ -1212,6 +1542,28 @@ impl<T> GivenSubjectAnyPredicate<T> {
 			Self::AnyObject(g) => (PatternObject::Any, g.into_graph()),
 			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, g.into_graph()),
 			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
+		}
+	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyObject(g) => (
+				PatternObject::Any,
+				Self::GivenObject(o.clone(), g.set_object(o)),
+			),
+			Self::SameAsPredicate(g) => (PatternObject::SameAsPredicate, Self::GivenObject(o, g)),
+			Self::GivenObject(old_o, g) => (PatternObject::Given(old_o), Self::GivenObject(o, g)),
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(rest) => rest.set_graph(g),
+			Self::SameAsPredicate(rest) => rest.set_graph(g),
+			Self::GivenObject(_, rest) => rest.set_graph(g),
 		}
 	}
 }
@@ -1316,19 +1668,14 @@ impl<T> GivenSubjectGivenPredicate<T> {
 		}
 	}
 
-	pub fn into_triple(
-		self,
-	) -> (
-		triple::canonical::GivenSubjectGivenPredicate<T>,
-		PatternGraph<T>,
-	) {
+	pub fn into_triple(self) -> (triple::GivenSubjectGivenPredicate<T>, PatternGraph<T>) {
 		match self {
 			Self::AnyObject(t) => (
-				triple::canonical::GivenSubjectGivenPredicate::AnyObject,
+				triple::GivenSubjectGivenPredicate::AnyObject,
 				t.into_graph(),
 			),
 			Self::GivenObject(id, t) => (
-				triple::canonical::GivenSubjectGivenPredicate::GivenObject(id),
+				triple::GivenSubjectGivenPredicate::GivenObject(id),
 				t.into_graph(),
 			),
 		}
@@ -1340,6 +1687,26 @@ impl<T> GivenSubjectGivenPredicate<T> {
 			Self::GivenObject(o, g) => (PatternObject::Given(o), g.into_graph()),
 		}
 	}
+
+	pub fn set_object(&mut self, o: T) -> PatternObject<T>
+	where
+		T: Clone,
+	{
+		replace_with_or_abort_and_return(self, |this| match this {
+			Self::AnyObject(g) => (
+				PatternObject::Any,
+				Self::GivenObject(o.clone(), g.set_object(o)),
+			),
+			Self::GivenObject(old_o, g) => (PatternObject::Given(old_o), Self::GivenObject(o, g)),
+		})
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		match self {
+			Self::AnyObject(rest) => rest.set_graph(g),
+			Self::GivenObject(_, rest) => rest.set_graph(g),
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1349,6 +1716,37 @@ pub enum PatternGraph<T> {
 	SameAsPredicate,
 	SameAsObject,
 	Given(Option<T>),
+}
+
+impl<T> PatternGraph<T> {
+	pub fn id(&self) -> Option<&T> {
+		match self {
+			Self::Given(g) => g.as_ref(),
+			_ => None,
+		}
+	}
+
+	pub fn into_id(self) -> Option<T> {
+		match self {
+			Self::Given(g) => g,
+			_ => None,
+		}
+	}
+}
+
+impl<T> PatternGraph<&T> {
+	pub fn cloned(self) -> PatternGraph<T>
+	where
+		T: Clone,
+	{
+		match self {
+			Self::Any => PatternGraph::Any,
+			Self::SameAsSubject => PatternGraph::SameAsSubject,
+			Self::SameAsPredicate => PatternGraph::SameAsPredicate,
+			Self::SameAsObject => PatternGraph::SameAsObject,
+			Self::Given(g) => PatternGraph::Given(g.cloned()),
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1478,6 +1876,40 @@ impl<T> AnySubjectAnyPredicateAnyObject<T> {
 			}
 		}
 	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectAnyPredicateAnyObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => GivenSubjectAnyPredicateAnyObject::GivenGraph(Some(s)),
+			Self::SameAsPredicate => GivenSubjectAnyPredicateAnyObject::SameAsPredicate,
+			Self::SameAsObject => GivenSubjectAnyPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateAnyObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_predicate(self, p: T) -> AnySubjectGivenPredicateAnyObject<T> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateAnyObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectGivenPredicateAnyObject::GivenGraph(Some(p)),
+			Self::SameAsObject => AnySubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => AnySubjectGivenPredicateAnyObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_object(self, o: T) -> AnySubjectAnyPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => AnySubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectAnyPredicateGivenObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::SameAsObject => AnySubjectAnyPredicateGivenObject::GivenGraph(Some(o)),
+			Self::GivenGraph(g) => AnySubjectAnyPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1594,6 +2026,28 @@ impl<T> GivenSubjectAnyPredicateAnyObject<T> {
 				)
 			}
 		}
+	}
+
+	pub fn set_predicate(self, p: T) -> GivenSubjectGivenPredicateAnyObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectGivenPredicateAnyObject::GivenGraph(Some(p)),
+			Self::SameAsObject => GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateAnyObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_object(self, o: T) -> GivenSubjectAnyPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::SameAsObject => GivenSubjectAnyPredicateGivenObject::GivenGraph(Some(o)),
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
 	}
 }
 
@@ -1712,6 +2166,28 @@ impl<T> AnySubjectGivenPredicateAnyObject<T> {
 			}
 		}
 	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectGivenPredicateAnyObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateAnyObject::AnyGraph,
+			Self::SameAsSubject => GivenSubjectGivenPredicateAnyObject::GivenGraph(Some(s)),
+			Self::SameAsObject => GivenSubjectGivenPredicateAnyObject::SameAsObject,
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateAnyObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_object(self, o: T) -> AnySubjectGivenPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			Self::SameAsObject => AnySubjectGivenPredicateGivenObject::GivenGraph(Some(o)),
+			Self::GivenGraph(g) => AnySubjectGivenPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1829,6 +2305,28 @@ impl<T> AnySubjectAnyPredicateGivenObject<T> {
 			}
 		}
 	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectAnyPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectAnyPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => GivenSubjectAnyPredicateGivenObject::GivenGraph(Some(s)),
+			Self::SameAsPredicate => GivenSubjectAnyPredicateGivenObject::SameAsPredicate,
+			Self::GivenGraph(g) => GivenSubjectAnyPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_predicate(self, p: T) -> AnySubjectGivenPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => AnySubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => AnySubjectGivenPredicateGivenObject::SameAsSubject,
+			Self::SameAsPredicate => AnySubjectGivenPredicateGivenObject::GivenGraph(Some(p)),
+			Self::GivenGraph(g) => AnySubjectGivenPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1933,6 +2431,18 @@ impl<T> AnySubjectGivenPredicateGivenObject<T> {
 				)
 			}
 		}
+	}
+
+	pub fn set_subject(self, s: T) -> GivenSubjectGivenPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsSubject => GivenSubjectGivenPredicateGivenObject::GivenGraph(Some(s)),
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
 	}
 }
 
@@ -2039,6 +2549,18 @@ impl<T> GivenSubjectAnyPredicateGivenObject<T> {
 			}
 		}
 	}
+
+	pub fn set_predicate(self, p: T) -> GivenSubjectGivenPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsPredicate => GivenSubjectGivenPredicateGivenObject::GivenGraph(Some(p)),
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2144,6 +2666,18 @@ impl<T> GivenSubjectGivenPredicateAnyObject<T> {
 			}
 		}
 	}
+
+	pub fn set_object(self, o: T) -> GivenSubjectGivenPredicateGivenObject<T> {
+		match self {
+			Self::AnyGraph => GivenSubjectGivenPredicateGivenObject::AnyGraph,
+			Self::SameAsObject => GivenSubjectGivenPredicateGivenObject::GivenGraph(Some(o)),
+			Self::GivenGraph(g) => GivenSubjectGivenPredicateGivenObject::GivenGraph(g),
+		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2232,6 +2766,10 @@ impl<T> GivenSubjectGivenPredicateGivenObject<T> {
 				)
 			}
 		}
+	}
+
+	pub fn set_graph(&mut self, g: Option<T>) -> PatternGraph<T> {
+		std::mem::replace(self, Self::GivenGraph(g)).into_graph()
 	}
 }
 
@@ -2404,5 +2942,193 @@ impl<T: std::ops::Deref> GivenSubjectGivenPredicateGivenObject<T> {
 				GivenSubjectGivenPredicateGivenObject::GivenGraph(option_as_deref(g))
 			}
 		}
+	}
+}
+
+#[cfg(test)]
+mod mutation_tests {
+	use super::*;
+	use crate::Quad;
+
+	fn pattern(
+		s: Pattern<i32, u8>,
+		p: Pattern<i32, u8>,
+		o: Pattern<i32, u8>,
+		g: Option<Pattern<i32, u8>>,
+	) -> CanonicalQuadPattern<i32> {
+		CanonicalQuadPattern::from_pattern(Quad(s, p, o, g))
+	}
+
+	#[test]
+	fn set_predicate_propagates_to_subject() {
+		// ?0 ?0 ?1 ?2 (subject == predicate)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_predicate(42);
+		assert_eq!(old, PatternPredicate::SameAsSubject);
+		assert_eq!(pat.subject(), PatternSubject::Given(&42));
+		assert_eq!(pat.predicate(), PatternPredicate::Given(&42));
+		assert_eq!(pat.object(), PatternObject::Any);
+		assert_eq!(pat.graph(), PatternGraph::Any);
+	}
+
+	#[test]
+	fn set_subject_propagates_to_predicate() {
+		// ?0 ?0 ?1 ?2 (subject == predicate)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_subject(7);
+		assert_eq!(old, PatternSubject::Any);
+		assert_eq!(pat.subject(), PatternSubject::Given(&7));
+		assert_eq!(pat.predicate(), PatternPredicate::Given(&7));
+	}
+
+	#[test]
+	fn set_subject_propagates_to_object() {
+		// ?0 ?1 ?0 ?2 (object == subject, predicate independent)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(0),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_subject(9);
+		assert_eq!(old, PatternSubject::Any);
+		assert_eq!(pat.subject(), PatternSubject::Given(&9));
+		assert_eq!(pat.object(), PatternObject::Given(&9));
+		assert_eq!(pat.predicate(), PatternPredicate::Any);
+	}
+
+	#[test]
+	fn set_predicate_does_not_disturb_unrelated_same_as_subject_object() {
+		// ?0 ?1 ?0 ?2 (object == subject, predicate independent): setting the
+		// predicate must NOT collapse the object's `SameAsSubject` relation
+		// down to `Any` (regression test for the fixed bug class).
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(0),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_predicate(5);
+		assert_eq!(old, PatternPredicate::Any);
+		assert_eq!(pat.predicate(), PatternPredicate::Given(&5));
+		assert_eq!(pat.object(), PatternObject::SameAsSubject);
+	}
+
+	#[test]
+	fn set_predicate_propagates_to_object() {
+		// ?0 ?1 ?1 ?2 (object == predicate)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(1),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_predicate(3);
+		assert_eq!(old, PatternPredicate::Any);
+		assert_eq!(pat.predicate(), PatternPredicate::Given(&3));
+		assert_eq!(pat.object(), PatternObject::Given(&3));
+	}
+
+	#[test]
+	fn set_object_propagates_to_predicate() {
+		// ?0 ?1 ?1 ?2 (object == predicate)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(1),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_object(11);
+		assert_eq!(old, PatternObject::Any);
+		assert_eq!(pat.predicate(), PatternPredicate::Given(&11));
+		assert_eq!(pat.object(), PatternObject::Given(&11));
+	}
+
+	#[test]
+	fn set_subject_propagates_to_graph() {
+		// ?0 ?1 ?2 ?0 (graph == subject)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(2),
+			Some(Pattern::Var(0)),
+		);
+		let old = pat.set_subject(13);
+		assert_eq!(old, PatternSubject::Any);
+		assert_eq!(pat.graph(), PatternGraph::Given(Some(&13)));
+	}
+
+	#[test]
+	fn set_predicate_propagates_to_graph() {
+		// ?0 ?1 ?2 ?1 (graph == predicate)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(2),
+			Some(Pattern::Var(1)),
+		);
+		let old = pat.set_predicate(17);
+		assert_eq!(old, PatternPredicate::Any);
+		assert_eq!(pat.graph(), PatternGraph::Given(Some(&17)));
+	}
+
+	#[test]
+	fn set_object_propagates_to_graph() {
+		// ?0 ?1 ?2 ?2 (graph == object)
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(2),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_object(19);
+		assert_eq!(old, PatternObject::Any);
+		assert_eq!(pat.graph(), PatternGraph::Given(Some(&19)));
+	}
+
+	#[test]
+	fn set_graph_does_not_affect_earlier_positions() {
+		// ?0 ?1 ?2 ?2 (graph == object): setting the graph must not affect
+		// subject/predicate/object at all.
+		let mut pat = pattern(
+			Pattern::Var(0),
+			Pattern::Var(1),
+			Pattern::Var(2),
+			Some(Pattern::Var(2)),
+		);
+		let old = pat.set_graph(Some(23));
+		assert_eq!(old, PatternGraph::SameAsObject);
+		assert_eq!(pat.subject(), PatternSubject::Any);
+		assert_eq!(pat.predicate(), PatternPredicate::Any);
+		assert_eq!(pat.object(), PatternObject::Any);
+		assert_eq!(pat.graph(), PatternGraph::Given(Some(&23)));
+	}
+
+	#[test]
+	fn with_subject_with_predicate_with_object_with_graph() {
+		let pat = CanonicalQuadPattern::<i32>::ANY
+			.with_subject(1)
+			.with_predicate(2)
+			.with_object(3)
+			.with_graph(Some(4));
+		assert_eq!(
+			pat.into_parts(),
+			(
+				PatternSubject::Given(1),
+				PatternPredicate::Given(2),
+				PatternObject::Given(3),
+				PatternGraph::Given(Some(4)),
+			)
+		);
 	}
 }
