@@ -85,8 +85,8 @@ impl<R> BTreeGraph<R> {
 	}
 
 	/// Returns an iterator over the triples of the graph.
-	pub fn iter(&self) -> Triples<'_, R> {
-		Triples {
+	pub fn iter(&self) -> Iter<'_, R> {
+		Iter {
 			resources: &self.resources,
 			triples: &self.triples,
 			indexes: self.triples_indexes.iter(),
@@ -262,7 +262,7 @@ impl<R> Graph for BTreeGraph<R> {
 
 impl<R> FiniteGraph for BTreeGraph<R> {
 	type Triples<'a>
-		= Triples<'a, R>
+		= Iter<'a, R>
 	where
 		R: 'a;
 
@@ -295,13 +295,13 @@ impl<R: Clone + Ord> GraphMut for BTreeGraph<R> {
 /// Iterator over the triples of a [`BTreeGraph`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
-pub struct Triples<'a, R> {
+pub struct Iter<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	triples: &'a Slab<Triple<usize>>,
 	indexes: raw_btree::Iter<'a, usize>,
 }
 
-impl<'a, R> Iterator for Triples<'a, R> {
+impl<'a, R> Iterator for Iter<'a, R> {
 	type Item = Triple<&'a R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -312,13 +312,13 @@ impl<'a, R> Iterator for Triples<'a, R> {
 }
 
 /// Iterator over the triples of a [`BTreeGraph`].
-pub struct IntoTriples<R> {
+pub struct IntoIter<R> {
 	resources: Slab<Resource<R>>,
 	triples: Slab<Triple<usize>>,
 	indexes: raw_btree::IntoIter<usize>,
 }
 
-impl<R: Clone> Iterator for IntoTriples<R> {
+impl<R: Clone> Iterator for IntoIter<R> {
 	type Item = Triple<R>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -330,7 +330,7 @@ impl<R: Clone> Iterator for IntoTriples<R> {
 
 impl<'a, R> IntoIterator for &'a BTreeGraph<R> {
 	type Item = Triple<&'a R>;
-	type IntoIter = Triples<'a, R>;
+	type IntoIter = Iter<'a, R>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.iter()
@@ -339,10 +339,10 @@ impl<'a, R> IntoIterator for &'a BTreeGraph<R> {
 
 impl<R: Clone> IntoIterator for BTreeGraph<R> {
 	type Item = Triple<R>;
-	type IntoIter = IntoTriples<R>;
+	type IntoIter = IntoIter<R>;
 
 	fn into_iter(self) -> Self::IntoIter {
-		IntoTriples {
+		IntoIter {
 			resources: self.resources,
 			triples: self.triples,
 			indexes: self.triples_indexes.into_iter(),
