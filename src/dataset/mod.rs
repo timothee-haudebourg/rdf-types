@@ -242,6 +242,30 @@ pub trait MultiPatternMatchingDataset: Dataset {
 	) -> Self::QuadMultiPatternMatching<'_, 'p>;
 }
 
+/// Any single-graph, multi-pattern-matching-capable graph is a
+/// multi-pattern-matching dataset, matching only quads in the default
+/// graph.
+impl<G: MultiPatternMatchingGraph> MultiPatternMatchingDataset for G {
+	type QuadMultiPatternMatching<'a, 'p>
+		= OptionIterator<TriplesIntoQuads<G::TripleMultiPatternMatching<'a, 'p>, &'a G::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
+
+	fn quad_multi_pattern_matching<'p, P: IntoIterator<Item = &'p Self::Resource>>(
+		&self,
+		pattern: LinearQuadPattern<P>,
+	) -> Self::QuadMultiPatternMatching<'_, 'p> {
+		let (pattern, g) = pattern.into_triple();
+		match g {
+			Some(Some(_)) => OptionIterator(None),
+			_ => OptionIterator(Some(TriplesIntoQuads::new(
+				self.triple_multi_pattern_matching(pattern),
+			))),
+		}
+	}
+}
+
 /// Pattern-matching-capable dataset.
 ///
 /// A dataset that can be queried with a [`LinearQuadPattern`], i.e. a quad
@@ -444,6 +468,33 @@ pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
 	) -> Self::ExtractMatchingQuads<'_, 'p>
 	where
 		Self::Resource: 'p;
+}
+
+/// Any single-graph, pattern-matching-capable mutable graph is a
+/// pattern-matching mutable dataset, only ever extracting quads from the
+/// default graph.
+impl<G: PatternMatchingGraphMut> PatternMatchingDatasetMut for G {
+	type ExtractMatchingQuads<'a, 'p>
+		= OptionIterator<TriplesIntoQuads<G::ExtractMatchingTriples<'a, 'p>, G::Resource>>
+	where
+		Self: 'a,
+		Self::Resource: 'p;
+
+	fn extract_matching_quads<'p>(
+		&mut self,
+		pattern: impl Into<LinearQuadPattern<&'p Self::Resource>>,
+	) -> Self::ExtractMatchingQuads<'_, 'p>
+	where
+		Self::Resource: 'p,
+	{
+		let (pattern, g) = pattern.into().into_triple();
+		match g {
+			Some(Some(_)) => OptionIterator(None),
+			_ => OptionIterator(Some(TriplesIntoQuads::new(
+				self.extract_matching_triples(pattern),
+			))),
+		}
+	}
 }
 
 /// Mutable dataset.
