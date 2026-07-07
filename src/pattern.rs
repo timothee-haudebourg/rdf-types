@@ -98,6 +98,15 @@ impl<T, X> Pattern<T, X> {
 		matches!(self, Self::Var(_))
 	}
 
+	/// Returns `true` if this pattern is a variable satisfying the given
+	/// predicate, and `false` if it is a ground value.
+	pub fn is_var_and(&self, f: impl FnOnce(&X) -> bool) -> bool {
+		match self {
+			Self::Ground(_) => false,
+			Self::Var(x) => f(x),
+		}
+	}
+
 	/// Returns `true` if this pattern is a ground value, or if it is a
 	/// variable satisfying the given predicate.
 	///
@@ -107,6 +116,18 @@ impl<T, X> Pattern<T, X> {
 		match self {
 			Self::Ground(_) => true,
 			Self::Var(x) => f(x),
+		}
+	}
+
+	/// Returns `true` if this pattern is a variable, or if it is a ground
+	/// value satisfying the given predicate.
+	///
+	/// Mirrors [`Option::is_none_or`], with [`Self::Var`] playing the role of
+	/// [`None`].
+	pub fn is_var_or(&self, f: impl FnOnce(&T) -> bool) -> bool {
+		match self {
+			Self::Ground(t) => f(t),
+			Self::Var(_) => true,
 		}
 	}
 
@@ -181,8 +202,44 @@ pub trait AsPattern {
 		self.as_pattern().is_ground()
 	}
 
+	/// Returns `true` if this value is a ground value satisfying the given
+	/// predicate, and `false` if it is a variable.
+	fn is_ground_and(&self, f: impl FnOnce(&Self::Ground) -> bool) -> bool {
+		match self.as_pattern() {
+			Pattern::Ground(t) => f(t),
+			Pattern::Var(_) => false,
+		}
+	}
+
 	/// Checks if this value is a variable (as opposed to a ground value).
 	fn is_var(&self) -> bool {
 		self.as_pattern().is_var()
+	}
+
+	/// Returns `true` if this value is a variable satisfying the given
+	/// predicate, and `false` if it is a ground value.
+	fn is_var_and(&self, f: impl FnOnce(&Self::Var) -> bool) -> bool {
+		match self.as_pattern() {
+			Pattern::Ground(_) => false,
+			Pattern::Var(x) => f(x),
+		}
+	}
+
+	/// Returns `true` if this value is a ground value, or if it is a
+	/// variable satisfying the given predicate.
+	fn is_ground_or(&self, f: impl FnOnce(&Self::Var) -> bool) -> bool {
+		match self.as_pattern() {
+			Pattern::Ground(_) => true,
+			Pattern::Var(x) => f(x),
+		}
+	}
+
+	/// Returns `true` if this value is a variable, or if it is a ground
+	/// value satisfying the given predicate.
+	fn is_var_or(&self, f: impl FnOnce(&Self::Ground) -> bool) -> bool {
+		match self.as_pattern() {
+			Pattern::Ground(t) => f(t),
+			Pattern::Var(_) => true,
+		}
 	}
 }
