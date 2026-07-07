@@ -1,9 +1,14 @@
+//! Small iterator adapters shared by the fallible/owned trait
+//! implementations of this crate.
 use std::marker::PhantomData;
 
 use into_owned_trait::IntoOwned;
 
 use crate::{Quad, Triple};
 
+/// Wraps a infallible iterator into one yielding
+/// [`Result<I::Item, Infallible>`](std::convert::Infallible), so it can be
+/// used where a fallible iterator is expected.
 pub struct InfallibleIterator<I>(pub I);
 
 impl<I: Iterator> Iterator for InfallibleIterator<I> {
@@ -14,9 +19,12 @@ impl<I: Iterator> Iterator for InfallibleIterator<I> {
 	}
 }
 
+/// Wraps an iterator over `Triple<S, P, O>` into one over `Quad<S, P, O, G>`,
+/// leaving the graph component of every quad to `None`.
 pub struct TriplesIntoQuads<I, G>(I, PhantomData<G>);
 
 impl<I, G> TriplesIntoQuads<I, G> {
+	/// Wraps the given triples iterator.
 	pub fn new(inner: I) -> Self {
 		Self(inner, PhantomData)
 	}
@@ -54,6 +62,8 @@ impl<R: IntoOwned, I: Iterator<Item = Quad<R>>> Iterator for QuadsIntoOwned<I> {
 	}
 }
 
+/// Turns an `Option<I>` into an iterator, yielding the items of `I` if
+/// there is one, or nothing (`None`) otherwise.
 pub struct OptionIterator<I>(pub Option<I>);
 
 impl<I: Iterator> Iterator for OptionIterator<I> {

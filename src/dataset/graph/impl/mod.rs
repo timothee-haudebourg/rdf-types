@@ -1,3 +1,4 @@
+//! Ready-to-use [`Graph`](super::Graph) implementations.
 pub mod btree_graph;
 pub mod indexed_btree_graph;
 

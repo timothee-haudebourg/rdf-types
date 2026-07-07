@@ -464,7 +464,7 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 		}
 	}
 
-	/// Returns an iterator over all the quads matching the given canonical
+	/// Returns an iterator over all the quads matching the given linear
 	/// quad pattern.
 	pub fn pattern_matching(
 		&self,
@@ -481,8 +481,9 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 		}
 	}
 
-	/// Returns an iterator over all the quads matching the given canonical
-	/// quad pattern.
+	/// Returns an iterator over all the quads matching the given linear
+	/// quad pattern, where each component may match any resource from a
+	/// given set.
 	pub fn multi_pattern_matching<'a, P>(
 		&self,
 		Quad(s, p, o, g): LinearQuadPattern<P>,
@@ -502,12 +503,12 @@ impl<R: Ord> IndexedBTreeDataset<R> {
 		}
 	}
 
-	/// Returns an iterator over all the quads matching the given canonical
+	/// Returns an iterator over all the quads matching the given linear
 	/// quad pattern.
 	///
-	/// Each matching quad returned by [`Iterator::next`] are removed from the
-	/// dataset. Matching quads that are not iterated on a kept in the dataset,
-	/// even when the iterator is dropped.
+	/// Each matching quad returned by [`Iterator::next`] is removed from the
+	/// dataset. Matching quads that are not iterated on are kept in the
+	/// dataset, even when the iterator is dropped.
 	pub fn extract_pattern_matching(
 		&mut self,
 		Quad(s, p, o, g): LinearQuadPattern<&R>,
@@ -716,7 +717,7 @@ impl<R: fmt::Display> fmt::Display for IndexedBTreeDataset<R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`].
+/// Iterator over the quads of an [`IndexedBTreeDataset`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
 pub struct Iter<'a, R> {
@@ -735,7 +736,7 @@ impl<'a, R> Iterator for Iter<'a, R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`].
+/// Owning iterator over the quads of an [`IndexedBTreeDataset`].
 pub struct IntoIter<R> {
 	resources: Slab<Resource<R>>,
 	quads: Slab<Quad<usize>>,
@@ -774,6 +775,7 @@ impl<R: Clone> IntoIterator for IndexedBTreeDataset<R> {
 	}
 }
 
+/// Iterator over the resources of an [`IndexedBTreeDataset`].
 pub struct Resources<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: raw_btree::Iter<'a, usize>,
@@ -787,6 +789,7 @@ impl<'a, R> Iterator for Resources<'a, R> {
 	}
 }
 
+/// Iterator over the distinct subjects of an [`IndexedBTreeDataset`].
 pub struct Subjects<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -800,6 +803,7 @@ impl<'a, R> Iterator for Subjects<'a, R> {
 	}
 }
 
+/// Iterator over the distinct predicates of an [`IndexedBTreeDataset`].
 pub struct Predicates<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -813,6 +817,7 @@ impl<'a, R> Iterator for Predicates<'a, R> {
 	}
 }
 
+/// Iterator over the distinct objects of an [`IndexedBTreeDataset`].
 pub struct Objects<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -826,6 +831,7 @@ impl<'a, R> Iterator for Objects<'a, R> {
 	}
 }
 
+/// Iterator over the distinct named graphs of an [`IndexedBTreeDataset`].
 pub struct NamedGraphs<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -868,7 +874,8 @@ impl<R: Hash> Hash for IndexedBTreeDataset<R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
+/// Iterator over the quads of an [`IndexedBTreeDataset`] matching some
+/// given [`LinearQuadPattern`].
 pub struct PatternMatching<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	quads: &'a Slab<Quad<usize>>,
@@ -917,7 +924,9 @@ impl<'a, R> Iterator for PatternMatching<'a, R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
+/// Iterator over the quads of an [`IndexedBTreeDataset`] matching some
+/// given [`LinearQuadPattern`], where each component may match any resource
+/// from a given set.
 pub struct MultiPatternMatching<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	quads: &'a Slab<Quad<usize>>,
@@ -966,7 +975,9 @@ impl<'a, R> Iterator for MultiPatternMatching<'a, R> {
 	}
 }
 
-/// Iterator over the quads of a [`BTreeGraph`] matching some given pattern.
+/// Iterator over the quads of an [`IndexedBTreeDataset`] matching some
+/// given [`LinearQuadPattern`], removing each yielded quad from the
+/// dataset.
 ///
 /// Dropping this iterator will *not* extract the remaining matching quads.
 pub struct ExtractPatternMatching<'a, R> {
@@ -1022,6 +1033,10 @@ impl<R: Clone + Ord> Iterator for ExtractPatternMatching<'_, R> {
 type TripleIndexes<'a> = std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>;
 type OwnedTripleIndexes = std::vec::IntoIter<usize>;
 
+/// Constraint on one quad component (subject, predicate, object or graph)
+/// during pattern matching: either no quad can match (`None`), any quad can
+/// match (`Any`), or only quads whose index is in the given, sorted
+/// iterator can match (`Fixed`).
 enum ComponentConstraints<I: Iterator> {
 	None,
 	Any,
@@ -1137,6 +1152,8 @@ impl<I: Iterator<Item = usize>> ComponentConstraints<I> {
 	}
 }
 
+/// Resource stored in an [`IndexedBTreeDataset`], along with the indexes of
+/// the quads it occurs in, per component.
 #[derive(Default, Clone)]
 struct Resource<R> {
 	value: R,

@@ -1,21 +1,28 @@
+//! Asynchronous counterparts of the [`Domain`](super::Domain) traits, for
+//! domains backed by asynchronous storage.
 use futures_lite::{Stream, stream};
 
 use crate::domain::fallible::{TryConstGenDomain, TryDomain, TryFiniteDomain};
 
-/// Finite domain.
+/// Asynchronous finite domain.
 pub trait AsyncFiniteDomain: TryDomain {
+	/// Asynchronous fallible resources stream.
 	type AsyncResources<'a>: Stream<Item = Result<Self::Resource, Self::Error>>
 	where
 		Self: 'a;
 
+	/// Returns the number of resources in the domain.
 	async fn async_len(&self) -> Result<usize, Self::Error>;
 
+	/// Checks if the domain has no resources.
 	async fn async_is_empty(&self) -> Result<bool, Self::Error> {
 		Ok(self.async_len().await? == 0)
 	}
 
+	/// Checks if the given resource belongs to the domain.
 	async fn async_contains(&self, a: &Self::Resource) -> Result<bool, Self::Error>;
 
+	/// Returns a stream over the resources of the domain.
 	async fn async_resources(&self) -> Result<Self::AsyncResources<'_>, Self::Error>;
 }
 
@@ -31,12 +38,15 @@ pub trait AsyncConstGenDomain: TryDomain {
 	async fn async_new_resource(&self) -> Result<Self::Resource, Self::Error>;
 }
 
+/// Any [`AsyncConstGenDomain`] can be used as an [`AsyncGenDomain`].
 impl<I: AsyncConstGenDomain> AsyncGenDomain for I {
 	async fn async_new_resource(&mut self) -> Result<Self::Resource, Self::Error> {
 		AsyncConstGenDomain::async_new_resource(self).await
 	}
 }
 
+/// Any fallible finite domain can be used, synchronously, as an
+/// asynchronous finite domain.
 impl<I: TryFiniteDomain> AsyncFiniteDomain for I
 where
 	I::Resource: Clone,
@@ -63,25 +73,10 @@ where
 	}
 }
 
+/// Any fallible const-generative domain can be used, synchronously, as an
+/// asynchronous const-generative domain.
 impl<I: TryConstGenDomain> AsyncConstGenDomain for I {
 	async fn async_new_resource(&self) -> Result<Self::Resource, Self::Error> {
 		TryConstGenDomain::try_new_resource(self)
 	}
-}
-
-/// Async fallible finite domain.
-pub trait AsyncTryFiniteDomain: TryDomain {
-	type AsyncTryResources<'a>: Stream<Item = Result<Self::Resource, Self::Error>>
-	where
-		Self: 'a;
-
-	async fn async_try_len(&self) -> Result<usize, Self::Error>;
-
-	async fn async_try_is_empty(&self) -> Result<bool, Self::Error> {
-		Ok(self.async_try_len().await? == 0)
-	}
-
-	async fn async_try_contains(&self, a: &Self::Resource) -> Result<bool, Self::Error>;
-
-	async fn async_try_resources(&self) -> Result<Self::AsyncTryResources<'_>, Self::Error>;
 }

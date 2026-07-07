@@ -1,3 +1,5 @@
+//! Asynchronous counterparts of the [`Dataset`](super::Dataset) traits, for
+//! datasets backed by asynchronous storage.
 use futures_lite::{Stream, StreamExt, stream};
 
 use crate::{
@@ -8,13 +10,17 @@ use crate::{
 
 /// Async finite dataset.
 pub trait AsyncFiniteDataset: TryDataset {
+	/// Asynchronous fallible quads stream.
 	type AsyncQuads<'a>: Stream<Item = Result<Quad<Self::Resource>, Self::Error>>
 	where
 		Self: 'a;
 
+	/// Returns a stream over the quads of the dataset.
 	async fn async_quads(&self) -> Result<Self::AsyncQuads<'_>, Self::Error>;
 }
 
+/// Any fallible finite dataset can be used, synchronously, as an
+/// asynchronous finite dataset.
 impl<D: TryFiniteDataset> AsyncFiniteDataset for D {
 	type AsyncQuads<'a>
 		= stream::Iter<D::TryQuads<'a>>
@@ -28,22 +34,28 @@ impl<D: TryFiniteDataset> AsyncFiniteDataset for D {
 
 /// Async pattern-matching-capable dataset.
 pub trait AsyncPatternMatchingDataset: TryDataset {
+	/// Asynchronous fallible pattern-matching stream.
 	type AsyncQuadPatternMatching<'a, 'p>: Stream<Item = Result<Quad<Self::Resource>, Self::Error>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
+	/// Returns a stream over all the quads of the dataset matching the
+	/// given pattern.
 	async fn async_quad_pattern_matching<'p>(
 		&self,
 		pattern: LinearQuadPattern<&'p Self::Resource>,
 	) -> Result<Self::AsyncQuadPatternMatching<'_, 'p>, Self::Error>;
 
+	/// Checks if the dataset contains the given quad.
 	async fn async_contains_quad(&self, quad: Quad<&Self::Resource>) -> Result<bool, Self::Error> {
 		let mut stream = std::pin::pin!(self.async_quad_pattern_matching(quad.into()).await?);
 		Ok(stream.next().await.transpose()?.is_some())
 	}
 }
 
+/// Any fallible pattern-matching-capable dataset can be used, synchronously,
+/// as an asynchronous pattern-matching-capable dataset.
 impl<D: TryPatternMatchingDataset> AsyncPatternMatchingDataset for D {
 	type AsyncQuadPatternMatching<'a, 'p>
 		= stream::Iter<D::TryQuadPatternMatching<'a, 'p>>
@@ -61,9 +73,12 @@ impl<D: TryPatternMatchingDataset> AsyncPatternMatchingDataset for D {
 
 /// Async mutable dataset.
 pub trait AsyncDatasetMut: TryDataset {
+	/// Inserts the given quad in the dataset.
 	async fn async_insert(&mut self, quad: Quad<Self::Resource>) -> Result<(), Self::Error>;
 }
 
+/// Any fallible mutable dataset can be used, synchronously, as an
+/// asynchronous mutable dataset.
 impl<D: TryDatasetMut> AsyncDatasetMut for D {
 	async fn async_insert(&mut self, quad: Quad<Self::Resource>) -> Result<(), Self::Error> {
 		self.try_insert(quad)

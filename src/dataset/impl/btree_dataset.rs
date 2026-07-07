@@ -387,6 +387,7 @@ impl<R: Clone> IntoIterator for BTreeDataset<R> {
 	}
 }
 
+/// Iterator over the resources of a [`BTreeDataset`].
 pub struct Resources<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: raw_btree::Iter<'a, usize>,
@@ -429,6 +430,8 @@ impl<R: Hash> Hash for BTreeDataset<R> {
 	}
 }
 
+/// Resource stored in a [`BTreeDataset`], along with the number of quad
+/// components it currently occurs in.
 #[derive(Default, Clone)]
 pub(crate) struct Resource<R> {
 	pub value: R,

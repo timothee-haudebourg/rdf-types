@@ -1,3 +1,4 @@
+//! RDF quads.
 use std::{cmp::Ordering, fmt, ops::Deref};
 
 use into_owned_trait::IntoOwned;
@@ -5,6 +6,10 @@ use into_owned_trait::IntoOwned;
 use crate::Triple;
 
 /// RDF quad.
+///
+/// A quad is a [`Triple`] (subject, predicate, object) together with an
+/// optional fourth component, the named graph in which the triple is
+/// asserted (`None` meaning the default graph).
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Quad<S, P = S, O = S, G = S>(pub S, pub P, pub O, pub Option<G>);
@@ -117,6 +122,7 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 		Quad(self.0, self.1, self.2, f(self.3))
 	}
 
+	/// Returns a copy of this quad with its graph component replaced by `g`.
 	pub fn with_graph(self, g: Option<G>) -> Self {
 		Self(self.0, self.1, self.2, g)
 	}
@@ -135,6 +141,7 @@ impl<S, P, O, G> Quad<S, P, O, G> {
 }
 
 impl<S, P, O, G> Quad<&S, &P, &O, &G> {
+	/// Clones each borrowed component of the quad.
 	pub fn cloned(&self) -> Quad<S, P, O, G>
 	where
 		S: Clone,
@@ -150,6 +157,7 @@ impl<S, P, O, G> Quad<&S, &P, &O, &G> {
 		)
 	}
 
+	/// Copies each borrowed component of the quad.
 	pub fn copied(&self) -> Quad<S, P, O, G>
 	where
 		S: Copy,

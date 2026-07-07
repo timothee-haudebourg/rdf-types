@@ -350,6 +350,7 @@ impl<R: Clone> IntoIterator for BTreeGraph<R> {
 	}
 }
 
+/// Iterator over the resources of a [`BTreeGraph`].
 pub struct Resources<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: raw_btree::Iter<'a, usize>,
@@ -392,6 +393,8 @@ impl<R: Hash> Hash for BTreeGraph<R> {
 	}
 }
 
+/// Resource stored in a [`BTreeGraph`], along with the number of triple
+/// components it currently occurs in.
 #[derive(Default, Clone)]
 pub(crate) struct Resource<R> {
 	pub value: R,

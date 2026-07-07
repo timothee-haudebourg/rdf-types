@@ -1,3 +1,6 @@
+//! Isomorphism between two RDF datasets, i.e. equality up to a renaming of
+//! their blank node identifiers (or, more generally, of any [`AsPattern`]
+//! variable).
 use std::collections::{BTreeMap, BTreeSet, btree_map::Entry};
 
 use crate::pattern::{AsPattern, Pattern};

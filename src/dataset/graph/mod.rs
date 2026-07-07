@@ -1,3 +1,4 @@
+//! RDF graph traits and implementations.
 use crate::{Triple, pattern::LinearTriplePattern};
 
 mod r#async;
@@ -9,71 +10,100 @@ pub use fallible::*;
 pub use r#impl::*;
 
 /// RDF graph.
+///
+/// A graph is a set of [`Triple`]s. This trait only fixes the resource
+/// type; see [`FiniteGraph`] and the other traits of this module for
+/// actually usable graphs.
 pub trait Graph {
+	/// Resource type.
 	type Resource;
 }
 
+/// Graph that can be traversed using a provided triple iterator.
 pub trait FiniteGraph: Graph {
+	/// Triples iterator.
 	type Triples<'a>: Iterator<Item = Triple<&'a Self::Resource>>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the triples of the graph.
 	fn triples(&self) -> Self::Triples<'_>;
 
+	/// Returns the number of triples in the graph.
 	fn triples_count(&self) -> usize {
 		self.triples().count()
 	}
 }
 
+/// Graph that can enumerate the distinct resources it mentions (in any
+/// position of any triple).
 pub trait ResourceFiniteGraph: Graph {
+	/// Resources iterator.
 	type GraphResources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct resources of the graph.
 	fn graph_resources(&self) -> Self::GraphResources<'_>;
 
+	/// Returns the number of distinct resources in the graph.
 	fn graph_resource_count(&self) -> usize {
 		self.graph_resources().count()
 	}
 }
 
+/// Graph that can enumerate the distinct resources it uses as a subject.
 pub trait SubjectFiniteGraph: Graph {
+	/// Subjects iterator.
 	type GraphSubjects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct subjects of the graph.
 	fn graph_subjects(&self) -> Self::GraphSubjects<'_>;
 
+	/// Returns the number of distinct subjects in the graph.
 	fn graph_subject_count(&self) -> usize {
 		self.graph_subjects().count()
 	}
 }
 
+/// Graph that can enumerate the distinct resources it uses as a predicate.
 pub trait PredicateFiniteGraph: Graph {
+	/// Predicates iterator.
 	type GraphPredicates<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct predicates of the graph.
 	fn graph_predicates(&self) -> Self::GraphPredicates<'_>;
 
+	/// Returns the number of distinct predicates in the graph.
 	fn graph_predicate_count(&self) -> usize {
 		self.graph_predicates().count()
 	}
 }
 
+/// Graph that can enumerate the distinct resources it uses as an object.
 pub trait ObjectFiniteGraph: Graph {
+	/// Objects iterator.
 	type GraphObjects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct objects of the graph.
 	fn graph_objects(&self) -> Self::GraphObjects<'_>;
 
+	/// Returns the number of distinct objects in the graph.
 	fn graph_object_count(&self) -> usize {
 		self.graph_objects().count()
 	}
 }
 
 /// Multi-pattern-matching-capable graph.
+///
+/// Unlike [`PatternMatchingGraph`], each component of the pattern may match
+/// any resource from a given set, rather than at most one fixed resource.
 pub trait MultiPatternMatchingGraph: Graph {
 	/// Pattern-matching iterator.
 	type TripleMultiPatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
@@ -89,18 +119,25 @@ pub trait MultiPatternMatchingGraph: Graph {
 	) -> Self::TripleMultiPatternMatching<'_, 'p>;
 }
 
-/// Pattern-matching-capable dataset.
+/// Pattern-matching-capable graph.
+///
+/// A graph that can be queried with a [`LinearTriplePattern`], i.e. a triple
+/// where each component is either a fixed resource or left unconstrained.
 pub trait PatternMatchingGraph: Graph {
+	/// Pattern-matching iterator.
 	type TriplePatternMatching<'a, 'p>: Iterator<Item = Triple<&'a Self::Resource>>
 	where
 		Self: 'a,
 		Self::Resource: 'p;
 
+	/// Returns an iterator over all the triples of the graph matching the
+	/// given pattern.
 	fn triple_pattern_matching<'p>(
 		&self,
 		pattern: LinearTriplePattern<&'p Self::Resource>,
 	) -> Self::TriplePatternMatching<'_, 'p>;
 
+	/// Checks if the graph contains the given triple.
 	fn contains_triple(&self, triple: Triple<&Self::Resource>) -> bool {
 		self.triple_pattern_matching(triple.into()).next().is_some()
 	}
@@ -155,6 +192,10 @@ pub trait PatternMatchingGraph: Graph {
 	}
 }
 
+/// Iterator over the predicates of a graph matching a given subject, along
+/// with, for each predicate, the objects matching it.
+///
+/// Created by [`PatternMatchingGraph::triple_predicates_objects`].
 pub struct TriplePredicatesObjects<
 	'a,
 	'p,
@@ -192,6 +233,10 @@ where
 	}
 }
 
+/// Iterator over the objects of a graph matching a given subject and
+/// predicate.
+///
+/// Created by [`PatternMatchingGraph::triple_objects`].
 pub struct TripleObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingGraph>
 where
 	D::Resource: 'p,
@@ -215,7 +260,7 @@ where
 
 /// Pattern-matching-capable mutable graph.
 pub trait PatternMatchingGraphMut: PatternMatchingGraph {
-	// Pattern-matching iterator.
+	/// Pattern-matching iterator.
 	type ExtractMatchingTriples<'a, 'p>: Iterator<Item = Triple<Self::Resource>>
 	where
 		Self: 'a,
@@ -235,9 +280,11 @@ pub trait PatternMatchingGraphMut: PatternMatchingGraph {
 		Self::Resource: 'p;
 }
 
-/// Mutable dataset.
+/// Mutable graph.
 pub trait GraphMut: Graph {
+	/// Inserts the given triple in the graph.
 	fn insert(&mut self, triple: Triple<Self::Resource>);
 
+	/// Removes the given triple from the graph.
 	fn remove(&mut self, triple: Triple<&Self::Resource>);
 }

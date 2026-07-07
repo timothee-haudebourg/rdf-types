@@ -1,4 +1,4 @@
-//! Dataset traits and implementations.
+//! RDF dataset traits and implementations.
 use crate::{
 	Quad,
 	pattern::LinearQuadPattern,
@@ -16,11 +16,18 @@ pub use graph::*;
 pub use r#impl::*;
 
 /// RDF dataset.
+///
+/// A dataset is a set of [`Quad`]s, i.e. a collection of named graphs (plus
+/// a default, unnamed graph). This trait only fixes the resource type; see
+/// [`FiniteDataset`] and the other traits of this module for actually
+/// usable datasets.
 pub trait Dataset {
 	/// Resource type.
 	type Resource;
 }
 
+/// Every graph is a (single-graph) dataset, where every triple of the graph
+/// is asserted in the default graph.
 impl<G: Graph> Dataset for G {
 	type Resource = G::Resource;
 }
@@ -35,6 +42,7 @@ pub trait FiniteDataset: Dataset {
 	/// Returns an iterator over the quads of the dataset.
 	fn quads(&self) -> Self::Quads<'_>;
 
+	/// Returns the number of quads in the dataset.
 	fn quads_count(&self) -> usize {
 		self.quads().count()
 	}
@@ -55,13 +63,18 @@ impl<G: FiniteGraph> FiniteDataset for G {
 	}
 }
 
+/// Dataset that can enumerate the distinct resources it mentions (in any
+/// position of any quad).
 pub trait ResourceFiniteDataset: Dataset {
+	/// Resources iterator.
 	type Resources<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct resources of the dataset.
 	fn resources(&self) -> Self::Resources<'_>;
 
+	/// Returns the number of distinct resources in the dataset.
 	fn resource_count(&self) -> usize {
 		self.resources().count()
 	}
@@ -82,13 +95,17 @@ impl<G: ResourceFiniteGraph> ResourceFiniteDataset for G {
 	}
 }
 
+/// Dataset that can enumerate the distinct resources it uses as a subject.
 pub trait SubjectFiniteDataset: Dataset {
+	/// Subjects iterator.
 	type Subjects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct subjects of the dataset.
 	fn subjects(&self) -> Self::Subjects<'_>;
 
+	/// Returns the number of distinct subjects in the dataset.
 	fn subject_count(&self) -> usize {
 		self.subjects().count()
 	}
@@ -109,13 +126,18 @@ impl<G: SubjectFiniteGraph> SubjectFiniteDataset for G {
 	}
 }
 
+/// Dataset that can enumerate the distinct resources it uses as a
+/// predicate.
 pub trait PredicateFiniteDataset: Dataset {
+	/// Predicates iterator.
 	type Predicates<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct predicates of the dataset.
 	fn predicates(&self) -> Self::Predicates<'_>;
 
+	/// Returns the number of distinct predicates in the dataset.
 	fn predicate_count(&self) -> usize {
 		self.predicates().count()
 	}
@@ -136,13 +158,17 @@ impl<G: PredicateFiniteGraph> PredicateFiniteDataset for G {
 	}
 }
 
+/// Dataset that can enumerate the distinct resources it uses as an object.
 pub trait ObjectFiniteDataset: Dataset {
+	/// Objects iterator.
 	type Objects<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct objects of the dataset.
 	fn objects(&self) -> Self::Objects<'_>;
 
+	/// Returns the number of distinct objects in the dataset.
 	fn object_count(&self) -> usize {
 		self.objects().count()
 	}
@@ -163,18 +189,24 @@ impl<G: ObjectFiniteGraph> ObjectFiniteDataset for G {
 	}
 }
 
+/// Dataset that can enumerate the distinct resources it uses to name a
+/// graph.
 pub trait NamedGraphFiniteDataset: Dataset {
+	/// Named graphs iterator.
 	type NamedGraphs<'a>: Iterator<Item = &'a Self::Resource>
 	where
 		Self: 'a;
 
+	/// Returns an iterator over the distinct named graphs of the dataset.
 	fn named_graphs(&self) -> Self::NamedGraphs<'_>;
 
+	/// Returns the number of distinct named graphs in the dataset.
 	fn named_graph_count(&self) -> usize {
 		self.named_graphs().count()
 	}
 }
 
+/// A (single-graph) dataset built from a [`Graph`] has no named graph.
 impl<G: Graph> NamedGraphFiniteDataset for G {
 	type NamedGraphs<'a>
 		= std::iter::Empty<&'a Self::Resource>
@@ -190,6 +222,11 @@ impl<G: Graph> NamedGraphFiniteDataset for G {
 	}
 }
 
+/// Multi-pattern-matching-capable dataset.
+///
+/// Unlike [`PatternMatchingDataset`], each component of the pattern may
+/// match any resource from a given set, rather than at most one fixed
+/// resource.
 pub trait MultiPatternMatchingDataset: Dataset {
 	/// Pattern-matching iterator.
 	type QuadMultiPatternMatching<'a, 'p>: Iterator<Item = Quad<&'a Self::Resource>>
@@ -206,6 +243,9 @@ pub trait MultiPatternMatchingDataset: Dataset {
 }
 
 /// Pattern-matching-capable dataset.
+///
+/// A dataset that can be queried with a [`LinearQuadPattern`], i.e. a quad
+/// where each component is either a fixed resource or left unconstrained.
 pub trait PatternMatchingDataset: Dataset {
 	/// Pattern-matching iterator.
 	type QuadPatternMatching<'a, 'p>: Iterator<Item = Quad<&'a Self::Resource>>
@@ -290,6 +330,8 @@ pub trait PatternMatchingDataset: Dataset {
 	}
 }
 
+/// Any single-graph, pattern-matching-capable graph is a pattern-matching
+/// dataset, matching only quads in the default graph.
 impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 	type QuadPatternMatching<'a, 'p>
 		= OptionIterator<TriplesIntoQuads<G::TriplePatternMatching<'a, 'p>, &'a G::Resource>>
@@ -311,6 +353,10 @@ impl<G: PatternMatchingGraph> PatternMatchingDataset for G {
 	}
 }
 
+/// Iterator over the predicates of a dataset matching a given graph and
+/// subject, along with, for each predicate, the objects matching it.
+///
+/// Created by [`PatternMatchingDataset::quad_predicates_objects`].
 pub struct QuadPredicatesObjects<
 	'a,
 	'p,
@@ -353,6 +399,10 @@ where
 	}
 }
 
+/// Iterator over the objects of a dataset matching a given graph, subject
+/// and predicate.
+///
+/// Created by [`PatternMatchingDataset::quad_objects`].
 pub struct QuadObjects<'a, 'p, D: 'a + ?Sized + PatternMatchingDataset>
 where
 	D::Resource: 'p,
@@ -376,7 +426,7 @@ where
 
 /// Pattern-matching-capable mutable dataset.
 pub trait PatternMatchingDatasetMut: PatternMatchingDataset {
-	// Pattern-matching iterator.
+	/// Pattern-matching iterator.
 	type ExtractMatchingQuads<'a, 'p>: Iterator<Item = Quad<Self::Resource>>
 	where
 		Self: 'a,

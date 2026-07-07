@@ -57,12 +57,35 @@ fn triple_index_cmp<'a, R: Ord>(
 /// Indexed BTree-based RDF graph, optimized for pattern matching operations.
 #[derive(Clone)]
 pub struct IndexedBTreeGraph<R> {
+	/// All the resources appearing in this graph.
+	///
+	/// Each of them is uniquely indexed by a `usize` in this slab.
 	resources: Slab<Resource<R>>,
+
+	/// All the triples in this graph.
+	///
+	/// Each of them is uniquely indexed by a `usize` in this slab.
 	triples: Slab<Triple<usize>>,
+
+	/// Maps each resource to its index in `resources`.
+	///
+	/// Using a `RawBTree` so we don't have to actually store each resource
+	/// there.
 	resources_indexes: RawBTree<usize>,
+
+	/// Maps each triple to its index in `triples`.
+	///
+	/// Using a `RawBTree` so we don't have to actually store each triple
+	/// there.
 	triples_indexes: RawBTree<usize>,
+
+	/// All the resources that appear as triple subject.
 	subjects: BTreeSet<usize>,
+
+	/// All the resources that appear as triple predicate.
 	predicates: BTreeSet<usize>,
+
+	/// All the resources that appear as triple object.
 	objects: BTreeSet<usize>,
 }
 
@@ -341,7 +364,7 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 		}
 	}
 
-	/// Returns an iterator over all the triples matching the given canonical
+	/// Returns an iterator over all the triples matching the given linear
 	/// triple pattern.
 	pub fn pattern_matching(&self, pattern: LinearTriplePattern<&R>) -> PatternMatching<'_, R> {
 		PatternMatching {
@@ -356,8 +379,9 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 		}
 	}
 
-	/// Returns an iterator over all the triples matching the given canonical
-	/// triple pattern.
+	/// Returns an iterator over all the triples matching the given linear
+	/// triple pattern, where each component may match any resource from a
+	/// given set.
 	pub fn multi_pattern_matching<'a, P>(
 		&self,
 		Triple(s, p, o): LinearTriplePattern<P>,
@@ -376,10 +400,10 @@ impl<R: Ord> IndexedBTreeGraph<R> {
 		}
 	}
 
-	/// Returns an iterator over all the triples matching the given canonical
+	/// Returns an iterator over all the triples matching the given linear
 	/// triple pattern.
 	///
-	/// Each matching triple returned by [`Iterator::next`] are removed from
+	/// Each matching triple returned by [`Iterator::next`] is removed from
 	/// the graph. Matching triples that are not iterated on are kept in the
 	/// graph, even when the iterator is dropped.
 	pub fn extract_pattern_matching(
@@ -563,7 +587,7 @@ impl<R: Clone + Ord> PatternMatchingGraphMut for IndexedBTreeGraph<R> {
 	}
 }
 
-/// Iterator over the triples of a [`BTreeGraph`].
+/// Iterator over the triples of an [`IndexedBTreeGraph`].
 #[derive(Educe)]
 #[educe(Clone, Copy)]
 pub struct Triples<'a, R> {
@@ -582,7 +606,7 @@ impl<'a, R> Iterator for Triples<'a, R> {
 	}
 }
 
-/// Iterator over the triples of a [`BTreeGraph`].
+/// Owning iterator over the triples of an [`IndexedBTreeGraph`].
 pub struct IntoTriples<R> {
 	resources: Slab<Resource<R>>,
 	triples: Slab<Triple<usize>>,
@@ -621,6 +645,7 @@ impl<R: Clone> IntoIterator for IndexedBTreeGraph<R> {
 	}
 }
 
+/// Iterator over the resources of an [`IndexedBTreeGraph`].
 pub struct Resources<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: raw_btree::Iter<'a, usize>,
@@ -634,6 +659,7 @@ impl<'a, R> Iterator for Resources<'a, R> {
 	}
 }
 
+/// Iterator over the distinct subjects of an [`IndexedBTreeGraph`].
 pub struct Subjects<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -647,6 +673,7 @@ impl<'a, R> Iterator for Subjects<'a, R> {
 	}
 }
 
+/// Iterator over the distinct predicates of an [`IndexedBTreeGraph`].
 pub struct Predicates<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -660,6 +687,7 @@ impl<'a, R> Iterator for Predicates<'a, R> {
 	}
 }
 
+/// Iterator over the distinct objects of an [`IndexedBTreeGraph`].
 pub struct Objects<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	indexes: std::collections::btree_set::Iter<'a, usize>,
@@ -702,7 +730,8 @@ impl<R: Hash> Hash for IndexedBTreeGraph<R> {
 	}
 }
 
-/// Iterator over the triples of a [`BTreeGraph`] matching some given pattern.
+/// Iterator over the triples of an [`IndexedBTreeGraph`] matching some
+/// given [`LinearTriplePattern`].
 pub struct PatternMatching<'a, R> {
 	resources: &'a Slab<Resource<R>>,
 	triples: &'a Slab<Triple<usize>>,
@@ -846,6 +875,10 @@ impl<R: Clone + Ord> Iterator for ExtractPatternMatching<'_, R> {
 type TripleIndexes<'a> = std::iter::Copied<std::collections::btree_set::Iter<'a, usize>>;
 type OwnedTripleIndexes = std::vec::IntoIter<usize>;
 
+/// Constraint on one triple component (subject, predicate or object) during
+/// pattern matching: either no triple can match (`None`), any triple can
+/// match (`Any`), or only triples whose index is in the given, sorted
+/// iterator can match (`Fixed`).
 enum ComponentConstraints<I: Iterator> {
 	None,
 	Any,
@@ -942,6 +975,8 @@ impl<I: Iterator<Item = usize>> ComponentConstraints<I> {
 	}
 }
 
+/// Resource stored in an [`IndexedBTreeGraph`], along with the indexes of
+/// the triples it occurs in, per component.
 #[derive(Default, Clone)]
 pub(crate) struct Resource<R> {
 	pub value: R,

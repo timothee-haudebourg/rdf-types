@@ -1,9 +1,13 @@
+//! RDF triples.
 use into_owned_trait::IntoOwned;
 
 use crate::Quad;
 use std::{cmp::Ordering, fmt};
 
 /// RDF triple.
+///
+/// A triple is a (subject, predicate, object) tuple of resources. See
+/// [`Quad`] for a triple additionally located in a named graph.
 #[derive(Clone, Copy, Eq, Ord, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Triple<S, P = S, O = S>(pub S, pub P, pub O);
@@ -106,6 +110,7 @@ impl<S, P, O> Triple<S, P, O> {
 }
 
 impl<S, P, O> Triple<&S, &P, &O> {
+	/// Clones each borrowed component of the triple.
 	pub fn cloned(&self) -> Triple<S, P, O>
 	where
 		S: Clone,
@@ -115,6 +120,7 @@ impl<S, P, O> Triple<&S, &P, &O> {
 		Triple(self.0.clone(), self.1.clone(), self.2.clone())
 	}
 
+	/// Copies each borrowed component of the triple.
 	pub fn copied(&self) -> Triple<S, P, O>
 	where
 		S: Copy,
