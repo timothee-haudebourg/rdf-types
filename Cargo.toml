@@ -10,7 +10,7 @@ license = "MIT/Apache-2.0"
 readme = "README.md"
 edition = "2024"
 rust-version = "1.85.0"
-version = "0.22.4"
+version = "1.0.0"
 
 [features]
 serde = ["dep:serde"]
