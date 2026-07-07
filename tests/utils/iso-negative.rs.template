@@ -1,9 +1,9 @@
-use rdf_types::{dataset::BTreeDataset, pattern::Pattern, Quad};
+use rdf_types::{BTreeDataset, pattern::Pattern, Quad};
 
 type Term = Pattern<u32, u32>;
 
 fn test(a: BTreeDataset<Term>, b: BTreeDataset<Term>) {
-	if let Some(_) = rdf_types::find_bijection(&a, &b) {
+	if rdf_types::find_bijection(&a, &b).is_some() {
 		panic!("bijection found!")
 	}
 }

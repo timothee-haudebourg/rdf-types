@@ -94,7 +94,7 @@ class Triple
 	end
 
 	def to_rust
-		"Quad(\n\t\t#{@subject.to_rust},\n\t\t#{@predicate.to_rust},\n\t\t#{@object.to_rust},\n\t\tNone\n\t)"
+		"Quad(\n\t\t#{@subject.to_rust},\n\t\t#{@predicate.to_rust},\n\t\t#{@object.to_rust},\n\t\tNone,\n\t)"
 	end
 
 	def substituted
