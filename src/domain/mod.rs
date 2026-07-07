@@ -46,14 +46,20 @@ pub trait FiniteDomain: Domain {
 	fn resources(&self) -> Self::Resources<'_>;
 }
 
+/// Domain that can spawn fresh new resources from a shared reference.
+pub trait ConstGenDomain: Domain {
+	/// Create a new resource.
+	fn new_resource(&self) -> Self::Resource;
+}
+
 /// Domain that can spawn fresh new resources.
 pub trait GenDomain: Domain {
 	/// Create a new resource.
 	fn new_resource(&mut self) -> Self::Resource;
 }
 
-/// Domain that can spawn fresh new resources from a shared reference.
-pub trait ConstGenDomain: Domain {
-	/// Create a new resource.
-	fn new_resource(&self) -> Self::Resource;
+impl<T: ConstGenDomain> GenDomain for T {
+	fn new_resource(&mut self) -> Self::Resource {
+		ConstGenDomain::new_resource(self)
+	}
 }
